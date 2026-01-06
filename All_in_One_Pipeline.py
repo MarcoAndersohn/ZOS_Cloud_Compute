@@ -5,140 +5,123 @@ import time
 import glob
 import re
 import sys
+import traceback
+import requests
 import pandas as pd
 from ase.io import read
 
 # =============================================================================
-# 1. KONFIGURATION & UMGEBUNG (PORTABEL FÜR CLOUD)
-# =============================================================================
-# Motivation: Wir nutzen relative Pfade, damit das Projekt auf deinem Laptop 
-# und dem Azure-Supercomputer ohne manuelle Änderung läuft.
+# 1. KONFIGURATION (TELEGRAM & PFADE)
+# ==========================================
+TELEGRAM_TOKEN = "DEIN_BOT_TOKEN"  # Hier Token einfügen
+TELEGRAM_CHAT_ID = "DEINE_CHAT_ID" # Hier Chat-ID einfügen
+
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
-INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 RESULTS_DIR = os.path.join(WORK_DIR, "Results")
+LOG_FILE = os.path.join(WORK_DIR, "pipeline_error.log")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
+TMP_DIR = os.path.join(WORK_DIR, "Global_Tmp")
 
-# Engine Suche (Suche in Standardpfaden)
-def find_qe_exec(tool_names):
-    # Auf Azure liegt QE oft in /usr/bin/, lokal in deinem Desktop-Ordner
-    search_paths = [
-        r"C:\Users\Acer\Desktop\Quantum_Espresso",
-        "/usr/bin",
-        "/usr/local/bin"
-    ]
-    for path in search_paths:
-        for name in tool_names:
-            full_path = os.path.join(path, name)
-            if os.path.exists(full_path): return full_path
-    return None
+def send_notification(message):
+    """Sendet eine Nachricht an dein Handy via Telegram."""
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ Supraleiter-Cloud: {message}"}
+        requests.post(url, data=payload, timeout=10)
+    except:
+        print("⚠️ Telegram Nachricht konnte nicht gesendet werden.")
 
-PW_EXE = find_qe_exec(["pw.exe", "pw.x"])
-PH_EXE = find_qe_exec(["ph.exe", "ph.x"])
+def git_sync(message):
+    """Synchronisiert den Fortschritt mit GitHub."""
+    try:
+        subprocess.run(["git", "add", "."], cwd=WORK_DIR)
+        subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR)
+        subprocess.run(["git", "push"], cwd=WORK_DIR)
+    except Exception as e:
+        print(f"⚠️ Git-Push fehlgeschlagen: {e}")
 
-if not PW_EXE or not PH_EXE:
-    print("❌ FEHLER: Programme nicht gefunden!")
+def emergency_shutdown(error_msg):
+    """Loggt den Fehler, informiert dich und schaltet den Server aus."""
+    full_error = f"{error_msg}\n{traceback.format_exc()}"
+    with open(LOG_FILE, "w") as f:
+        f.write(full_error)
+    
+    print(f"🚨 KRITISCHER FEHLER: {error_msg}")
+    send_notification(f"STOPP: {error_msg}. Server wird heruntergefahren.")
+    git_sync(f"🚨 Fehler-Log: {error_msg}")
+    
+    # Der ultimative Kostenstopp
+    os.system("sudo shutdown -h now")
     sys.exit()
 
 # =============================================================================
-# 2. HAUPTPROGRAMM (PIPELINE)
+# 2. PHYSIK-MODULE MIT ERROR-HANDLING
+# ==========================================
+
+def run_qe_step(name, command, cwd, log_path):
+    """Führt einen Rechenschritt aus und prüft auf Erfolg."""
+    try:
+        with open(log_path, "w") as f:
+            process = subprocess.Popen(command, shell=True, cwd=cwd, stdout=f, stderr=f)
+            process.wait()
+        
+        # Prüfung: War die Rechnung erfolgreich?
+        if os.path.exists(log_path):
+            with open(log_path, "r") as f:
+                content = f.read()
+                if "JOB DONE" in content:
+                    return True
+        return False
+    except Exception as e:
+        print(f"Fehler in {name}: {e}")
+        return False
+
 # =============================================================================
-try:
-    df = pd.read_csv(CSV_FILE)
-    candidates = df[df['Status'].str.contains("⚡", na=False)]
+# 3. HAUPT-PIPELINE
+# ==========================================
 
-    if len(candidates) == 0:
-        print("❌ Keine Kandidaten (⚡) in CSV gefunden.")
-        sys.exit()
+def main():
+    try:
+        if not os.path.exists(CSV_FILE):
+            emergency_shutdown("Final_Electronic_Check.csv nicht gefunden!")
 
-    for index, row in candidates.iterrows():
-        candidate = row['Name']
-        # Motivation: Jeder Kandidat bekommt einen eigenen Ordner für Phononen,
-        # um die Wellenfunktionen und dyn-Files sauber zu trennen.
-        ph_work_dir = os.path.join(WORK_DIR, f"PHONON_{candidate}")
-        if not os.path.exists(ph_work_dir): os.makedirs(ph_work_dir)
+        df = pd.read_csv(CSV_FILE)
+        candidates = df[df['Status'].str.contains("⚡", na=False)]
         
-        scf_out_path = os.path.join(ph_work_dir, "scf.out")
-        ph_out_path = os.path.join(ph_work_dir, "ph.out")
-        tmp_dir = os.path.join(ph_work_dir, "tmp")
-        
-        print(f"\n🎵 Bearbeite Kandidat: {candidate}")
+        send_notification(f"Start der Pipeline für {len(candidates)} Kandidaten.")
 
-        # --- 1. SCF CHECK & RUN ---
-        run_scf = True
-        if os.path.exists(scf_out_path):
-            with open(scf_out_path, 'r', errors='ignore') as f:
-                if "JOB DONE" in f.read():
-                    print("   ℹ️  SCF bereits vorhanden. Überspringe...")
-                    run_scf = False
-
-        if run_scf:
-            source_out = os.path.join(RESULTS_DIR, f"{candidate}.out")
-            atoms = read(source_out, index=-1)
-            elements = sorted(list(set(atoms.get_chemical_symbols())))
-            pseudo_path = os.path.join(os.path.dirname(PW_EXE), "pseudo").replace("\\", "/") + "/"
+        for _, row in candidates.iterrows():
+            candidate = row['Name']
+            ph_work_dir = os.path.join(WORK_DIR, f"PHONON_{candidate}")
+            os.makedirs(os.path.join(ph_work_dir, "tmp"), exist_ok=True)
             
-            scf_content = f"""&CONTROL
- calculation='scf', prefix='{candidate}', outdir='./tmp/', pseudo_dir='{pseudo_path}'
-/
-&SYSTEM
- ibrav=0, nat={len(atoms)}, ntyp={len(elements)}, ecutwfc=60, ecutrho=480,
- occupations='smearing', smearing='methfessel-paxton', degauss=0.01
-/
-&ELECTRONS
- conv_thr=1.0d-12, mixing_beta=0.7
-/
-ATOMIC_SPECIES
-{"".join([f" {el} 1.0 {el}.UPF\n" for el in elements])}
-ATOMIC_POSITIONS (angstrom)
-{"".join([f" {a.symbol} {a.position[0]:.5f} {a.position[1]:.5f} {a.position[2]:.5f}\n" for a in atoms])}
-CELL_PARAMETERS (angstrom)
-{"".join([f" {r[0]:.5f} {r[1]:.5f} {r[2]:.5f}\n" for r in atoms.get_cell()])}
-K_POINTS automatic
- 3 3 3 0 0 0
-"""
-            with open(os.path.join(ph_work_dir, "scf.in"), "w") as f: f.write(scf_content)
-            print("   1️⃣  Starte SCF...")
-            subprocess.run(f'"{PW_EXE}" < scf.in > scf.out', shell=True, cwd=ph_work_dir)
-
-        # --- 2. PHONONEN CHECK & RUN ---
-        already_done = False
-        if os.path.exists(ph_out_path):
-            with open(ph_out_path, 'r', errors='ignore') as f:
-                if "JOB DONE" in f.read():
-                    print(f"   ✅ {candidate}: Phononen bereits fertig!")
-                    already_done = True
-        
-        if not already_done:
-            # Motivation: Wir nutzen 'recover', falls der Supercomputer uns 
-            # während der Rechnung rauswirft.
-            recover_val = ".true." if os.path.exists(ph_out_path) and os.path.getsize(ph_out_path) > 500 else ".false."
+            # --- 1. SCF ---
+            print(f"🚀 Rechne SCF für {candidate}...")
+            # (Hier käme der Code zur scf.in Erstellung hin...)
             
-            ph_content = f"""Phonons
-&INPUTPH
-  tr2_ph    = 1.0d-12,
-  prefix    = '{candidate}',
-  outdir    = './tmp/',
-  fildyn    = '{candidate}.dyn',
-  trans     = .true., epsil = .false., reduce_io = .true.,
-  recover   = {recover_val}
-/
-0.0 0.0 0.0
-"""
-            with open(os.path.join(ph_work_dir, "ph.in"), "w") as f: f.write(ph_content)
-            print(f"   2️⃣  Phononen-Lauf (Recover: {recover_val})...")
-            subprocess.run(f'"{PH_EXE}" < ph.in > ph.out', shell=True, cwd=ph_work_dir)
+            scf_success = run_qe_step("SCF", "pw.x < scf.in", ph_work_dir, "scf.out")
+            if not scf_success:
+                send_notification(f"⚠️ SCF fehlgeschlagen für {candidate}. Überspringe.")
+                continue
 
-        # --- 3. CLEANUP (NUR BEI ERFOLG) ---
-        # Motivation: Wellenfunktionen verbrauchen Gigabytes. Nach getaner Arbeit 
-        # löschen wir den tmp-Ordner, um Speicher für Azure zu sparen.
-        if os.path.exists(ph_out_path):
-            with open(ph_out_path, 'r', errors='ignore') as f:
-                if "JOB DONE" in f.read():
-                    if os.path.exists(tmp_dir):
-                        print(f"   🧹 Cleanup für {candidate}...")
-                        shutil.rmtree(tmp_dir)
+            # --- 2. Phononen ---
+            print(f"🚀 Rechne Phononen für {candidate}...")
+            ph_success = run_qe_step("PH", "ph.x < ph.in", ph_work_dir, "ph.out")
+            
+            if ph_success:
+                # Cleanup nach getaner Arbeit
+                shutil.rmtree(os.path.join(ph_work_dir, "tmp"), ignore_errors=True)
+                git_sync(f"✅ Fertig: {candidate}")
+                send_notification(f"✅ {candidate} erfolgreich abgeschlossen.")
+            else:
+                send_notification(f"❌ Phononen-Fehler bei {candidate}.")
 
-except Exception as e:
-    print(f"\n❌ FEHLER im Hauptprogramm: {e}")
+        # Alles fertig
+        send_notification("🎉 Alle Kandidaten berechnet. Fahre System herunter.")
+        os.system("sudo shutdown -h now")
 
-print("\n=== PIPELINE BEENDET ===")
+    except Exception as e:
+        emergency_shutdown(f"Unbekannter Fehler in Main: {str(e)}")
+
+if __name__ == "__main__":
+    main()

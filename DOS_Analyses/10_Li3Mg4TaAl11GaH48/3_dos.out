@@ -1,0 +1,45 @@
+
+     Program DOS v.6.1 starts on 24Dec2025 at 18: 7:48 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI & OpenMP), running on      12 processor cores
+     Number of MPI processes:                 1
+     Threads/MPI process:                    12
+
+   Info: using nr1, nr2, nr3 values from input
+
+   Info: using nr1, nr2, nr3 values from input
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation      =  SLA  PW   PBE  PBE ( 1  4  3  4 0 0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+               file Al.UPF: wavefunction(s)  3S 3P renormalized
+               file Ga.UPF: wavefunction(s)  4S renormalized
+               file H.UPF: wavefunction(s)  1S renormalized
+               file Mg.UPF: wavefunction(s)  Xn Xn Xn Xn Xn Xn renormalized
+
+     G-vector sticks info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Sum        8645    4319   1195               820371   290049   42347
+
+
+     Gaussian broadening (read from file): ngauss,degauss=   1    0.010000
+
+
+     DOS          :  2m20.06s CPU     2m20.53s WALL
+
+
+   This run was terminated on:  18:10: 8  24Dec2025            
+
+=------------------------------------------------------------------------------=
+   JOB DONE.
+=------------------------------------------------------------------------------=

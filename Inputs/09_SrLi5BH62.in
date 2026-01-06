@@ -1,0 +1,61 @@
+&CONTROL
+  calculation = 'vc-relax'
+  prefix = 'SrLi5BH62'
+  outdir = './tmp/'
+  pseudo_dir = './pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 20
+  ntyp = 4
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  B  1.00  B.UPF
+  H  1.00  H.UPF
+  Li  1.00  Li.UPF
+  Sr  1.00  Sr.UPF
+ATOMIC_POSITIONS (angstrom)
+  Li  -2.926658  5.848929  -5.152560
+  Li  -2.998007  3.146832  -1.705166
+  Sr  -0.871170  4.352962  -3.402399
+  Li  -4.564974  1.319697  -3.165135
+  Li  -1.232707  1.920594  -5.601132
+  Li  -2.396216  6.327401  -1.530324
+  B  -2.168606  1.670861  -3.306177
+  B  -0.308652  0.010615  -6.227634
+  H  -2.063379  4.465115  -0.847973
+  H  -2.723937  1.593699  -4.443576
+  H  -1.184447  -0.490188  -5.502803
+  H  -1.511296  0.622301  -3.057897
+  H  -4.559831  1.020675  -5.758695
+  H  -4.201996  3.168366  -4.998215
+  H  0.327669  4.096096  -1.218934
+  H  -4.487427  3.702034  -5.487325
+  H  -3.952191  6.148443  -0.513974
+  H  -0.640810  1.372834  -0.771579
+  H  0.166448  3.326643  -1.328519
+  H  -3.360918  5.327083  -3.423206
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  -4.892019  0.164196  -0.190646
+  0.316082  6.165982  0.061470
+  -0.238455  -0.700162  -6.312144

@@ -1,0 +1,42 @@
+&CONTROL
+  calculation = 'vc-relax'
+  prefix = 'YH2'
+  outdir = './tmp/'
+ pseudo_dir = 'C:/Users/Acer/Desktop/Quantum_Espresso/pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 3
+  ntyp = 2
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  H  1.00  H.UPF
+  Y  1.00  Y.UPF
+ATOMIC_POSITIONS (angstrom)
+  Y  -0.000000  -0.000000  0.000000
+  H  3.189575  2.255370  5.524504
+  H  1.063192  0.751790  1.841501
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  3.189575  -0.000000  1.841501
+  1.063192  3.007160  1.841501
+  0.000000  0.000000  3.683003

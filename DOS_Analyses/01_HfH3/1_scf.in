@@ -1,0 +1,27 @@
+&CONTROL
+ calculation='scf', prefix='01_HfH3', outdir='./tmp/', pseudo_dir='C:/Users/Acer/Desktop/Quantum_Espresso_Workspace/Inputs/pseudo'
+/
+&SYSTEM
+ ibrav=0, nat=4, ntyp=2, ecutwfc=50, ecutrho=400,
+ occupations='smearing', smearing='methfessel-paxton', degauss=0.01
+/
+&ELECTRONS
+ conv_thr=1.0d-8
+/
+ATOMIC_SPECIES
+ H 1.0 H.UPF
+ Hf 1.0 Hf.UPF
+
+ATOMIC_POSITIONS (angstrom)
+ Hf 0.00003 -0.00002 -0.00033
+ H -0.00002 1.47195 1.68788
+ H 1.47193 -0.00000 1.68786
+ H -0.00003 -0.00001 3.37553
+
+CELL_PARAMETERS (angstrom)
+ -1.47197 1.47194 3.37547
+ 1.47193 -1.47196 3.37547
+ 1.47197 1.47196 -3.37549
+
+K_POINTS automatic
+ 4 4 4 0 0 0

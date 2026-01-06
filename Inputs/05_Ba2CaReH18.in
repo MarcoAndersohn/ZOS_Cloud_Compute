@@ -1,0 +1,63 @@
+&CONTROL
+  calculation = 'vc-relax'
+  prefix = 'Ba2CaReH18'
+  outdir = './tmp/'
+ pseudo_dir = 'C:/Users/Acer/Desktop/Quantum_Espresso/pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 22
+  ntyp = 4
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  Ba  1.00  Ba.UPF
+  Ca  1.00  Ca.UPF
+  H  1.00  H.UPF
+  Re  1.00  Re.UPF
+ATOMIC_POSITIONS (angstrom)
+  Ba  -0.000106  0.231734  -0.144108
+  Ba  -0.000087  0.231724  5.521582
+  Re  2.569153  0.944824  2.688747
+  Ca  2.570235  -1.028167  8.066225
+  H  2.569843  -0.296419  1.497224
+  H  2.569576  0.314614  9.901803
+  H  2.569851  -0.296424  3.880275
+  H  2.569564  0.314620  6.230642
+  H  3.552554  1.664921  3.865521
+  H  3.746755  -1.857338  6.400792
+  H  3.552546  1.664925  1.511977
+  H  3.746766  -1.857344  9.731671
+  H  1.394415  -1.856118  6.400801
+  H  1.585281  1.665947  3.865567
+  H  1.394427  -1.856124  9.731642
+  H  1.585272  1.665952  1.511913
+  H  4.052528  0.153063  2.688754
+  H  4.151164  0.431285  8.066229
+  H  0.987850  0.432942  8.066216
+  H  1.086888  0.154693  2.688742
+  H  2.568484  2.591778  2.688743
+  H  2.571334  -3.441601  8.066229
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  2.571676  -4.242667  0.000019
+  2.567714  4.240035  0.000003
+  0.000037  -0.000019  10.754950

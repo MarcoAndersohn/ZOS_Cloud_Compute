@@ -1,0 +1,51 @@
+&CONTROL
+  calculation = 'vc-relax'
+  prefix = 'Ti3GaH7'
+  outdir = './tmp/'
+  pseudo_dir = './pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 11
+  ntyp = 3
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  Ga  1.00  Ga.UPF
+  H  1.00  H.UPF
+  Ti  1.00  Ti.UPF
+ATOMIC_POSITIONS (angstrom)
+  Ga  1.214589  3.184663  3.184660
+  Ti  3.313795  1.085459  3.363591
+  Ti  3.313795  3.363595  1.085457
+  Ti  1.035657  1.085458  1.085457
+  H  2.173628  0.024808  0.024808
+  H  -0.119507  2.112864  2.112862
+  H  2.257320  0.148575  2.141930
+  H  0.004261  2.196557  -0.004260
+  H  0.044010  -0.044010  -0.044010
+  H  0.004260  -0.004261  2.196555
+  H  2.257320  2.141933  0.148575
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  4.370186  0.029069  0.029068
+  0.029069  4.370183  -0.029069
+  0.029068  -0.029069  4.370179

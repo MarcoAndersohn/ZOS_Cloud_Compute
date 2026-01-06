@@ -1,0 +1,62 @@
+&CONTROL
+  calculation = 'vc-relax'
+  prefix = 'K4SrLi2AlH12'
+  outdir = './tmp/'
+  pseudo_dir = './pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 20
+  ntyp = 5
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  Al  1.00  Al.UPF
+  H  1.00  H.UPF
+  K  1.00  K.UPF
+  Li  1.00  Li.UPF
+  Sr  1.00  Sr.UPF
+ATOMIC_POSITIONS (angstrom)
+  K  1.106658  0.678065  3.652651
+  K  7.560831  4.632629  24.955388
+  K  2.505891  1.535395  8.270979
+  K  6.161598  3.775299  20.337061
+  Li  3.583148  2.195446  11.826590
+  Li  5.084341  3.115248  16.781449
+  Sr  0.000001  0.000000  -0.000001
+  Al  4.333744  2.655347  14.304021
+  H  1.994718  1.222193  11.430383
+  H  3.216196  3.618728  10.615422
+  H  4.684585  1.222192  10.615422
+  H  3.982903  4.088502  17.992617
+  H  6.672771  4.088501  17.177657
+  H  5.451294  1.691965  17.992617
+  H  3.484738  2.135149  15.754847
+  H  4.556632  4.238203  15.039687
+  H  4.110857  1.072491  13.568352
+  H  5.182752  3.175545  12.853192
+  H  2.822286  3.175546  13.568353
+  H  5.845202  2.135148  15.039686
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  5.832401  0.073949  8.959179
+  2.714397  5.162795  8.959180
+  0.120691  0.073950  10.689680

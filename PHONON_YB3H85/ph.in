@@ -1,0 +1,10 @@
+Phonons
+&INPUTPH
+  tr2_ph    = 1.0d-12,
+  prefix    = 'YB3H85',
+  outdir    = './tmp/',
+  fildyn    = 'YB3H85.dyn',
+  fildrho   = 'YB3H85.drho',
+  trans     = .true., epsil = .false., reduce_io = .true.
+/
+0.0 0.0 0.0

@@ -100,7 +100,7 @@ def get_last_iteration(output_file):
     except: return 0
 
 def run_monitored_pw(input_file, output_file, cwd):
-    """Führt pw.x mit 8 Kernen aus und greift ein, wenn es nicht konvergiert."""
+    """Führt pw.x mit 2 Kernen aus und greift ein, wenn es nicht konvergiert."""
     was_optimized = False
     
     # --- AUTO-FIX: PFADE REPARIEREN ---
@@ -195,7 +195,7 @@ def main():
             print("⚠️ Keine .in Dateien im Inputs-Ordner gefunden!")
             sys.exit()
 
-        send_notification(f"Start: {len(input_files)} Kandidaten auf 8 Kernen.")
+        send_notification(f"Start: {len(input_files)} Kandidaten auf 2 Kernen.")
 
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
@@ -222,7 +222,7 @@ def main():
                     if "JOB DONE" in f.read(): scf_done = True
             
             if not scf_done:
-                print("    1️⃣  Starte Relaxation (SCF) [8 Kerne]...")
+                print("    1️⃣  Starte Relaxation (SCF) [2 Kerne]...")
                 if not run_monitored_pw(scf_in, scf_out, work_dir):
                     print(f"    ❌ SCF fehlgeschlagen für {name}. Überspringe."); continue
             else:
@@ -286,7 +286,7 @@ K_POINTS automatic
                 continue 
 
             # --- SCHRITT 4: PHONONEN (NUR WENN METALL) ---
-            print("    3️⃣  Starte Phononen (da Metall) [8 Kerne]...")
+            print("    3️⃣  Starte Phononen (da Metall) [2 Kerne]...")
             
             ph_done = False
             if os.path.exists(ph_out):

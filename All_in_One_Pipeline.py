@@ -7,6 +7,7 @@ import re
 import sys
 import traceback
 import requests
+import json
 from ase.io import read
 
 # =============================================================================
@@ -21,6 +22,7 @@ INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 RESULTS_DIR = os.path.join(WORK_DIR, "Results")
 PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")  # WICHTIG: Hier müssen die .UPF Dateien liegen
 LOG_FILE = os.path.join(WORK_DIR, "pipeline_error.log")
+SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt") # NEU: Signal für Automatisierung
 
 # Engine Suche
 def find_qe_exec(tool_names):
@@ -40,7 +42,7 @@ if not PW_EXE or not PH_EXE or not DOS_EXE:
     sys.exit()
 
 # =============================================================================
-# 2. HILFSFUNKTIONEN (NOTFALL & SYNC)
+# 2. HILFSFUNKTIONEN (NOTFALL & SYNC & SHUTDOWN)
 # =============================================================================
 def send_notification(message):
     try:
@@ -56,12 +58,52 @@ def git_sync(message):
         subprocess.run(["git", "push"], cwd=WORK_DIR)
     except: pass
 
+def smart_shutdown(reason="Fertig"):
+    """
+    Erstellt Signaldatei und dealloziert die VM via Azure CLI, um Kosten zu stoppen.
+    """
+    print(f"\n🔌 Leite Shutdown ein: {reason}")
+    
+    # 1. Signaldatei erstellen (für externe Automatisierung)
+    try:
+        with open(SIGNAL_FILE, "w") as f:
+            f.write(f"Status: {reason}\nTimestamp: {time.ctime()}")
+        print(f"✅ Signaldatei erstellt: {SIGNAL_FILE}")
+    except Exception as e:
+        print(f"⚠️ Konnte Signaldatei nicht erstellen: {e}")
+
+    # 2. Versuch: Azure Deallocation (Spart Geld!)
+    try:
+        # Metadaten abrufen um VM-Namen und Resource Group automatisch zu finden
+        print("⏳ Rufe Azure Instance Metadata ab...")
+        meta_url = "http://169.254.169.254/metadata/instance?api-version=2021-02-01"
+        headers = {"Metadata": "true"}
+        r = requests.get(meta_url, headers=headers, timeout=2)
+        data = r.json()
+        
+        vm_name = data['compute']['name']
+        rg_name = data['compute']['resourceGroupName']
+        
+        print(f"✅ VM erkannt: {vm_name} in RG {rg_name}")
+        print("🚀 Sende Deallocate-Befehl an Azure CLI...")
+        
+        # Der Befehl, der das Geld spart:
+        subprocess.run(f"az vm deallocate --resource-group {rg_name} --name {vm_name}", shell=True)
+        
+    except Exception as e:
+        print(f"⚠️ Azure Deallocation fehlgeschlagen (az login fehlt?): {e}")
+        print("🛡️ Fallback: Nutze Standard-Shutdown...")
+        if os.name != 'nt': 
+            os.system("sudo shutdown -h now")
+
 def emergency_shutdown(error_msg):
     full_error = f"{error_msg}\n{traceback.format_exc()}"
     with open(LOG_FILE, "w") as f: f.write(full_error)
     send_notification(f"🚨 STOPP: {error_msg}. Server-Shutdown.")
     git_sync(f"🚨 Fehler-Log: {error_msg}")
-    if os.name != 'nt': os.system("sudo shutdown -h now")
+    
+    # Auch im Notfall versuchen wir sauber zu deallozieren
+    smart_shutdown(reason="Emergency Error")
     sys.exit()
 
 # =============================================================================
@@ -124,7 +166,7 @@ def run_monitored_pw(input_file, output_file, cwd):
         with open(run_input, 'w') as f: f.write(content)
 
         with open(run_input, 'r') as f_in, open(output_file, 'a') as f_out:
-            # FIX: --oversubscribe hinzugefügt
+            # FIX: --oversubscribe
             cmd = ["mpirun", "--oversubscribe", "-np", "2", PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, cwd=cwd)
             
@@ -185,11 +227,17 @@ def check_is_metal(dos_file):
 # =============================================================================
 def main():
     try:
+        # Falls die Signaldatei noch von einem alten Lauf existiert, löschen wir sie
+        if os.path.exists(SIGNAL_FILE):
+            os.remove(SIGNAL_FILE)
+
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         input_files = glob.glob(os.path.join(INPUTS_DIR, "*.in"))
         
         if not input_files:
             print("⚠️ Keine .in Dateien im Inputs-Ordner gefunden!")
+            # Auch hier sauber beenden, damit nicht endlos Leerlauf bezahlt wird
+            smart_shutdown(reason="Keine Inputs")
             sys.exit()
 
         send_notification(f"Start: {len(input_files)} Kandidaten auf D2s_v5 (2 Kerne + Oversubscribe).")
@@ -259,7 +307,7 @@ K_POINTS automatic
                     with open(nscf_in, "w") as f: f.write(nscf_content)
                     
                     with open(nscf_out, "w") as f_log:
-                        # FIX: --oversubscribe auch hier
+                        # FIX: --oversubscribe
                         subprocess.run(f'mpirun --oversubscribe -np 2 "{PW_EXE}" < nscf.in', shell=True, stdout=f_log, stderr=f_log, cwd=work_dir)
                     
                     dos_content = f"&DOS\n prefix='{name}', outdir='./tmp/', fildos='{name}.dos', Emin=-20.0, Emax=20.0, DeltaE=0.05\n/\n"
@@ -305,7 +353,7 @@ K_POINTS automatic
                 with open(ph_in, "w") as f: f.write(ph_content)
                 
                 with open(ph_out, "a") as f:
-                    # FIX: --oversubscribe auch hier
+                    # FIX: --oversubscribe
                     subprocess.run(f'mpirun --oversubscribe -np 2 "{PH_EXE}" < ph.in', shell=True, stdout=f, stderr=f, cwd=work_dir)
 
             final_success = False
@@ -322,7 +370,9 @@ K_POINTS automatic
                 print("    ⚠️ Phononen noch nicht konvergiert.")
 
         send_notification("🎉 Pipeline beendet. Shutdown.")
-        if os.name != 'nt': os.system("sudo shutdown -h now")
+        
+        # NEU: Smart Shutdown (Deallocate + Signaldatei)
+        smart_shutdown(reason="Pipeline Success")
 
     except Exception as e: emergency_shutdown(f"Main Error: {e}")
 

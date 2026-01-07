@@ -124,8 +124,8 @@ def run_monitored_pw(input_file, output_file, cwd):
         with open(run_input, 'w') as f: f.write(content)
 
         with open(run_input, 'r') as f_in, open(output_file, 'a') as f_out:
-            # HIER IST DIE ANPASSUNG: mpirun -np 2 (Passend zur D2s_v5)
-            cmd = ["mpirun", "-np", "2", PW_EXE]
+            # FIX: --oversubscribe hinzugefügt
+            cmd = ["mpirun", "--oversubscribe", "-np", "2", PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, cwd=cwd)
             
             killed = False
@@ -192,7 +192,7 @@ def main():
             print("⚠️ Keine .in Dateien im Inputs-Ordner gefunden!")
             sys.exit()
 
-        send_notification(f"Start: {len(input_files)} Kandidaten auf D2s_v5 (2 Kerne).")
+        send_notification(f"Start: {len(input_files)} Kandidaten auf D2s_v5 (2 Kerne + Oversubscribe).")
 
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
@@ -259,8 +259,8 @@ K_POINTS automatic
                     with open(nscf_in, "w") as f: f.write(nscf_content)
                     
                     with open(nscf_out, "w") as f_log:
-                        # ANPASSUNG: mpirun -np 2
-                        subprocess.run(f'mpirun -np 2 "{PW_EXE}" < nscf.in', shell=True, stdout=f_log, stderr=f_log, cwd=work_dir)
+                        # FIX: --oversubscribe auch hier
+                        subprocess.run(f'mpirun --oversubscribe -np 2 "{PW_EXE}" < nscf.in', shell=True, stdout=f_log, stderr=f_log, cwd=work_dir)
                     
                     dos_content = f"&DOS\n prefix='{name}', outdir='./tmp/', fildos='{name}.dos', Emin=-20.0, Emax=20.0, DeltaE=0.05\n/\n"
                     with open(dos_in, "w") as f: f.write(dos_content)
@@ -305,8 +305,8 @@ K_POINTS automatic
                 with open(ph_in, "w") as f: f.write(ph_content)
                 
                 with open(ph_out, "a") as f:
-                    # ANPASSUNG: mpirun -np 2
-                    subprocess.run(f'mpirun -np 2 "{PH_EXE}" < ph.in', shell=True, stdout=f, stderr=f, cwd=work_dir)
+                    # FIX: --oversubscribe auch hier
+                    subprocess.run(f'mpirun --oversubscribe -np 2 "{PH_EXE}" < ph.in', shell=True, stdout=f, stderr=f, cwd=work_dir)
 
             final_success = False
             if os.path.exists(ph_out):

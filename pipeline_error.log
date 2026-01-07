@@ -1,7 +1,0 @@
-Main Error: 
-Traceback (most recent call last):
-  File "/home/marco/ZOS_Cloud_Compute/All_in_One_Pipeline.py", line 200, in main
-    atoms = read(source_out, index=-1)
-  File "/usr/lib/python3/dist-packages/ase/io/formats.py", line 736, in read
-    return next(_iread(filename, slice(index, None), format, io,
-StopIteration

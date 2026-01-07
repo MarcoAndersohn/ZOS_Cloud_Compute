@@ -14,11 +14,15 @@ import requests
 TELEGRAM_TOKEN = "8589716957:AAHAAU26UrnwOWgL4OytPpmj0dSPnyWNwu0"
 TELEGRAM_CHAT_ID = "711461437"
 
+# WICHTIG: Hier den exakten Namen deiner Logic App eintragen!
+LOGIC_APP_NAME = "DEIN_LOGIC_APP_NAME_HIER_EINTRAGEN" 
+RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
+
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")
 LOG_FILE = os.path.join(WORK_DIR, "pipeline_error.log")
-SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt") # Steuert Azure Shutdown
+SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt") 
 
 # Engine Suche
 def find_qe_exec(tool_names):
@@ -38,7 +42,7 @@ if not PW_EXE or not PH_EXE or not DOS_EXE:
     sys.exit()
 
 # =============================================================================
-# 2. NOTFALL & SHUTDOWN (GELD SPAREN)
+# 2. NOTFALL & SHUTDOWN & LOGIC APP DISABLE
 # =============================================================================
 def send_notification(message):
     try:
@@ -54,15 +58,40 @@ def git_sync(message):
         subprocess.run(["git", "push"], cwd=WORK_DIR)
     except: pass
 
+def disable_logic_app():
+    """Deaktiviert die Azure Logic App, um Kosten zu sparen."""
+    print(f"🛑 Deaktiviere Logic App: {LOGIC_APP_NAME}...")
+    try:
+        # Azure CLI Befehl zum Deaktivieren des Workflows
+        cmd = [
+            "az", "logic", "workflow", "set-state",
+            "--resource-group", RESOURCE_GROUP,
+            "--name", LOGIC_APP_NAME,
+            "--state", "Disabled"
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            print("✅ Logic App erfolgreich deaktiviert.")
+            send_notification("Logic App wurde in den Schlafmodus versetzt (Disabled).")
+        else:
+            print(f"⚠️ Fehler beim Deaktivieren der Logic App: {result.stderr}")
+            send_notification(f"Warnung: Konnte Logic App nicht deaktivieren! Fehler: {result.stderr}")
+    except Exception as e:
+        print(f"⚠️ Exception beim Deaktivieren: {e}")
+
 def smart_shutdown(reason="Fertig"):
     print(f"\n🔌 Leite Shutdown ein: {reason}")
-    # 1. Signaldatei erstellen
+    
+    # 1. Logic App deaktivieren (Damit sie nicht wieder aufwacht)
+    disable_logic_app()
+
+    # 2. Signaldatei erstellen (Als Backup, falls Logic App doch läuft)
     try:
         with open(SIGNAL_FILE, "w") as f:
             f.write(f"Status: {reason}\nTimestamp: {time.ctime()}")
     except: pass
 
-    # 2. Versuche harte Deallokation via Azure CLI
+    # 3. Versuche harte Deallokation via Azure CLI
     try:
         print("⏳ Hole Azure Metadaten...")
         meta_url = "http://169.254.169.254/metadata/instance?api-version=2021-02-01"
@@ -125,7 +154,6 @@ def get_last_iteration(output_file):
     except: return 0
 
 def run_monitored_pw(input_file, output_file, cwd):
-    # Pfad-Korrektur
     with open(input_file, 'r') as f: content = f.read()
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" not in content:
@@ -133,7 +161,6 @@ def run_monitored_pw(input_file, output_file, cwd):
     with open(input_file, 'w') as f: f.write(content)
 
     while True:
-        # Restart-Modus prüfen
         with open(input_file, 'r') as f: content = f.read()
         mode = 'restart' if (os.path.exists(output_file)) else 'from_scratch'
         if "restart_mode" not in content:
@@ -144,7 +171,6 @@ def run_monitored_pw(input_file, output_file, cwd):
         run_input = input_file + ".run"
         with open(run_input, 'w') as f: f.write(content)
 
-        # Append nur bei restart
         file_mode = 'a' if mode == 'restart' else 'w'
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
@@ -179,13 +205,18 @@ def run_monitored_pw(input_file, output_file, cwd):
 # =============================================================================
 def main():
     try:
+        # Alte Signaldatei löschen, falls vorhanden (startet clean)
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
+        
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         
         input_files = glob.glob(os.path.join(INPUTS_DIR, "*.in"))
         
         if not input_files:
-            print("⚠️ Keine Inputs gefunden."); smart_shutdown("Leerlauf"); sys.exit()
+            # Keine Arbeit da -> Logic App deaktivieren und runterfahren
+            print("⚠️ Keine Inputs gefunden.")
+            smart_shutdown("Leerlauf - Keine Inputs")
+            sys.exit()
 
         send_notification(f"Start: {len(input_files)} Jobs.")
 
@@ -195,7 +226,6 @@ def main():
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             if not os.path.exists(work_dir): os.makedirs(work_dir)
             
-            # Dateinamen
             scf_in = os.path.join(work_dir, "scf.in")
             scf_out = os.path.join(work_dir, "scf.out")
             dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
@@ -211,7 +241,6 @@ def main():
                 if not run_monitored_pw(scf_in, scf_out, work_dir):
                     print(f"    ❌ SCF fehlgeschlagen."); continue
             
-            # Lese Prefix aus der SCF Datei
             with open(scf_in, 'r') as f: scf_content = f.read()
             prefix = get_prefix_from_content(scf_content)
 
@@ -244,14 +273,13 @@ def main():
 """
                 with open(ph_in, "w") as f: f.write(ph_content)
                 with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
-                    # Oversubscribe für Phononen wichtig
                     cmd_ph = ["mpirun", "--oversubscribe", "-np", "2", PH_EXE]
                     subprocess.run(cmd_ph, stdin=f_in, stdout=f_out, cwd=work_dir)
 
             git_sync(f"Fertig: {name}")
 
         send_notification("🎉 Alles erledigt.")
-        smart_shutdown("Pipeline Success")
+        smart_shutdown("Pipeline Success - Alles fertig")
 
     except Exception as e: emergency_shutdown(f"Error: {e}")
 

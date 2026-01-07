@@ -7,8 +7,6 @@ import re
 import sys
 import traceback
 import requests
-import json
-from ase.io import read
 
 # =============================================================================
 # 1. KONFIGURATION
@@ -20,11 +18,11 @@ WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")
 LOG_FILE = os.path.join(WORK_DIR, "pipeline_error.log")
-SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt") # WICHTIG für Azure
+SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt") # Steuert Azure Shutdown
 
 # Engine Suche
 def find_qe_exec(tool_names):
-    search_paths = ["/usr/bin", "/usr/local/bin", r"C:\Quantum_Espresso"]
+    search_paths = ["/usr/bin", "/usr/local/bin", r"C:\Quantum_Espresso", os.path.expanduser("~")+"/bin"]
     for path in search_paths:
         for name in tool_names:
             full_path = os.path.join(path, name)
@@ -36,7 +34,7 @@ PH_EXE = find_qe_exec(["ph.x", "ph.exe"])
 DOS_EXE = find_qe_exec(["dos.x", "dos.exe"])
 
 if not PW_EXE or not PH_EXE or not DOS_EXE:
-    print("❌ FEHLER: Quantum Espresso Programme nicht gefunden!")
+    print("❌ FEHLER: Quantum Espresso Programme (pw.x, ph.x oder dos.x) nicht gefunden!")
     sys.exit()
 
 # =============================================================================
@@ -45,7 +43,7 @@ if not PW_EXE or not PH_EXE or not DOS_EXE:
 def send_notification(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ Supraleiter (D2s_v5): {message}"}
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ Supraleiter (HPC): {message}"}
         requests.post(url, data=payload, timeout=10)
     except: pass
 
@@ -58,7 +56,7 @@ def git_sync(message):
 
 def smart_shutdown(reason="Fertig"):
     print(f"\n🔌 Leite Shutdown ein: {reason}")
-    # 1. Signaldatei erstellen (damit Azure NICHT neustartet)
+    # 1. Signaldatei erstellen
     try:
         with open(SIGNAL_FILE, "w") as f:
             f.write(f"Status: {reason}\nTimestamp: {time.ctime()}")
@@ -77,7 +75,7 @@ def smart_shutdown(reason="Fertig"):
         print(f"🚀 Deallokiere VM {vm_name}...")
         subprocess.run(f"az vm deallocate --resource-group {rg_name} --name {vm_name}", shell=True)
     except:
-        print("⚠️ Azure CLI fehlgeschlagen. Fallback auf System-Shutdown.")
+        print("⚠️ Azure CLI oder Metadaten fehlgeschlagen. Fallback auf System-Shutdown.")
         if os.name != 'nt': os.system("sudo shutdown -h now")
 
 def emergency_shutdown(error_msg):
@@ -89,8 +87,12 @@ def emergency_shutdown(error_msg):
     sys.exit()
 
 # =============================================================================
-# 3. PUPPET MASTER (OPTIMIERT)
+# 3. PUPPET MASTER (LOGIK)
 # =============================================================================
+def get_prefix_from_content(content):
+    match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
+    return match.group(1) if match else "calc"
+
 def update_input_params(input_file, iteration_count):
     target_beta = 0.7
     if iteration_count >= 90: target_beta = 0.15
@@ -114,7 +116,6 @@ def update_input_params(input_file, iteration_count):
 def get_last_iteration(output_file):
     if not os.path.exists(output_file): return 0
     try:
-        # Lese nur die letzten 10KB, um alte Logs nicht versehentlich zu lesen
         file_size = os.path.getsize(output_file)
         with open(output_file, 'rb') as f:
             f.seek(max(0, file_size - 10000), 0) 
@@ -124,8 +125,6 @@ def get_last_iteration(output_file):
     except: return 0
 
 def run_monitored_pw(input_file, output_file, cwd):
-    """Führt pw.x aus. Rotiert Log-Dateien bei Optimierung, um Loops zu verhindern."""
-    
     # Pfad-Korrektur
     with open(input_file, 'r') as f: content = f.read()
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
@@ -145,9 +144,10 @@ def run_monitored_pw(input_file, output_file, cwd):
         run_input = input_file + ".run"
         with open(run_input, 'w') as f: f.write(content)
 
-        # WICHTIG: Append ('a') nutzen wir nur, wenn wir NICHT optimiert haben.
-        # Wenn wir optimieren, wird die Datei vorher umbenannt (siehe unten).
-        with open(run_input, 'r') as f_in, open(output_file, 'a') as f_out:
+        # Append nur bei restart
+        file_mode = 'a' if mode == 'restart' else 'w'
+        
+        with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
             cmd = ["mpirun", "--oversubscribe", "-np", "2", PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, cwd=cwd)
             
@@ -160,20 +160,15 @@ def run_monitored_pw(input_file, output_file, cwd):
                     if update_input_params(input_file, cur_iter):
                         process.terminate()
                         killed = True
-                        
-                        # ANTI-LOOP TRICK: Alte Logdatei umbenennen!
-                        # So startet der nächste Run mit einer leeren Datei 
-                        # und der Puppet Master liest nicht die alten "Iter 30" nochmal.
                         try:
                             timestamp = int(time.time())
                             shutil.move(output_file, f"{output_file}.bak_{timestamp}")
-                            print(f"    🧹 Altes Log archiviert -> {output_file}.bak_{timestamp}")
+                            print(f"    🧹 Log rotiert -> {output_file}.bak_{timestamp}")
                         except: pass
-                        
                         break
             except: process.kill(); return False
             
-        if killed: continue # Neustart mit neuen Parametern und frischem Logfile
+        if killed: continue 
         
         with open(output_file, 'r') as f:
             if "JOB DONE" in f.read(): return True
@@ -184,29 +179,29 @@ def run_monitored_pw(input_file, output_file, cwd):
 # =============================================================================
 def main():
     try:
-        # Alte Signaldatei löschen beim Start
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
-
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
+        
         input_files = glob.glob(os.path.join(INPUTS_DIR, "*.in"))
         
         if not input_files:
             print("⚠️ Keine Inputs gefunden."); smart_shutdown("Leerlauf"); sys.exit()
 
-        send_notification(f"Start: {len(input_files)} Kandidaten.")
+        send_notification(f"Start: {len(input_files)} Jobs.")
 
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
-            print(f"\n💎 Kandidat: {name}")
+            print(f"\n💎 Job: {name}")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             if not os.path.exists(work_dir): os.makedirs(work_dir)
             
             # Dateinamen
-            scf_in, scf_out = os.path.join(work_dir, "scf.in"), os.path.join(work_dir, "scf.out")
-            dos_out = os.path.join(work_dir, f"{name}.dos")
+            scf_in = os.path.join(work_dir, "scf.in")
+            scf_out = os.path.join(work_dir, "scf.out")
+            dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
             ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
 
-            # 1. SCF
+            # --- 1. SCF ---
             if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
             scf_done = False
             if os.path.exists(scf_out) and "JOB DONE" in open(scf_out).read(): scf_done = True
@@ -215,29 +210,47 @@ def main():
                 print("    1️⃣  Starte SCF...")
                 if not run_monitored_pw(scf_in, scf_out, work_dir):
                     print(f"    ❌ SCF fehlgeschlagen."); continue
-
-            # 2. DOS Check (Metall)
-            # ... (Hier der Standardteil, gekürzt für Übersicht, Logik bleibt gleich)
-            # ... (Wir gehen davon aus, dass du den DOS Teil vom vorherigen Skript hast 
-            # ...  oder soll ich den hier auch voll einfügen? Ich füge das DOS Setup kurz ein:)
             
+            # Lese Prefix aus der SCF Datei
+            with open(scf_in, 'r') as f: scf_content = f.read()
+            prefix = get_prefix_from_content(scf_content)
+
+            # --- 2. DOS ---
             if not os.path.exists(dos_out):
                 print("    2️⃣  DOS Berechnung...")
-                # (Hier folgt der Standard DOS Code aus deinem vorherigen Skript - 
-                # der war okay, ich überspringe ihn hier nur, um Platz zu sparen, 
-                # wenn du ihn brauchst, sag Bescheid, sonst nutze den Teil aus Version 2)
-                # ... FÜGE HIER DEN DOS-TEIL EIN WENN NÖTIG ...
-                pass # Platzhalter
+                dos_content = f"""&DOS
+  prefix='{prefix}',
+  outdir='./tmp',
+  fildos='{name}.dos',
+  Emin=-20.0, Emax=30.0, DeltaE=0.1
+/
+"""
+                with open(dos_in, "w") as f: f.write(dos_content)
+                with open(dos_in, "r") as f_in, open(dos_out, "w") as f_out:
+                    subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, cwd=work_dir)
 
-            # 3. Phononen
-            # ... Auch hier: Oversubscribe wichtig!
-            # subprocess.run(f'mpirun --oversubscribe -np 2 ...')
-            
-            # Um das Skript hier lauffähig zu halten, nehme ich an, der Rest ist bekannt.
-            # WICHTIG: Am Ende:
+            # --- 3. PHONONEN ---
+            if not os.path.exists(ph_out):
+                print("    3️⃣  Phononen Berechnung...")
+                ph_content = f"""Phonons for {name}
+&INPUTPH
+  tr2_ph=1.0d-14,
+  prefix='{prefix}',
+  outdir='./tmp',
+  fildyn='{name}.dyn',
+  ldisp=.true.,
+  nq1=2, nq2=2, nq3=2
+/
+"""
+                with open(ph_in, "w") as f: f.write(ph_content)
+                with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
+                    # Oversubscribe für Phononen wichtig
+                    cmd_ph = ["mpirun", "--oversubscribe", "-np", "2", PH_EXE]
+                    subprocess.run(cmd_ph, stdin=f_in, stdout=f_out, cwd=work_dir)
+
             git_sync(f"Fertig: {name}")
 
-        send_notification("🎉 Fertig.")
+        send_notification("🎉 Alles erledigt.")
         smart_shutdown("Pipeline Success")
 
     except Exception as e: emergency_shutdown(f"Error: {e}")

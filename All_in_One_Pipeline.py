@@ -126,9 +126,9 @@ def run_monitored_pw(input_file, output_file, cwd):
         with open(run_input, 'w') as f: f.write(content)
 
         with open(run_input, 'r') as f_in, open(output_file, 'a') as f_out:
-            # HIER IST DER TURBO: mpirun -np 8
+            # HIER IST DER TURBO: mpirun -np 2
             # Wir nutzen eine Liste für Popen, damit Argumente sauber getrennt sind
-            cmd = ["mpirun", "-np", "8", PW_EXE]
+            cmd = ["mpirun", "-np", "2", PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, cwd=cwd)
             
             killed = False
@@ -262,8 +262,8 @@ K_POINTS automatic
                     with open(nscf_in, "w") as f: f.write(nscf_content)
                     
                     with open(nscf_out, "w") as f_log:
-                        # HIER IST DER TURBO: mpirun -np 8
-                        subprocess.run(f'mpirun -np 8 "{PW_EXE}" < nscf.in', shell=True, stdout=f_log, stderr=f_log, cwd=work_dir)
+                        # HIER IST DER TURBO: mpirun -np 2
+                        subprocess.run(f'mpirun -np 2 "{PW_EXE}" < nscf.in', shell=True, stdout=f_log, stderr=f_log, cwd=work_dir)
                     
                     dos_content = f"&DOS\n prefix='{name}', outdir='./tmp/', fildos='{name}.dos', Emin=-20.0, Emax=20.0, DeltaE=0.05\n/\n"
                     with open(dos_in, "w") as f: f.write(dos_content)
@@ -309,8 +309,8 @@ K_POINTS automatic
                 with open(ph_in, "w") as f: f.write(ph_content)
                 
                 with open(ph_out, "a") as f:
-                    # HIER IST DER TURBO: mpirun -np 8
-                    subprocess.run(f'mpirun -np 8 "{PH_EXE}" < ph.in', shell=True, stdout=f, stderr=f, cwd=work_dir)
+                    # HIER IST DER TURBO: mpirun -np 2
+                    subprocess.run(f'mpirun -np 2 "{PH_EXE}" < ph.in', shell=True, stdout=f, stderr=f, cwd=work_dir)
 
             final_success = False
             if os.path.exists(ph_out):

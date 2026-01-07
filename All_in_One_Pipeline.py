@@ -7,7 +7,6 @@ import re
 import sys
 import traceback
 import requests
-import pandas as pd
 from ase.io import read
 
 # =============================================================================
@@ -22,7 +21,6 @@ INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 RESULTS_DIR = os.path.join(WORK_DIR, "Results")
 PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")  # WICHTIG: Hier müssen die .UPF Dateien liegen
 LOG_FILE = os.path.join(WORK_DIR, "pipeline_error.log")
-CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
 # Engine Suche
 def find_qe_exec(tool_names):
@@ -47,7 +45,7 @@ if not PW_EXE or not PH_EXE or not DOS_EXE:
 def send_notification(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ Supraleiter-Fabrik: {message}"}
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ Supraleiter-Fabrik (D2s_v5): {message}"}
         requests.post(url, data=payload, timeout=10)
     except: pass
 
@@ -100,7 +98,7 @@ def get_last_iteration(output_file):
     except: return 0
 
 def run_monitored_pw(input_file, output_file, cwd):
-    """Führt pw.x mit 2 Kernen aus und greift ein, wenn es nicht konvergiert."""
+    """Führt pw.x mit 2 Kernen (D2s_v5 Limit) aus und greift ein, wenn es nicht konvergiert."""
     was_optimized = False
     
     # --- AUTO-FIX: PFADE REPARIEREN ---
@@ -126,8 +124,7 @@ def run_monitored_pw(input_file, output_file, cwd):
         with open(run_input, 'w') as f: f.write(content)
 
         with open(run_input, 'r') as f_in, open(output_file, 'a') as f_out:
-            # HIER IST DER TURBO: mpirun -np 2
-            # Wir nutzen eine Liste für Popen, damit Argumente sauber getrennt sind
+            # HIER IST DIE ANPASSUNG: mpirun -np 2 (Passend zur D2s_v5)
             cmd = ["mpirun", "-np", "2", PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, cwd=cwd)
             
@@ -195,7 +192,7 @@ def main():
             print("⚠️ Keine .in Dateien im Inputs-Ordner gefunden!")
             sys.exit()
 
-        send_notification(f"Start: {len(input_files)} Kandidaten auf 2 Kernen.")
+        send_notification(f"Start: {len(input_files)} Kandidaten auf D2s_v5 (2 Kerne).")
 
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
@@ -262,14 +259,13 @@ K_POINTS automatic
                     with open(nscf_in, "w") as f: f.write(nscf_content)
                     
                     with open(nscf_out, "w") as f_log:
-                        # HIER IST DER TURBO: mpirun -np 2
+                        # ANPASSUNG: mpirun -np 2
                         subprocess.run(f'mpirun -np 2 "{PW_EXE}" < nscf.in', shell=True, stdout=f_log, stderr=f_log, cwd=work_dir)
                     
                     dos_content = f"&DOS\n prefix='{name}', outdir='./tmp/', fildos='{name}.dos', Emin=-20.0, Emax=20.0, DeltaE=0.05\n/\n"
                     with open(dos_in, "w") as f: f.write(dos_content)
                     
                     with open(os.path.join(work_dir, "dos.log"), "w") as f_log:
-                        # DOS braucht meist kein MPI, aber schadet nicht wenn supported
                         subprocess.run(f'"{DOS_EXE}" < dos.in > {name}.dos', shell=True, cwd=work_dir)
 
                 except Exception as e:
@@ -309,7 +305,7 @@ K_POINTS automatic
                 with open(ph_in, "w") as f: f.write(ph_content)
                 
                 with open(ph_out, "a") as f:
-                    # HIER IST DER TURBO: mpirun -np 2
+                    # ANPASSUNG: mpirun -np 2
                     subprocess.run(f'mpirun -np 2 "{PH_EXE}" < ph.in', shell=True, stdout=f, stderr=f, cwd=work_dir)
 
             final_success = False

@@ -79,6 +79,24 @@ def disable_logic_app():
     except Exception as e:
         print(f"⚠️ Exception beim Deaktivieren: {e}")
 
+def enable_logic_app():
+    """Aktiviert die Azure Logic App zu Beginn des Skripts."""
+    print(f"🟢 Aktiviere Logic App: {LOGIC_APP_NAME}...")
+    try:
+        cmd = [
+            "az", "logic", "workflow", "set-state",
+            "--resource-group", RESOURCE_GROUP,
+            "--name", LOGIC_APP_NAME,
+            "--state", "Enabled"
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            print("✅ Logic App erfolgreich aktiviert (Enabled).")
+        else:
+            print(f"⚠️ Warnung: Konnte Logic App nicht aktivieren: {result.stderr}")
+    except Exception as e:
+        print(f"⚠️ Exception beim Aktivieren: {e}")
+
 def smart_shutdown(reason="Fertig"):
     print(f"\n🔌 Leite Shutdown ein: {reason}")
     
@@ -205,6 +223,14 @@ def run_monitored_pw(input_file, output_file, cwd):
 # =============================================================================
 def main():
     try:
+        # 1. Logic App sofort aktivieren (damit alles sauber definiert ist)
+        enable_logic_app()
+
+        # 2. Alte Signaldatei löschen (damit der Weg frei ist)
+        if os.path.exists(SIGNAL_FILE): 
+            os.remove(SIGNAL_FILE)
+            print("🧹 Alte rechnung_fertig.txt gelöscht.")
+        
         # Alte Signaldatei löschen, falls vorhanden (startet clean)
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         

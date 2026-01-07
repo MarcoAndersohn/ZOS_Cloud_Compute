@@ -199,7 +199,7 @@ def main():
                     
                 atoms = read(source_out, index=-1)
                 elements = sorted(list(set(atoms.get_chemical_symbols())))
-                %pseudo_path = os.path.join(os.path.dirname(PW_EXE), "pseudo").replace("\\", "/") + "/"
+                #pseudo_path = os.path.join(os.path.dirname(PW_EXE), "pseudo").replace("\\", "/") + "/"
                 pseudo_path = os.path.join(WORK_DIR, "pseudo").replace("\\", "/") + "/"
                 
                 # VORBEREITUNG DER LISTEN (Fix für SyntaxError)

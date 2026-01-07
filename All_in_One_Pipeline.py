@@ -100,21 +100,16 @@ def get_last_iteration(output_file):
     except: return 0
 
 def run_monitored_pw(input_file, output_file, cwd):
-    """Führt pw.x aus und greift ein, wenn es nicht konvergiert."""
+    """Führt pw.x mit 8 Kernen aus und greift ein, wenn es nicht konvergiert."""
     was_optimized = False
     
     # --- AUTO-FIX: PFADE REPARIEREN ---
-    # Bevor wir starten, stellen wir sicher, dass der Pseudo-Pfad stimmt!
     with open(input_file, 'r') as f: content = f.read()
-    
-    # 1. Pfad korrigieren
     correct_pseudo_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" in content:
         content = re.sub(r"pseudo_dir\s*=\s*['\"].*?['\"]", f"pseudo_dir='{correct_pseudo_path}'", content)
     else:
-        # Falls es ganz fehlt, in &CONTROL einfügen
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{correct_pseudo_path}',")
-        
     with open(input_file, 'w') as f: f.write(content)
     # ----------------------------------
 
@@ -122,7 +117,6 @@ def run_monitored_pw(input_file, output_file, cwd):
         with open(input_file, 'r') as f: content = f.read()
         mode = 'restart' if (os.path.exists(output_file) and not was_optimized) else 'from_scratch'
         
-        # Patch restart_mode
         if "restart_mode" in content:
             content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
         else:
@@ -132,7 +126,10 @@ def run_monitored_pw(input_file, output_file, cwd):
         with open(run_input, 'w') as f: f.write(content)
 
         with open(run_input, 'r') as f_in, open(output_file, 'a') as f_out:
-            process = subprocess.Popen([PW_EXE], stdin=f_in, stdout=f_out, cwd=cwd)
+            # HIER IST DER TURBO: mpirun -np 8
+            # Wir nutzen eine Liste für Popen, damit Argumente sauber getrennt sind
+            cmd = ["mpirun", "-np", "8", PW_EXE]
+            process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, cwd=cwd)
             
             killed = False
             try:
@@ -157,7 +154,7 @@ def check_is_metal(dos_file):
     try:
         with open(dos_file, 'r') as f: lines = f.readlines()
         e_fermi = None
-        for line in lines[:30]: # Header scannen
+        for line in lines[:30]: 
             if "EFermi" in line or "Fermi" in line:
                 parts = line.split("EFermi =")
                 if len(parts) > 1:
@@ -198,7 +195,7 @@ def main():
             print("⚠️ Keine .in Dateien im Inputs-Ordner gefunden!")
             sys.exit()
 
-        send_notification(f"Start: {len(input_files)} Kandidaten.")
+        send_notification(f"Start: {len(input_files)} Kandidaten auf 8 Kernen.")
 
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
@@ -225,8 +222,7 @@ def main():
                     if "JOB DONE" in f.read(): scf_done = True
             
             if not scf_done:
-                print("    1️⃣  Starte Relaxation (SCF)...")
-                # Auto-Fix Pfad passiert innerhalb dieser Funktion!
+                print("    1️⃣  Starte Relaxation (SCF) [8 Kerne]...")
                 if not run_monitored_pw(scf_in, scf_out, work_dir):
                     print(f"    ❌ SCF fehlgeschlagen für {name}. Überspringe."); continue
             else:
@@ -266,12 +262,14 @@ K_POINTS automatic
                     with open(nscf_in, "w") as f: f.write(nscf_content)
                     
                     with open(nscf_out, "w") as f_log:
-                        subprocess.run(f'"{PW_EXE}" < nscf.in', shell=True, stdout=f_log, stderr=f_log, cwd=work_dir)
+                        # HIER IST DER TURBO: mpirun -np 8
+                        subprocess.run(f'mpirun -np 8 "{PW_EXE}" < nscf.in', shell=True, stdout=f_log, stderr=f_log, cwd=work_dir)
                     
                     dos_content = f"&DOS\n prefix='{name}', outdir='./tmp/', fildos='{name}.dos', Emin=-20.0, Emax=20.0, DeltaE=0.05\n/\n"
                     with open(dos_in, "w") as f: f.write(dos_content)
                     
                     with open(os.path.join(work_dir, "dos.log"), "w") as f_log:
+                        # DOS braucht meist kein MPI, aber schadet nicht wenn supported
                         subprocess.run(f'"{DOS_EXE}" < dos.in > {name}.dos', shell=True, cwd=work_dir)
 
                 except Exception as e:
@@ -288,7 +286,7 @@ K_POINTS automatic
                 continue 
 
             # --- SCHRITT 4: PHONONEN (NUR WENN METALL) ---
-            print("    3️⃣  Starte Phononen (da Metall)...")
+            print("    3️⃣  Starte Phononen (da Metall) [8 Kerne]...")
             
             ph_done = False
             if os.path.exists(ph_out):
@@ -311,7 +309,8 @@ K_POINTS automatic
                 with open(ph_in, "w") as f: f.write(ph_content)
                 
                 with open(ph_out, "a") as f:
-                    subprocess.run(f'"{PH_EXE}" < ph.in', shell=True, stdout=f, stderr=f, cwd=work_dir)
+                    # HIER IST DER TURBO: mpirun -np 8
+                    subprocess.run(f'mpirun -np 8 "{PH_EXE}" < ph.in', shell=True, stdout=f, stderr=f, cwd=work_dir)
 
             final_success = False
             if os.path.exists(ph_out):

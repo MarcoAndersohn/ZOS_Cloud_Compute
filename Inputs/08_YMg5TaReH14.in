@@ -1,0 +1,64 @@
+&CONTROL
+  calculation = 'vc-relax'
+  prefix = 'YMg5TaReH14'
+  outdir = './tmp/'
+  pseudo_dir = './pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 22
+  ntyp = 5
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  H  1.00  H.UPF
+  Mg  1.00  Mg.UPF
+  Re  1.00  Re.UPF
+  Ta  1.00  Ta.UPF
+  Y  1.00  Y.UPF
+ATOMIC_POSITIONS (angstrom)
+  Mg  2.502622  1.444102  4.594836
+  Y  2.502658  -1.446082  6.200743
+  Mg  2.502718  -1.446667  10.328924
+  Mg  2.502584  1.444816  0.700045
+  Mg  2.502627  -4.335417  2.733020
+  Mg  2.502654  -4.336211  8.086452
+  Re  2.502656  4.333932  5.396602
+  Ta  -0.000023  0.000055  -0.020684
+  H  2.502708  2.819832  9.779697
+  H  1.310730  0.755119  9.779964
+  H  3.694703  0.755124  9.779978
+  H  2.502561  -2.845465  1.141075
+  H  3.715159  -0.744935  1.140832
+  H  1.289967  -0.744951  1.140780
+  H  2.502583  -2.907155  4.409485
+  H  3.768104  -0.714911  4.409175
+  H  1.237146  -0.714957  4.409153
+  H  2.502654  2.952679  6.492497
+  H  1.196041  0.689433  6.492874
+  H  3.809294  0.689416  6.492920
+  H  2.502514  1.444733  2.663238
+  H  2.502674  -1.446279  8.347564
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  2.502541  -4.334874  0.000756
+  2.502552  4.334880  -0.000675
+  0.000177  -0.001807  10.904534

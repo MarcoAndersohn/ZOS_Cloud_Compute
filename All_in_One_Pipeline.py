@@ -20,6 +20,7 @@ TELEGRAM_CHAT_ID = "711461437"
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 RESULTS_DIR = os.path.join(WORK_DIR, "Results")
+PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")  # WICHTIG: Hier müssen die .UPF Dateien liegen
 LOG_FILE = os.path.join(WORK_DIR, "pipeline_error.log")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
@@ -101,6 +102,22 @@ def get_last_iteration(output_file):
 def run_monitored_pw(input_file, output_file, cwd):
     """Führt pw.x aus und greift ein, wenn es nicht konvergiert."""
     was_optimized = False
+    
+    # --- AUTO-FIX: PFADE REPARIEREN ---
+    # Bevor wir starten, stellen wir sicher, dass der Pseudo-Pfad stimmt!
+    with open(input_file, 'r') as f: content = f.read()
+    
+    # 1. Pfad korrigieren
+    correct_pseudo_path = PSEUDO_DIR.replace("\\", "/") + "/"
+    if "pseudo_dir" in content:
+        content = re.sub(r"pseudo_dir\s*=\s*['\"].*?['\"]", f"pseudo_dir='{correct_pseudo_path}'", content)
+    else:
+        # Falls es ganz fehlt, in &CONTROL einfügen
+        content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{correct_pseudo_path}',")
+        
+    with open(input_file, 'w') as f: f.write(content)
+    # ----------------------------------
+
     while True:
         with open(input_file, 'r') as f: content = f.read()
         mode = 'restart' if (os.path.exists(output_file) and not was_optimized) else 'from_scratch'
@@ -115,7 +132,6 @@ def run_monitored_pw(input_file, output_file, cwd):
         with open(run_input, 'w') as f: f.write(content)
 
         with open(run_input, 'r') as f_in, open(output_file, 'a') as f_out:
-            # print(f"    ▶️ Engine läuft ({mode})...") # Zu viel Spam vermeiden
             process = subprocess.Popen([PW_EXE], stdin=f_in, stdout=f_out, cwd=cwd)
             
             killed = False
@@ -138,19 +154,17 @@ def run_monitored_pw(input_file, output_file, cwd):
 # 4. DOS ANALYSE FUNKTION
 # =============================================================================
 def check_is_metal(dos_file):
-    """Liest die DOS-Datei und prüft den Wert an der Fermi-Energie."""
     try:
         with open(dos_file, 'r') as f: lines = f.readlines()
-        
         e_fermi = None
-        for line in lines[:20]:
+        for line in lines[:30]: # Header scannen
             if "EFermi" in line or "Fermi" in line:
                 parts = line.split("EFermi =")
                 if len(parts) > 1:
                     e_fermi = float(parts[1].split("eV")[0])
                     break
         
-        if e_fermi is None: return False, 0.0 # Fallback
+        if e_fermi is None: return False, 0.0
 
         dos_at_fermi = 0.0
         closest_diff = 999.9
@@ -168,18 +182,15 @@ def check_is_metal(dos_file):
                     dos_at_fermi = dos_val
             except: continue
             
-        # Kriterium: Ist DOS > 0.05 Zustände/eV?
-        is_metal = dos_at_fermi > 0.05
-        return is_metal, dos_at_fermi
+        return (dos_at_fermi > 0.05), dos_at_fermi
     except:
         return False, 0.0
 
 # =============================================================================
-# 5. MAIN PIPELINE (DER TRICHTER)
+# 5. MAIN PIPELINE
 # =============================================================================
 def main():
     try:
-        # 1. Inputs scannen
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         input_files = glob.glob(os.path.join(INPUTS_DIR, "*.in"))
         
@@ -187,7 +198,7 @@ def main():
             print("⚠️ Keine .in Dateien im Inputs-Ordner gefunden!")
             sys.exit()
 
-        send_notification(f"Start: {len(input_files)} Kandidaten in der Pipeline.")
+        send_notification(f"Start: {len(input_files)} Kandidaten.")
 
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
@@ -196,7 +207,6 @@ def main():
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             if not os.path.exists(work_dir): os.makedirs(work_dir)
             
-            # Pfade definieren
             scf_in = os.path.join(work_dir, "scf.in")
             scf_out = os.path.join(work_dir, "scf.out")
             nscf_in = os.path.join(work_dir, "nscf.in")
@@ -216,6 +226,7 @@ def main():
             
             if not scf_done:
                 print("    1️⃣  Starte Relaxation (SCF)...")
+                # Auto-Fix Pfad passiert innerhalb dieser Funktion!
                 if not run_monitored_pw(scf_in, scf_out, work_dir):
                     print(f"    ❌ SCF fehlgeschlagen für {name}. Überspringe."); continue
             else:
@@ -224,18 +235,15 @@ def main():
             # --- SCHRITT 2: DOS & METALL CHECK ---
             if not os.path.exists(dos_out):
                 print("    2️⃣  Prüfe auf Metall (NSCF + DOS)...")
-                # Atome aus relaxierter Struktur lesen
                 try:
                     atoms = read(scf_out, index=-1)
                     elements = sorted(list(set(atoms.get_chemical_symbols())))
-                    pseudo_path = os.path.join(WORK_DIR, "pseudo").replace("\\", "/") + "/"
+                    pseudo_path = PSEUDO_DIR.replace("\\", "/") + "/"
                     
-                    # Strings vorbereiten (gegen f-string SyntaxError)
                     spec_str = "".join([f" {el} 1.0 {el}.UPF\n" for el in elements])
                     pos_str = "".join([f" {a.symbol} {a.position[0]:.5f} {a.position[1]:.5f} {a.position[2]:.5f}\n" for a in atoms])
                     cell_str = "".join([f" {r[0]:.5f} {r[1]:.5f} {r[2]:.5f}\n" for r in atoms.get_cell()])
 
-                    # NSCF Input erstellen (Tetrahedra Methode für bessere DOS)
                     nscf_content = f"""&CONTROL
  calculation='nscf', prefix='{name}', outdir='./tmp/', pseudo_dir='{pseudo_path}'
 /
@@ -257,15 +265,12 @@ K_POINTS automatic
 """
                     with open(nscf_in, "w") as f: f.write(nscf_content)
                     
-                    # NSCF Rechnen
                     with open(nscf_out, "w") as f_log:
                         subprocess.run(f'"{PW_EXE}" < nscf.in', shell=True, stdout=f_log, stderr=f_log, cwd=work_dir)
                     
-                    # DOS Input
                     dos_content = f"&DOS\n prefix='{name}', outdir='./tmp/', fildos='{name}.dos', Emin=-20.0, Emax=20.0, DeltaE=0.05\n/\n"
                     with open(dos_in, "w") as f: f.write(dos_content)
                     
-                    # DOS Rechnen
                     with open(os.path.join(work_dir, "dos.log"), "w") as f_log:
                         subprocess.run(f'"{DOS_EXE}" < dos.in > {name}.dos', shell=True, cwd=work_dir)
 
@@ -280,7 +285,7 @@ K_POINTS automatic
             if not is_metal:
                 print(f"    🛑 Kein Metall. Stoppe hier für {name}.")
                 git_sync(f"Isolator: {name}")
-                continue # Nächster Kandidat
+                continue 
 
             # --- SCHRITT 4: PHONONEN (NUR WENN METALL) ---
             print("    3️⃣  Starte Phononen (da Metall)...")
@@ -291,10 +296,7 @@ K_POINTS automatic
                     if "JOB DONE" in f.read(): ph_done = True
             
             if not ph_done:
-                # Wir nutzen 'recover' falls vorhanden
                 recover = ".true." if (os.path.exists(ph_out) and os.path.getsize(ph_out) > 500) else ".false."
-                
-                # Phonon Input erstellen
                 ph_content = f"""Phonons
 &INPUTPH
   tr2_ph    = 1.0d-12,
@@ -308,11 +310,9 @@ K_POINTS automatic
 """
                 with open(ph_in, "w") as f: f.write(ph_content)
                 
-                # Phonon Rechnen (kann lange dauern!)
                 with open(ph_out, "a") as f:
                     subprocess.run(f'"{PH_EXE}" < ph.in', shell=True, stdout=f, stderr=f, cwd=work_dir)
 
-            # Check ob fertig
             final_success = False
             if os.path.exists(ph_out):
                 with open(ph_out, 'r') as f:
@@ -321,7 +321,6 @@ K_POINTS automatic
             if final_success:
                 print(f"    ✅ {name} komplett fertig!")
                 send_notification(f"✅ {name} (Metall) fertig berechnet.")
-                # Platz sparen
                 shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
                 git_sync(f"Fertig: {name}")
             else:

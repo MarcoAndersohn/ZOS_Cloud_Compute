@@ -1,6 +1,6 @@
 &CONTROL
- restart_mode='from_scratch',
- calculation='scf', prefix='00_YB3H85_Legend', outdir='./tmp/', pseudo_dir='/usr/bin/pseudo/'
+ restart_mode='restart',
+ calculation='scf', prefix='00_YB3H85_Legend', outdir='./tmp/', pseudo_dir='/home/marco/ZOS_Cloud_Compute/pseudo/'
 /
 &SYSTEM
  ibrav=0, nat=89, ntyp=3, ecutwfc=60, ecutrho=480,

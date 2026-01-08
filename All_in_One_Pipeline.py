@@ -19,9 +19,6 @@ sys.stderr.reconfigure(line_buffering=True)
 # =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
-# WICHTIG: KEIN TOKEN MEHR IM CODE!
-# Der Token wird jetzt über die Git-Konfiguration des Systems gesteuert.
-
 TELEGRAM_TOKEN = "8589716957:AAHAAU26UrnwOWgL4OytPpmj0dSPnyWNwu0"
 TELEGRAM_CHAT_ID = "711461437"
 LOGIC_APP_NAME = "AutoRestart-Supraleiter" 
@@ -34,6 +31,7 @@ PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")
 SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt") 
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
+# Dateien, die beim Neustart geleert werden sollen
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 SMART_LOG_FILE = os.path.join(WORK_DIR, "pipeline_smart.log")
 
@@ -54,7 +52,7 @@ def send_notification(message):
 def set_logic_app_state(state="Enabled"):
     if not shutil.which("az"): return
     try:
-        subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True, timeout=30)
+        subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True)
     except: pass
 
 def get_error_details(filepath, lines=60):
@@ -67,22 +65,14 @@ def get_error_details(filepath, lines=60):
     except: return "   (Fehler beim Lesen des Logs)"
 
 def git_sync(message):
-    """
-    Synchronisiert mit GitHub.
-    Verlässt sich auf die im Terminal hinterlegten Credentials (git remote set-url).
-    """
-    env = os.environ.copy()
-    env["GIT_TERMINAL_PROMPT"] = "0" # Verhindert Hänger bei Passwortfragen
-    
     try:
-        subprocess.run(["git", "add", "."], cwd=WORK_DIR, env=env, timeout=60)
-        subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, env=env, timeout=60)
-        subprocess.run(["git", "pull", "origin", "main", "--rebase", "--autostash", "-X", "ours"], cwd=WORK_DIR, env=env, timeout=120)
-        subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=120)
-    except subprocess.TimeoutExpired:
-        print("⚠️ Git-Sync Timeout. Rechnungen laufen weiter!")
+        # Nutze --quiet und ein Timeout, damit das Skript nicht ewig wartet
+        subprocess.run(["git", "add", "."], cwd=WORK_DIR, timeout=30)
+        subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, timeout=30)
+        subprocess.run(["git", "pull", "origin", "main", "--rebase", "--autostash", "-X", "ours"], cwd=WORK_DIR, timeout=60)
+        subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, timeout=60)
     except Exception as e:
-        print(f"⚠️ Git Fehler: {e}")
+        print(f"Git-Sync Timeout oder Fehler: {e}")
 
 def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-"):
     fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Timestamp']
@@ -158,10 +148,14 @@ def get_last_iteration(output_file):
 
 def run_monitored_pw(input_file, output_file, cwd):
     fix_input_file(input_file, 0)
+    
     while True:
         with open(input_file, 'r') as f: content = f.read()
+        
+        # INTELLIGENT RESTART: Nur wenn Daten da sind!
         tmp_dir = os.path.join(cwd, "tmp")
         can_restart = os.path.exists(output_file) and os.path.exists(tmp_dir) and os.listdir(tmp_dir)
+        
         mode = 'restart' if can_restart else 'from_scratch'
         
         if "restart_mode" in content:
@@ -198,10 +192,11 @@ def run_monitored_pw(input_file, output_file, cwd):
 # =============================================================================
 def main():
     try:
-        # CLEANUP
+        # --- CLEANUP: BEIDE LOGS LEEREN ---
         for log in [TXT_LOG_FILE, SMART_LOG_FILE]:
             if os.path.exists(log):
-                try: with open(log, 'w') as f: f.truncate(0)
+                try:
+                    with open(log, 'w') as f: f.truncate(0)
                 except: pass
             
         set_logic_app_state("Enabled")
@@ -218,6 +213,8 @@ def main():
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             
             last_status = get_csv_status(name)
+            
+            # ZOMBIE KILLER: Bereinigt alte Fehler und abgebrochene Starts
             is_zombie = "Rechnet" in last_status
             is_failed = "Fehler" in last_status or "INTERRUPTED" in last_status
             

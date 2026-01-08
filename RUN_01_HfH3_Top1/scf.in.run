@@ -1,0 +1,44 @@
+&CONTROL
+ restart_mode='restart',
+  calculation = 'vc-relax'
+  prefix = '01_HfH3_Top1'
+  outdir = './tmp/'
+ pseudo_dir='/home/marco/ZOS_Cloud_Compute/pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 4
+  ntyp = 2
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  Hf  178.4900  Hf.UPF
+  H  1.0080  H.UPF
+ATOMIC_POSITIONS (angstrom)
+  Hf  0.85062  2.54412  0.62546
+  H  2.38219  0.97751  0.69533
+  H  1.94716  1.68781  2.27784
+  H  1.26302  0.46155  2.63550
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  3.63424  0.00000  0.00000
+  0.00000  3.63424  0.00000
+  0.00000  0.00000  3.63424

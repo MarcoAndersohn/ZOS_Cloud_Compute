@@ -1,0 +1,63 @@
+&CONTROL
+  calculation = 'vc-relax'
+  prefix = 'MgTiBH44'
+  outdir = './tmp/'
+  pseudo_dir='/home/marco/ZOS_Cloud_Compute/pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 22
+  ntyp = 4
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  B  1.00  B.UPF
+  H  1.00  H.UPF
+  Mg  1.00  Mg.UPF
+  Ti  1.00  Ti.UPF
+ATOMIC_POSITIONS (angstrom)
+  Ti  2.859212  2.859222  2.814657
+  Mg  -0.000005  -0.000003  5.495698
+  B  1.397749  4.320688  4.095446
+  B  4.320673  1.397756  4.095445
+  B  4.137199  4.137214  1.394049
+  B  1.581228  1.581234  1.394052
+  H  0.284562  3.960039  4.455314
+  H  5.433858  1.758403  4.455311
+  H  2.999409  4.443619  1.818285
+  H  2.719017  1.274828  1.818287
+  H  1.758396  5.433879  4.455312
+  H  3.960025  0.284564  4.455313
+  H  4.443603  2.999419  1.818285
+  H  1.274823  2.719027  1.818288
+  H  2.213175  3.505259  4.537590
+  H  3.505246  2.213184  4.537590
+  H  4.933738  4.933755  1.853766
+  H  0.784688  0.784691  1.853772
+  H  1.446442  4.271997  2.864623
+  H  4.271982  1.446448  2.864622
+  H  4.038803  4.038817  0.190762
+  H  1.679626  1.679631  0.190765
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  5.698679  0.019750  -0.000005
+  0.019750  5.698698  -0.000003
+  -0.000005  -0.000003  5.565677

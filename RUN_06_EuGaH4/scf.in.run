@@ -1,0 +1,47 @@
+&CONTROL
+ restart_mode='restart',
+  calculation = 'vc-relax'
+  prefix = 'EuGaH4'
+  outdir = './tmp/'
+  pseudo_dir='/home/marco/ZOS_Cloud_Compute/pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 6
+  ntyp = 3
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  Eu  1.00  Eu.UPF
+  Ga  1.00  Ga.UPF
+  H  1.00  H.UPF
+ATOMIC_POSITIONS (angstrom)
+  Eu  1.903301  -1.098872  3.613920
+  Ga  1.903300  1.098889  1.204640
+  H  1.903300  1.098872  3.613920
+  H  1.903301  -1.098886  1.204640
+  H  0.000000  -0.000003  2.511936
+  H  -0.000000  -0.000003  -0.102656
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  1.903302  -3.296627  0.000000
+  1.903299  3.296625  0.000000
+  0.000000  0.000000  4.818560

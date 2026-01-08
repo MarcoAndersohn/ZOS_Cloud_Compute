@@ -7,3 +7,56 @@
 
 💎 Job: 01_HfH3_Top1
    🛑 01_HfH3_Top1 ist ein Isolator (DOS=-0.000). Phononen übersprungen.
+From https://github.com/MarcoAndersohn/ZOS_Cloud_Compute
+ * branch            main       -> FETCH_HEAD
+error: cannot rebase: You have unstaged changes.
+error: Please commit or stash them.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   efe3ebc..6c1d62d  main -> main
+
+💎 Job: 01_K7SrMg4AlB15H64
+   1️⃣  Starte SCF...
+   ❌ SCF fehlgeschlagen! Letzte Ausgaben:
+----------------------------------------
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+        k(    2) = (  -0.0040158  -0.0027754  -0.3223719), wk =   0.2500000
+        k(    3) = (   0.0037737  -0.3906398  -0.0036274), wk =   0.2500000
+        k(    4) = (  -0.0002421  -0.3934152  -0.3259993), wk =   0.2500000
+        k(    5) = (  -0.5031480   0.0024474  -0.2440653), wk =   0.2500000
+        k(    6) = (  -0.5071638  -0.0003280  -0.5664371), wk =   0.2500000
+        k(    7) = (  -0.4993743  -0.3881923  -0.2476927), wk =   0.2500000
+        k(    8) = (  -0.5033901  -0.3909678  -0.5700646), wk =   0.2500000
+
+     Dense  grid:   968101 G-vectors     FFT dimensions: ( 100, 125, 180)
+
+     Smooth grid:   342405 G-vectors     FFT dimensions: (  72,  90, 120)
+
+     Estimated max dynamical RAM per process >       1.78 GB
+
+     Estimated total dynamical RAM >       7.12 GB
+
+     Atomic positions and unit cell read from directory:
+     ./tmp/K7SrMg4AlB15H64.save/
+     Message from routine qexsd_readschema :
+     xml data file ./tmp/K7SrMg4AlB15H64.save/data-file-schema.xml not found
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine read_conf_from_file (1):
+     fatal error reading xml file
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     stopping ...
+[Supraleiter-HPC-Knoten:00996] [[30674,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+[Supraleiter-HPC-Knoten:00996] [[30674,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:00996] [[30674,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+
+----------------------------------------

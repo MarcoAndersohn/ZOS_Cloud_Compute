@@ -64,16 +64,15 @@ def git_sync(message):
         subprocess.run(["git", "push"], cwd=WORK_DIR)
     except: pass
 
-def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-"):
-    """Schreibt den aktuellen Status in die CSV-Datei."""
+def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-"):
+    """Aktualisiert die CSV-Datei mit ALLEN Feldern."""
     file_exists = os.path.isfile(CSV_FILE)
     rows = []
     updated = False
     
-    # Header Definition
-    fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Timestamp']
+    # Hier müssen ALLE Spalten stehen, die jemals vorkommen könnten
+    fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Timestamp']
 
-    # Bestehende Daten lesen
     if file_exists:
         with open(CSV_FILE, 'r') as f:
             reader = csv.DictReader(f)
@@ -83,22 +82,20 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-"):
                     if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
                     if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
                     if is_metal != "-": row['Metall?'] = str(is_metal)
+                    if min_f != "-": row['Min Freq (THz)'] = str(min_f)
+                    if stab != "-": row['Stabilität'] = str(stab)
                     row['Timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M")
                     updated = True
                 rows.append(row)
     
-    # Neuen Eintrag hinzufügen, falls noch nicht da
     if not updated:
         rows.append({
-            'Name': name,
-            'Status': status,
-            'Fermi Energie (eV)': str(e_fermi),
-            'DOS @ Fermi': str(dos_val),
-            'Metall?': str(is_metal),
+            'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi),
+            'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal),
+            'Min Freq (THz)': str(min_f), 'Stabilität': str(stab),
             'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
         })
         
-    # Schreiben
     with open(CSV_FILE, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -329,6 +326,9 @@ def main():
             print(f"   ⚡ {name} ist ein Metall (DOS={dos_val:.3f}). Berechne Phononen...")
             update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
             
+            min_f = "-"
+            stab = "Unbekannt"
+            
             if not os.path.exists(ph_out):
                 print("   3️⃣  Phononen Berechnung...")
                 ph_content = f"""Phonons for {name}
@@ -346,7 +346,18 @@ def main():
                     cmd_ph = ["mpirun", "--oversubscribe", "-np", "4", PH_EXE] # 4 Kerne!
                     subprocess.run(cmd_ph, stdin=f_in, stdout=f_out, cwd=work_dir)
 
-            update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA")
+            # Frequenzen checken, falls PH fertig ist
+            if os.path.exists(ph_out):
+                 with open(ph_out, 'r') as f:
+                     content = f.read()
+                     if "JOB DONE" in content:
+                         freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
+                         if freqs:
+                             freqs = [float(f) for f in freqs]
+                             min_f = min(freqs)
+                             stab = "STABIL" if min_f > -0.05 else "INSTABIL"
+
+            update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
             # KORRIGIERT: Telegram Nachricht pro Metall
             send_notification(f"✅ {name} fertig: Metall & Phononen berechnet.")
             git_sync(f"Fertig: {name} (Metall)")

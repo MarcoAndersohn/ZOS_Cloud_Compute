@@ -11,16 +11,21 @@ import csv
 from datetime import datetime
 
 # =============================================================================
+# 0. PUFFERUNG ABSCHALTEN (WICHTIG FÜR LIVE-LOG)
+# =============================================================================
+# Dadurch landen prints sofort in der .txt Datei und nicht erst im Puffer
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+
+# =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
 TELEGRAM_TOKEN = "8589716957:AAHAAU26UrnwOWgL4OytPpmj0dSPnyWNwu0"
 TELEGRAM_CHAT_ID = "711461437"
 
-# KORREKTER NAME der Logic App
 LOGIC_APP_NAME = "AutoRestart-Supraleiter" 
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 
-# Schwelle: Alles unter 0.05 Zuständen/eV am Fermi-Level ist ein Isolator
 DOS_THRESHOLD = 0.05
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,7 +36,6 @@ SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 
-# Engine Suche
 def find_qe_exec(tool_names):
     search_paths = ["/usr/bin", "/usr/local/bin", r"C:\Quantum_Espresso", os.path.expanduser("~")+"/bin"]
     for path in search_paths:
@@ -61,10 +65,10 @@ def send_notification(message):
 def git_sync(message):
     """Synchronisiert CSV und Log-Dateien robust mit GitHub."""
     try:
-        # 1. Alles hinzufügen (CSV, TXT Log, etc.)
+        # 1. Alles hinzufügen
         subprocess.run(["git", "add", "."], cwd=WORK_DIR)
         
-        # 2. Commit erstellen (lokal)
+        # 2. Commit erstellen
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR)
         
         # 3. Pull mit Rebase (verhindert 'rejected' Fehler)
@@ -141,7 +145,6 @@ def emergency_shutdown(error_msg):
     full_error = f"{error_msg}\n{traceback.format_exc()}"
     with open(LOG_FILE, "w") as f: f.write(full_error)
     send_notification(f"🚨 STOPP: {error_msg}")
-    # Versuche noch schnell das Log hochzuladen
     git_sync("Emergency Shutdown Log")
     smart_shutdown(reason="Emergency Error")
     sys.exit()
@@ -169,11 +172,9 @@ def check_metallicity(dos_out_path, e_fermi):
                 parts = line.split()
                 if len(parts) >= 2:
                     try:
-                        e = float(parts[0])
-                        d = float(parts[1])
-                        diff = abs(e - e_fermi)
-                        if diff < closest_diff:
-                            closest_diff = diff
+                        e, d = float(parts[0]), float(parts[1])
+                        if abs(e - e_fermi) < closest_diff:
+                            closest_diff = abs(e - e_fermi)
                             dos_at_fermi = d
                     except: continue
         return (dos_at_fermi > DOS_THRESHOLD), dos_at_fermi
@@ -189,7 +190,6 @@ def update_input_params(input_file, iteration_count):
     elif iteration_count >= 60: target_beta = 0.25
     elif iteration_count >= 30: target_beta = 0.4
     else: return False
-
     with open(input_file, 'r') as f: content = f.read()
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
@@ -218,32 +218,21 @@ def run_monitored_pw(input_file, output_file, cwd):
     while True:
         with open(input_file, 'r') as f: content = f.read()
         mode = 'restart' if (os.path.exists(output_file)) else 'from_scratch'
-        if "restart_mode" not in content:
-            content = content.replace("&CONTROL", f"&CONTROL\n restart_mode='{mode}',")
-        else:
-            content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
-            
+        content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content) if "restart_mode" in content else content.replace("&CONTROL", f"&CONTROL\n restart_mode='{mode}',")
         run_input = input_file + ".run"
         with open(run_input, 'w') as f: f.write(content)
-
         file_mode = 'a' if mode == 'restart' else 'w'
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
             cmd = ["mpirun", "--oversubscribe", "-np", "4", PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, cwd=cwd)
-            
-            killed = False
             try:
                 while process.poll() is None:
                     time.sleep(10)
-                    cur_iter = get_last_iteration(output_file)
-                    if update_input_params(input_file, cur_iter):
-                        process.terminate()
-                        killed = True
-                        break
+                    if update_input_params(input_file, get_last_iteration(output_file)):
+                        process.terminate(); break
             except: process.kill(); return False
-            
-        if killed: continue 
+            if process.returncode is not None and process.returncode != 0: continue
         
         with open(output_file, 'r') as f:
             if "JOB DONE" in f.read(): return True
@@ -255,8 +244,11 @@ def run_monitored_pw(input_file, output_file, cwd):
 def main():
     try:
         enable_logic_app()
-        if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
+        print(f"\n\n{'='*40}")
+        print(f"🚀 NEUSTART DER PIPELINE: {datetime.now()}")
+        print(f"{'='*40}\n")
         
+        if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
         
@@ -269,12 +261,10 @@ def main():
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
             print(f"\n💎 Job: {name}")
-            
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             if not os.path.exists(work_dir): os.makedirs(work_dir)
             
-            scf_in = os.path.join(work_dir, "scf.in")
-            scf_out = os.path.join(work_dir, "scf.out")
+            scf_in, scf_out = os.path.join(work_dir, "scf.in"), os.path.join(work_dir, "scf.out")
             dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
             ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
 
@@ -282,17 +272,12 @@ def main():
             
             # --- 1. SCF ---
             update_csv(name, "Rechnet SCF...")
-            scf_done = False
-            if os.path.exists(scf_out) and "JOB DONE" in open(scf_out).read(): scf_done = True
-            
-            if not scf_done:
+            if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out).read()):
                 print("   1️⃣  Starte SCF...")
                 if not run_monitored_pw(scf_in, scf_out, work_dir):
                     print("   ❌ SCF fehlgeschlagen.")
                     update_csv(name, "Fehler (SCF)")
                     send_notification(f"⚠️ {name}: SCF fehlgeschlagen.")
-                    
-                    # JETZT WIRD AUCH BEI FEHLER SYNCHRONISIERT
                     git_sync(f"SCF Fehler: {name}")
                     continue 
             
@@ -304,53 +289,44 @@ def main():
             update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
             if not os.path.exists(dos_out):
                 print("   2️⃣  DOS Berechnung...")
-                dos_content = f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n"
-                with open(dos_in, "w") as f: f.write(dos_content)
+                with open(dos_in, "w") as f: f.write(f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n")
                 with open(dos_in, "r") as f_in, open(dos_out, "w") as f_out:
                     subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, cwd=work_dir)
 
             # --- 3. METALL CHECK ---
             is_metal, dos_val = check_metallicity(dos_out, e_fermi)
-            
             if not is_metal:
                 print(f"   🛑 {name} ist ein Isolator (DOS={dos_val:.3f}). Phononen übersprungen.")
                 update_csv(name, "Fertig (Isolator)", e_fermi, round(dos_val, 4), "NEIN")
-                send_notification(f"🛑 {name} fertig: Isolator (Skip Phonons).")
+                send_notification(f"🛑 {name} fertig: Isolator.")
                 git_sync(f"Fertig: {name} (Isolator)")
                 continue
 
-            # --- 4. PHONONEN (Nur wenn Metall) ---
+            # --- 4. PHONONEN ---
             print(f"   ⚡ {name} ist ein Metall (DOS={dos_val:.3f}). Berechne Phononen...")
             update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
-            
-            min_f = "-"
-            stab = "Unbekannt"
-            
             if not os.path.exists(ph_out):
                 print("   3️⃣  Phononen Berechnung...")
-                ph_content = f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n"
-                with open(ph_in, "w") as f: f.write(ph_content)
+                with open(ph_in, "w") as f: f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                 with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
-                    cmd_ph = ["mpirun", "--oversubscribe", "-np", "4", PH_EXE]
-                    subprocess.run(cmd_ph, stdin=f_in, stdout=f_out, cwd=work_dir)
+                    subprocess.run(["mpirun", "--oversubscribe", "-np", "4", PH_EXE], stdin=f_in, stdout=f_out, cwd=work_dir)
 
+            min_f, stab = "-", "Unbekannt"
             if os.path.exists(ph_out):
                  with open(ph_out, 'r') as f:
                      content = f.read()
                      if "JOB DONE" in content:
                          freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
                          if freqs:
-                             freqs = [float(f) for f in freqs]
-                             min_f = min(freqs)
+                             min_f = min([float(f) for f in freqs])
                              stab = "STABIL" if min_f > -0.05 else "INSTABIL"
 
             update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
             send_notification(f"✅ {name} fertig: Metall ({stab}).")
             git_sync(f"Fertig: {name} (Metall)")
 
-        send_notification("🎉 Alle Jobs der Liste abgearbeitet.")
-        smart_shutdown("Pipeline Success - Alles fertig")
-
+        send_notification("🎉 Alle Jobs erledigt.")
+        smart_shutdown("Pipeline Success")
     except Exception as e: emergency_shutdown(f"Error: {e}")
 
 if __name__ == "__main__":

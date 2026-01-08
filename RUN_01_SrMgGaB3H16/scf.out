@@ -1,0 +1,229 @@
+
+     Program PWSCF v.6.7MaX starts on  8Jan2026 at 17: 5: 9 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on     4 processors
+
+     MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       4
+     Waiting for input...
+     Reading input from standard input
+
+     Current dimensions of program PWSCF are:
+     Max number of different atomic species (ntypx) = 10
+     Max number of k-points (npk) =  40000
+     Max angular momentum in pseudopotentials (lmaxx) =  3
+     Message from routine iosys:
+     restart disabled: needed files not found
+     Message from routine read_pp_mesh:
+     mismatch in mesh size, discarding the one in header
+     file Ga.UPF: wavefunction(s)  4S renormalized
+     file H.UPF: wavefunction(s)  1S renormalized
+
+     Subspace diagonalization in iterative solution of the eigenvalue problem:
+     one sub-group per band group will be used
+     scalapack distributed-memory algorithm (size of sub-group:  2*  2 procs)
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        2152    1075    315               111705    39470    6225
+     Max        2153    1076    316               111707    39471    6226
+     Sum        8609    4303   1263               446823   157881   24903
+
+
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =      16.0365  a.u.
+     unit-cell volume          =    3306.8141 (a.u.)^3
+     number of atoms/cell      =           22
+     number of atomic types    =            5
+     number of electrons       =        58.00
+     number of Kohn-Sham states=           35
+     kinetic-energy cutoff     =      50.0000  Ry
+     charge density cutoff     =     400.0000  Ry
+     scf convergence threshold =      1.0E-06
+     mixing beta               =       0.7000
+     number of iterations used =            8  plain     mixing
+     energy convergence thresh.=      1.0E-04
+     force convergence thresh. =      1.0E-03
+     press convergence thresh. =      5.0E-01
+     Exchange-correlation= SLA  PW   PBE  PBE
+                           (   1   4   3   4   0   0   0)
+     nstep                     =           50
+
+
+     celldm(1)=  16.036463  celldm(2)=   0.000000  celldm(3)=   0.000000
+     celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (  -0.702933  -0.710605   0.030428 )  
+               a(2) = (  -0.740908   0.745109  -0.063690 )  
+               a(3) = (   0.702678   0.032217  -0.750419 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = ( -0.694773 -0.749214 -0.682738 )  
+               b(2) = ( -0.663818  0.631195 -0.594488 )  
+               b(3) = (  0.028169 -0.083950 -1.309816 )  
+
+
+     PseudoPot. # 1 for B  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/B.UPF
+     MD5 check sum: d9c678ba5d3b2fd7b74e61139c9288d8
+     Pseudo is Projector augmented-wave + core cor, Zval =  3.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1059 points,  4 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for Ga read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Ga.UPF
+     MD5 check sum: 79e63b61437c88080bf469cc04ca4be8
+     Pseudo is Projector augmented-wave + core cor, Zval = 13.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1205 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for H  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/H.UPF
+     MD5 check sum: 850d63dcbcc06c5de8b44e0ab9f952da
+     Pseudo is Projector augmented-wave, Zval =  1.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of  929 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 4 for Mg read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Mg.UPF
+     MD5 check sum: a77e51077e70c6c73445c6cac60d158f
+     Pseudo is Projector augmented-wave + core cor, Zval = 10.0
+     Generated using ATOMPAW code
+     Shape of augmentation charge: BESSEL
+     Using radial grid of 1171 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   0
+                l(4) =   0
+                l(5) =   1
+                l(6) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 5 for Sr read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Sr.UPF
+     MD5 check sum: 71c4688e601547c0814ef38edf55aea6
+     Pseudo is Ultrasoft + core correction, Zval = 10.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  883 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  8 coefficients,  rinner =    1.200   1.200   1.200
+                                                       1.200   1.200
+
+     atomic species   valence    mass     pseudopotential
+        B              3.00     1.00000     B ( 1.00)
+        Ga            13.00     1.00000     Ga( 1.00)
+        H              1.00     1.00000     H ( 1.00)
+        Mg            10.00     1.00000     Mg( 1.00)
+        Sr            10.00     1.00000     Sr( 1.00)
+
+     No symmetry found
+
+
+
+   Cartesian axes
+
+     site n.     atom                  positions (alat units)
+         1           Mg  tau(   1) = (  -0.3911466   0.4225942  -0.4399877  )
+         2           Sr  tau(   2) = (  -0.0019377  -0.0070552   0.0079143  )
+         3           Ga  tau(   3) = (  -0.2354410   0.1900813  -0.2083758  )
+         4           B   tau(   4) = (  -0.5104539   0.5774154  -0.2370804  )
+         5           B   tau(   5) = (  -0.2616302   0.5971464  -0.6163820  )
+         6           B   tau(   6) = (  -0.5091006   0.2203464  -0.5963839  )
+         7           H   tau(   7) = (  -0.8804341  -0.4752349  -0.0070409  )
+         8           H   tau(   8) = (  -0.5503169   0.5308764  -0.1073814  )
+         9           H   tau(   9) = (  -0.2173947   0.5473834  -0.7439263  )
+        10           H   tau(  10) = (   0.1971102  -0.4762453  -0.6636445  )
+        11           H   tau(  11) = (  -0.1643894   0.2993481  -0.3405964  )
+        12           H   tau(  12) = (  -0.5871827   0.5015611  -0.3340899  )
+        13           H   tau(  13) = (  -0.1959549   0.5157489  -0.5162625  )
+        14           H   tau(  14) = (  -0.5846699   0.2985575  -0.5006801  )
+        15           H   tau(  15) = (  -0.1921141   0.0113577  -0.2287707  )
+        16           H   tau(  16) = (   0.2058891  -0.0290164  -0.2007439  )
+        17           H   tau(  17) = (  -0.9293035   0.0222564  -0.5550604  )
+        18           H   tau(  18) = (  -0.5414010   0.0831673  -0.5706292  )
+        19           H   tau(  19) = (  -0.4156008   0.2231736  -0.2340818  )
+        20           H   tau(  20) = (  -1.0709372  -0.1532812  -0.2167904  )
+        21           H   tau(  21) = (   0.3348326  -0.1577746  -0.5486834  )
+        22           H   tau(  22) = (  -0.3660712   0.2335198  -0.5817412  )
+
+     number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000  -0.0000000), wk =   0.2500000
+        k(    2) = (  -0.0140843   0.0419748   0.6549081), wk =   0.2500000
+        k(    3) = (   0.3319091  -0.3155977   0.2972440), wk =   0.2500000
+        k(    4) = (   0.3178248  -0.2736229   0.9521521), wk =   0.2500000
+        k(    5) = (   0.3473864   0.3746071   0.3413688), wk =   0.2500000
+        k(    6) = (   0.3333021   0.4165819   0.9962770), wk =   0.2500000
+        k(    7) = (   0.6792955   0.0590094   0.6386128), wk =   0.2500000
+        k(    8) = (   0.6652112   0.1009842   1.2935209), wk =   0.2500000
+
+     Dense  grid:   446823 G-vectors     FFT dimensions: ( 108, 108, 108)
+
+     Smooth grid:   157881 G-vectors     FFT dimensions: (  75,  75,  75)
+
+     Estimated max dynamical RAM per process >     524.97 MB
+
+     Estimated total dynamical RAM >       2.05 GB
+     Cannot read rho : file not found
+
+     Initial potential from superposition of free atoms
+
+     starting charge   57.96156, renormalised to   58.00000
+     Message from routine qexsd_readschema :
+     xml data file ./tmp/SrMgGaB3H16.save/data-file-schema.xml not found
+     Cannot read wfcs: file not found
+     Starting wfcs are   60 randomized atomic wfcs
+     Checking if some PAW data can be deallocated... 
+
+     total cpu time spent up to now is       62.1 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     ethr =  1.00E-05,  avg # of iterations = 20.0

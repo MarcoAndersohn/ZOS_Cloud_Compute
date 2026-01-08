@@ -13,7 +13,6 @@ from datetime import datetime
 # =============================================================================
 # 0. LIVE-LOGGING
 # =============================================================================
-# Damit siehst du Ausgaben sofort in der txt Datei
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
@@ -22,7 +21,6 @@ sys.stderr.reconfigure(line_buffering=True)
 # =============================================================================
 TELEGRAM_TOKEN = "8589716957:AAHAAU26UrnwOWgL4OytPpmj0dSPnyWNwu0"
 TELEGRAM_CHAT_ID = "711461437"
-
 LOGIC_APP_NAME = "AutoRestart-Supraleiter" 
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
@@ -34,21 +32,9 @@ SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 LOG_FILE = os.path.join(WORK_DIR, "pipeline_smart.log")
 
-def find_qe_exec(tool_names):
-    search_paths = ["/usr/bin", "/usr/local/bin", os.path.expanduser("~")+"/bin"]
-    for path in search_paths:
-        for name in tool_names:
-            full_path = os.path.join(path, name)
-            if os.path.exists(full_path): return full_path
-    return None
-
-PW_EXE = find_qe_exec(["pw.x", "pw.exe"])
-PH_EXE = find_qe_exec(["ph.x", "ph.exe"])
-DOS_EXE = find_qe_exec(["dos.x", "dos.exe"])
-
-if not PW_EXE:
-    print("❌ FEHLER: Quantum Espresso (pw.x) nicht gefunden!")
-    sys.exit()
+PW_EXE = shutil.which("pw.x") or "/usr/bin/pw.x"
+PH_EXE = shutil.which("ph.x") or "/usr/bin/ph.x"
+DOS_EXE = shutil.which("dos.x") or "/usr/bin/dos.x"
 
 # =============================================================================
 # 2. HELFER & GIT
@@ -61,22 +47,12 @@ def send_notification(message):
     except: pass
 
 def set_logic_app_state(state="Enabled"):
-    """
-    Versucht die Logic App zu steuern. 
-    WICHTIG: Stürzt NICHT ab, wenn 'az' fehlt!
-    """
-    if not shutil.which("az"):
-        # Kein az installiert -> Wir machen einfach gar nichts und lassen das Skript laufen.
-        # Das stellt den Zustand "wie früher" wieder her.
-        return
-
+    if not shutil.which("az"): return
     try:
         subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True)
-    except: 
-        pass # Fehler ignorieren, damit die Rechnung nicht stirbt
+    except: pass
 
 def get_error_details(filepath, lines=40):
-    """Liest die letzten Zeilen inkl. MPI Fehler."""
     if not os.path.exists(filepath): return "   (Keine Log-Datei gefunden)"
     try:
         with open(filepath, 'r', errors='ignore') as f:
@@ -87,9 +63,14 @@ def get_error_details(filepath, lines=40):
 
 def git_sync(message):
     try:
+        # 1. Erst alles stagen und committen
         subprocess.run(["git", "add", "."], cwd=WORK_DIR)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True)
+        
+        # 2. Dann pullen (Konflikte vermeiden)
         subprocess.run(["git", "pull", "origin", "main", "--rebase"], cwd=WORK_DIR)
+        
+        # 3. Dann pushen
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR)
     except: pass
 
@@ -127,28 +108,34 @@ def get_csv_status(name):
     return "NEW"
 
 # =============================================================================
-# 3. PUPPET MASTER (KONVERGENZ)
+# 3. PUPPET MASTER (CORE LOGIC)
 # =============================================================================
-def update_input_params(input_file, iteration_count):
+def fix_input_file(input_file, iteration_count=0):
+    """Repariert Pfade und setzt Konvergenz-Parameter."""
+    with open(input_file, 'r') as f: content = f.read()
+    
+    # 1. PSEUDO DIR ERZWINGEN (Der wichtige Fix!)
+    # Wir nutzen Regex, um jeden bestehenden pseudo_dir Eintrag zu finden und zu ersetzen
+    corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
+    if "pseudo_dir" in content:
+        content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
+    else:
+        content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
+
+    # 2. KONVERGENZ PARAMETER
     target_beta = 0.7
-    # Aggressive Strategie (wie auf Laptop)
     if iteration_count >= 90: target_beta = 0.15
     elif iteration_count >= 60: target_beta = 0.25
     elif iteration_count >= 30: target_beta = 0.4
-    else: return False
 
-    with open(input_file, 'r') as f: content = f.read()
-    
-    # Beta anpassen
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
     
-    # Stabilitätsparameter erzwingen
     if "mixing_ndim" not in content:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 12,")
     if "electron_maxstep" not in content:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 300,")
-            
+
     with open(input_file, 'w') as f: f.write(content)
     return True
 
@@ -164,12 +151,8 @@ def get_last_iteration(output_file):
     except: return 0
 
 def run_monitored_pw(input_file, output_file, cwd):
-    # Input sicherstellen
-    with open(input_file, 'r') as f: content = f.read()
-    corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
-    if "pseudo_dir" not in content:
-        content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
-    with open(input_file, 'w') as f: f.write(content)
+    # Sofortiger Pfad-Fix vor dem Start!
+    fix_input_file(input_file, 0)
 
     while True:
         with open(input_file, 'r') as f: content = f.read()
@@ -185,7 +168,6 @@ def run_monitored_pw(input_file, output_file, cwd):
         file_mode = 'a' if mode == 'restart' else 'w'
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-            # stderr=subprocess.STDOUT ist WICHTIG für Fehlermeldungen!
             cmd = ["mpirun", "--oversubscribe", "-np", "4", PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
@@ -194,13 +176,17 @@ def run_monitored_pw(input_file, output_file, cwd):
                 while process.poll() is None:
                     time.sleep(10)
                     cur_iter = get_last_iteration(output_file)
-                    if update_input_params(input_file, cur_iter):
-                        process.terminate(); killed = True; break
+                    # Dynamisches Update während der Laufzeit
+                    if cur_iter > 30: # Erst ab Iteration 30 eingreifen
+                         fix_input_file(input_file, cur_iter)
             except: 
                 process.kill(); return False
             
-        if killed: continue 
-        
+        if process.returncode != 0:
+             # Wenn Prozess crasht (z.B. MPI Error), prüfen wir ob es an Parametern lag
+             # Wir geben False zurück, damit der Error im Main-Loop geloggt wird
+             return False
+
         with open(output_file, 'r') as f:
             if "JOB DONE" in f.read(): return True
             return False
@@ -210,12 +196,8 @@ def run_monitored_pw(input_file, output_file, cwd):
 # =============================================================================
 def main():
     try:
-        # Wächter versuchen zu aktivieren (stürzt nicht ab, wenn es nicht geht)
         set_logic_app_state("Enabled")
-        
-        print(f"\n\n{'='*40}")
-        print(f"🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-        print(f"{'='*40}\n")
+        print(f"\n\n{'='*40}\n🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
@@ -227,11 +209,10 @@ def main():
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             
-            # AUTO-RETRY LOGIK
+            # AUTO-RETRY
             last_status = get_csv_status(name)
             if "Fehler" in last_status or "INTERRUPTED" in last_status:
-                print(f"\n♻️  Auto-Retry für {name} (Status war: {last_status})")
-                print(f"    -> Lösche alten Ordner für sauberen Neustart.")
+                print(f"\n♻️  Auto-Retry für {name} (Status war: {last_status}) -> Lösche alten Ordner.")
                 if os.path.exists(work_dir): shutil.rmtree(work_dir)
                 update_csv(name, "Neustart (Retry)")
                 git_sync(f"Retry Start: {name}")
@@ -253,15 +234,13 @@ def main():
                 
                 if not success:
                     print(f"   ❌ SCF fehlgeschlagen! Letzte Ausgaben:")
-                    print("-" * 40)
-                    print(get_error_details(scf_out)) 
-                    print("-" * 40)
+                    print("-" * 40 + "\n" + get_error_details(scf_out) + "\n" + "-" * 40)
                     update_csv(name, "Fehler (SCF)")
-                    send_notification(f"⚠️ {name}: SCF fehlgeschlagen.")
+                    send_notification(f"⚠️ {name}: SCF fehlgeschlagen (Check Log).")
                     git_sync(f"SCF Fehler: {name}")
                     continue 
 
-            # Helper & Fermi lesen
+            # Helper lesen
             with open(scf_in, 'r') as f: 
                 match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
                 prefix = match.group(1) if match else "calc"
@@ -276,6 +255,8 @@ def main():
             update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
             if not os.path.exists(dos_out):
                 print("   2️⃣  DOS Berechnung...")
+                # Fix Pseudo Path auch für DOS Input
+                corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
                 with open(dos_in, "w") as f: 
                     f.write(f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n")
                 with open(dos_in, "r") as f_in, open(dos_out, "w") as f_out:
@@ -311,6 +292,7 @@ def main():
             update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
             if not os.path.exists(ph_out):
                 print("   3️⃣  Phononen Berechnung...")
+                corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
                 with open(ph_in, "w") as f: 
                     f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                 with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
@@ -333,7 +315,6 @@ def main():
 
         send_notification("🎉 Alle Jobs erledigt.")
         set_logic_app_state("Disabled")
-        
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")
         if os.name != 'nt': os.system("sudo shutdown -h now")
 

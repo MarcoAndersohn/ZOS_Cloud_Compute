@@ -11,9 +11,9 @@ import csv
 from datetime import datetime
 
 # =============================================================================
-# 0. LIVE-LOGGING AKTIVIEREN (WICHTIG!)
+# 0. LIVE-LOGGING
 # =============================================================================
-# Schaltet die Pufferung ab, damit du jeden Print sofort in der Datei siehst
+# Damit siehst du Ausgaben sofort in der txt Datei
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
@@ -34,7 +34,6 @@ SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 LOG_FILE = os.path.join(WORK_DIR, "pipeline_smart.log")
 
-# Pfade zu den Programmen
 def find_qe_exec(tool_names):
     search_paths = ["/usr/bin", "/usr/local/bin", os.path.expanduser("~")+"/bin"]
     for path in search_paths:
@@ -52,7 +51,7 @@ if not PW_EXE:
     sys.exit()
 
 # =============================================================================
-# 2. HELFER: LOGGING & GIT & CSV
+# 2. HELFER & GIT
 # =============================================================================
 def send_notification(message):
     try:
@@ -61,41 +60,49 @@ def send_notification(message):
         requests.post(url, data=payload, timeout=10)
     except: pass
 
-def get_error_details(filepath, lines=30):
-    """Liest die letzten n Zeilen einer Datei für das Log."""
+def set_logic_app_state(state="Enabled"):
+    """
+    Versucht die Logic App zu steuern. 
+    WICHTIG: Stürzt NICHT ab, wenn 'az' fehlt!
+    """
+    if not shutil.which("az"):
+        # Kein az installiert -> Wir machen einfach gar nichts und lassen das Skript laufen.
+        # Das stellt den Zustand "wie früher" wieder her.
+        return
+
+    try:
+        subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True)
+    except: 
+        pass # Fehler ignorieren, damit die Rechnung nicht stirbt
+
+def get_error_details(filepath, lines=40):
+    """Liest die letzten Zeilen inkl. MPI Fehler."""
     if not os.path.exists(filepath): return "   (Keine Log-Datei gefunden)"
     try:
         with open(filepath, 'r', errors='ignore') as f:
-            # Nutze deque für effizientes Lesen der letzten Zeilen oder simple list slicing
             content = f.readlines()
             tail = content[-lines:] if len(content) > lines else content
             return "".join(tail)
-    except Exception as e: return f"   (Fehler beim Lesen des Logs: {e})"
+    except: return "   (Fehler beim Lesen des Logs)"
 
 def git_sync(message):
     try:
         subprocess.run(["git", "add", "."], cwd=WORK_DIR)
-        subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR)
+        subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True)
         subprocess.run(["git", "pull", "origin", "main", "--rebase"], cwd=WORK_DIR)
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR)
-    except Exception as e: print(f"Git-Sync Fehler: {e}")
+    except: pass
 
 def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-"):
     fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Timestamp']
     rows = []
-    
-    # Lesen
     if os.path.exists(CSV_FILE):
         with open(CSV_FILE, 'r') as f: rows = list(csv.DictReader(f))
     
-    # Update oder Neu
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({
-                'Status': status,
-                'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
-            })
+            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -105,21 +112,14 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             break
             
     if not found:
-        rows.append({
-            'Name': name, 'Status': status, 
-            'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 
-            'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 
-            'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
-        })
+        rows.append({'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
     
-    # Schreiben
     with open(CSV_FILE, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
 
 def get_csv_status(name):
-    """Prüft den Status in der CSV Datei."""
     if not os.path.exists(CSV_FILE): return "NEW"
     with open(CSV_FILE, 'r') as f:
         for row in csv.DictReader(f):
@@ -127,10 +127,9 @@ def get_csv_status(name):
     return "NEW"
 
 # =============================================================================
-# 3. PUPPET MASTER (KONVERGENZ LOGIK)
+# 3. PUPPET MASTER (KONVERGENZ)
 # =============================================================================
 def update_input_params(input_file, iteration_count):
-    """Passt Parameter dynamisch an, um Konvergenz zu erzwingen."""
     target_beta = 0.7
     # Aggressive Strategie (wie auf Laptop)
     if iteration_count >= 90: target_beta = 0.15
@@ -140,19 +139,15 @@ def update_input_params(input_file, iteration_count):
 
     with open(input_file, 'r') as f: content = f.read()
     
-    # 1. Beta anpassen
+    # Beta anpassen
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
     
-    # 2. Stabilitätsparameter erzwingen (falls noch nicht drin)
-    # Das ist der Schlüssel, warum es lokal lief und hier nicht!
+    # Stabilitätsparameter erzwingen
     if "mixing_ndim" not in content:
-        if "&ELECTRONS" in content:
-            content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 12,")
-    
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 12,")
     if "electron_maxstep" not in content:
-        if "&ELECTRONS" in content:
-            content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 300,")
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 300,")
             
     with open(input_file, 'w') as f: f.write(content)
     return True
@@ -161,7 +156,6 @@ def get_last_iteration(output_file):
     if not os.path.exists(output_file): return 0
     try:
         file_size = os.path.getsize(output_file)
-        # Nur die letzten Bytes lesen für Speed
         with open(output_file, 'rb') as f:
             f.seek(max(0, file_size - 10000), 0) 
             chunk = f.read().decode('utf-8', errors='ignore')
@@ -170,7 +164,7 @@ def get_last_iteration(output_file):
     except: return 0
 
 def run_monitored_pw(input_file, output_file, cwd):
-    # Setup Input
+    # Input sicherstellen
     with open(input_file, 'r') as f: content = f.read()
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" not in content:
@@ -179,46 +173,36 @@ def run_monitored_pw(input_file, output_file, cwd):
 
     while True:
         with open(input_file, 'r') as f: content = f.read()
-        
-        # Modus bestimmen (Restart oder Scratch)
         mode = 'restart' if os.path.exists(output_file) else 'from_scratch'
-        
-        # Regex Update für restart_mode
         if "restart_mode" in content:
             content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
         else:
             content = content.replace("&CONTROL", f"&CONTROL\n restart_mode='{mode}',")
-            
+        
         run_input = input_file + ".run"
         with open(run_input, 'w') as f: f.write(content)
 
         file_mode = 'a' if mode == 'restart' else 'w'
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-            # Starte MPI Prozess
+            # stderr=subprocess.STDOUT ist WICHTIG für Fehlermeldungen!
             cmd = ["mpirun", "--oversubscribe", "-np", "4", PW_EXE]
-            process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, cwd=cwd)
+            process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
             killed = False
             try:
                 while process.poll() is None:
                     time.sleep(10)
                     cur_iter = get_last_iteration(output_file)
-                    # Puppet Master Eingriff?
                     if update_input_params(input_file, cur_iter):
-                        process.terminate()
-                        killed = True
-                        break
+                        process.terminate(); killed = True; break
             except: 
                 process.kill(); return False
             
-        if killed: continue # Neustart mit neuen Parametern
+        if killed: continue 
         
-        # Prüfung nach Ende
         with open(output_file, 'r') as f:
-            content = f.read()
-            if "JOB DONE" in content: return True
-            # Wenn kein Job Done und Prozess aus, war es ein Crash
+            if "JOB DONE" in f.read(): return True
             return False
 
 # =============================================================================
@@ -226,8 +210,8 @@ def run_monitored_pw(input_file, output_file, cwd):
 # =============================================================================
 def main():
     try:
-        # Logic App aktivieren (Azure VM wachhalten)
-        subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", "Enabled"], capture_output=True)
+        # Wächter versuchen zu aktivieren (stürzt nicht ab, wenn es nicht geht)
+        set_logic_app_state("Enabled")
         
         print(f"\n\n{'='*40}")
         print(f"🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
@@ -243,24 +227,19 @@ def main():
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             
-            # --- AUTO-RETRY LOGIK ---
-            # Wenn der Job vorher gefailt ist, löschen wir ihn für einen sauberen Neustart
+            # AUTO-RETRY LOGIK
             last_status = get_csv_status(name)
             if "Fehler" in last_status or "INTERRUPTED" in last_status:
                 print(f"\n♻️  Auto-Retry für {name} (Status war: {last_status})")
-                print(f"    -> Lösche alten Ordner: {work_dir}")
+                print(f"    -> Lösche alten Ordner für sauberen Neustart.")
                 if os.path.exists(work_dir): shutil.rmtree(work_dir)
                 update_csv(name, "Neustart (Retry)")
                 git_sync(f"Retry Start: {name}")
 
-            # Ordner erstellen
             if not os.path.exists(work_dir): os.makedirs(work_dir)
-            
             print(f"\n💎 Job: {name}")
 
-            # Pfade
-            scf_in = os.path.join(work_dir, "scf.in")
-            scf_out = os.path.join(work_dir, "scf.out")
+            scf_in, scf_out = os.path.join(work_dir, "scf.in"), os.path.join(work_dir, "scf.out")
             dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
             ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
 
@@ -275,20 +254,18 @@ def main():
                 if not success:
                     print(f"   ❌ SCF fehlgeschlagen! Letzte Ausgaben:")
                     print("-" * 40)
-                    print(get_error_details(scf_out)) # HIER WERDEN DIE FEHLER AUSGEGEBEN
+                    print(get_error_details(scf_out)) 
                     print("-" * 40)
-                    
                     update_csv(name, "Fehler (SCF)")
                     send_notification(f"⚠️ {name}: SCF fehlgeschlagen.")
                     git_sync(f"SCF Fehler: {name}")
                     continue 
 
-            # Helper lesen
+            # Helper & Fermi lesen
             with open(scf_in, 'r') as f: 
                 match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
                 prefix = match.group(1) if match else "calc"
             
-            # Fermi Energie lesen
             e_fermi = "-"
             if os.path.exists(scf_out):
                 with open(scf_out, 'r') as f:
@@ -302,13 +279,12 @@ def main():
                 with open(dos_in, "w") as f: 
                     f.write(f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n")
                 with open(dos_in, "r") as f_in, open(dos_out, "w") as f_out:
-                    subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, cwd=work_dir)
+                    subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
 
             # --- 3. METALL CHECK ---
             is_metal = False
             dos_val = 0.0
             if os.path.exists(dos_out) and e_fermi != "-":
-                # Finde DOS Wert am Fermi Level
                 closest_diff = 99.9
                 with open(dos_out, 'r') as f:
                     for line in f:
@@ -333,15 +309,14 @@ def main():
             # --- 4. PHONONEN ---
             print(f"   ⚡ {name} ist ein Metall (DOS={dos_val:.3f}). Berechne Phononen...")
             update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
-            
             if not os.path.exists(ph_out):
                 print("   3️⃣  Phononen Berechnung...")
                 with open(ph_in, "w") as f: 
                     f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                 with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
-                    subprocess.run(["mpirun", "--oversubscribe", "-np", "4", PH_EXE], stdin=f_in, stdout=f_out, cwd=work_dir)
+                    subprocess.run(["mpirun", "--oversubscribe", "-np", "4", PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
 
-            # --- 5. FINALE AUSWERTUNG ---
+            # --- 5. ENDE ---
             min_f, stab = "-", "Unbekannt"
             if os.path.exists(ph_out):
                  with open(ph_out, 'r') as f:
@@ -356,11 +331,9 @@ def main():
             send_notification(f"✅ {name} fertig: Metall ({stab}).")
             git_sync(f"Fertig: {name} (Metall)")
 
-        # Alles durch
         send_notification("🎉 Alle Jobs erledigt.")
+        set_logic_app_state("Disabled")
         
-        # Logic App deaktivieren & Shutdown
-        subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", "Disabled"], capture_output=True)
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")
         if os.name != 'nt': os.system("sudo shutdown -h now")
 

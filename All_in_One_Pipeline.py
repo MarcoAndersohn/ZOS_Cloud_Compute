@@ -30,9 +30,10 @@ INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")
 SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt") 
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
-LOG_FILE = os.path.join(WORK_DIR, "pipeline_smart.log")
-# NEU: Der Pfad zur Output Datei, damit wir sie leeren können
+
+# Dateien, die beim Neustart geleert werden sollen
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
+SMART_LOG_FILE = os.path.join(WORK_DIR, "pipeline_smart.log")
 
 PW_EXE = shutil.which("pw.x") or "/usr/bin/pw.x"
 PH_EXE = shutil.which("ph.x") or "/usr/bin/ph.x"
@@ -54,7 +55,7 @@ def set_logic_app_state(state="Enabled"):
         subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True)
     except: pass
 
-def get_error_details(filepath, lines=40):
+def get_error_details(filepath, lines=60):
     if not os.path.exists(filepath): return "   (Keine Log-Datei gefunden)"
     try:
         with open(filepath, 'r', errors='ignore') as f:
@@ -65,9 +66,11 @@ def get_error_details(filepath, lines=40):
 
 def git_sync(message):
     try:
+        # Robuster Sync: Staged alles, was da ist (auch leere Logs)
         subprocess.run(["git", "add", "."], cwd=WORK_DIR)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True)
-        subprocess.run(["git", "pull", "origin", "main", "--rebase"], cwd=WORK_DIR)
+        # --autostash schützt vor Konflikten bei Änderungen während des Pulls
+        subprocess.run(["git", "pull", "origin", "main", "--rebase", "--autostash"], cwd=WORK_DIR)
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR)
     except: pass
 
@@ -110,14 +113,12 @@ def get_csv_status(name):
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
     
-    # 1. Pfade korrigieren
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" in content:
         content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    # 2. Konvergenz erzwingen
     target_beta = 0.7
     if iteration_count >= 90: target_beta = 0.15
     elif iteration_count >= 60: target_beta = 0.25
@@ -147,9 +148,16 @@ def get_last_iteration(output_file):
 
 def run_monitored_pw(input_file, output_file, cwd):
     fix_input_file(input_file, 0)
+    
     while True:
         with open(input_file, 'r') as f: content = f.read()
-        mode = 'restart' if os.path.exists(output_file) else 'from_scratch'
+        
+        # INTELLIGENT RESTART: Nur wenn Daten da sind!
+        tmp_dir = os.path.join(cwd, "tmp")
+        can_restart = os.path.exists(output_file) and os.path.exists(tmp_dir) and os.listdir(tmp_dir)
+        
+        mode = 'restart' if can_restart else 'from_scratch'
+        
         if "restart_mode" in content:
             content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
         else:
@@ -184,14 +192,12 @@ def run_monitored_pw(input_file, output_file, cwd):
 # =============================================================================
 def main():
     try:
-        # --- HIER WIRD DIE DATEI GELEERT ---
-        if os.path.exists(TXT_LOG_FILE):
-            try:
-                # Wir öffnen die Datei im Schreibmodus ('w'), was den Inhalt löscht,
-                # aber die Datei selbst existieren lässt. Das ist sicher für 'screen'.
-                with open(TXT_LOG_FILE, 'w') as f:
-                    f.truncate(0)
-            except: pass
+        # --- CLEANUP: BEIDE LOGS LEEREN ---
+        for log in [TXT_LOG_FILE, SMART_LOG_FILE]:
+            if os.path.exists(log):
+                try:
+                    with open(log, 'w') as f: f.truncate(0)
+                except: pass
             
         set_logic_app_state("Enabled")
         print(f"\n\n{'='*40}\n🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
@@ -207,8 +213,14 @@ def main():
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             
             last_status = get_csv_status(name)
-            if "Fehler" in last_status or "INTERRUPTED" in last_status:
-                print(f"\n♻️  Auto-Retry für {name} (Status war: {last_status}) -> Lösche alten Ordner.")
+            
+            # ZOMBIE KILLER: Bereinigt alte Fehler und abgebrochene Starts
+            is_zombie = "Rechnet" in last_status
+            is_failed = "Fehler" in last_status or "INTERRUPTED" in last_status
+            
+            if is_failed or is_zombie:
+                reason = "Fehler" if is_failed else "Absturz (Zombie)"
+                print(f"\n♻️  Auto-Retry für {name} ({reason}) -> Lösche alten Ordner.")
                 if os.path.exists(work_dir): shutil.rmtree(work_dir)
                 update_csv(name, "Neustart (Retry)")
                 git_sync(f"Retry Start: {name}")

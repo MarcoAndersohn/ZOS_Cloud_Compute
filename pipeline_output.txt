@@ -1,1 +1,61 @@
-python3: can't open file '/home/marco/ZOS_Cloud_Compute/Smart_Pipeline.py': [Errno 2] No such file or directory
+At line 65 of file update_pot.f90 (unit = 27, file = './tmp/Ti3GaH7.update')
+Fortran runtime error: End of file
+
+Error termination. Backtrace:
+#0  0x7b6978823960 in ???
+#1  0x7b69788244d9 in ???
+#2  0x7b697882510f in ???
+#3  0x7b6978a7817b in ???
+#4  0x7b6978a71684 in ???
+#5  0x7b6978a722aa in ???
+#6  0x5c2c1828aa4d in ???
+#7  0x5c2c1824a1f5 in ???
+#8  0x5c2c181583e5 in ???
+#9  0x5c2c181580ce in ???
+#10  0x7b6978429d8f in ???
+#11  0x7b6978429e3f in ???
+#12  0x5c2c181580fd in ???
+#13  0xffffffffffffffff in ???
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[30693,1],0]
+  Exit code:    2
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:00999] [[30673,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 501
+[Supraleiter-HPC-Knoten:00999] [[30673,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+[Supraleiter-HPC-Knoten:00999] [[30673,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 3 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01104] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01104] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+[Supraleiter-HPC-Knoten:01124] [[28754,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 3 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01124] 2 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01124] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages

@@ -27,3 +27,221 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 
 💎 Job: 01_HfH3_Top1
    🛑 01_HfH3_Top1 ist ein Isolator (DOS=-0.000). Phononen übersprungen.
+[main 36cc7e8] Fertig: 01_HfH3_Top1 (Isolator)
+ Committer: Ubuntu <marco@Supraleiter-HPC-Knoten.chcdinplnujubffyatcao2e4tc.gvxx.internal.cloudapp.net>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+error: cannot pull with rebase: You have unstaged changes.
+error: please commit or stash them.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   67873f8..36cc7e8  main -> main
+
+💎 Job: 01_K7SrMg4AlB15H64
+   1️⃣  Starte SCF...
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:00993] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:00993] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 2 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01014] [[30656,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 501
+[Supraleiter-HPC-Knoten:01014] 2 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01014] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 3 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01034] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01034] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+[warn] Epoll MOD(1) on fd 27 failed. Old events were 6; read change was 0 (none); write change was 2 (del); close change was 0 (none): Bad file descriptor
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 2 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01054] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01054] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01074] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01074] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01097] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01097] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 2 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01134] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01134] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01157] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01157] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+[Supraleiter-HPC-Knoten:01179] [[28845,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 507
+[Supraleiter-HPC-Knoten:01179] [[28845,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 501
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 3 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01179] 1 more process has sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01179] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 3 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01201] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01201] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 3 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01221] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01221] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01241] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01241] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 3 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01265] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01265] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01285] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01285] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+[Supraleiter-HPC-Knoten:01307] [[28973,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01307] 2 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01307] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 3 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01327] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01327] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 2 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01347] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01347] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+[warn] Epoll MOD(1) on fd 24 failed. Old events were 6; read change was 0 (none); write change was 2 (del); close change was 0 (none): Bad file descriptor
+[warn] Epoll MOD(1) on fd 25 failed. Old events were 6; read change was 0 (none); write change was 2 (del); close change was 0 (none): Bad file descriptor
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 2 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01368] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01368] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01476] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01476] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages

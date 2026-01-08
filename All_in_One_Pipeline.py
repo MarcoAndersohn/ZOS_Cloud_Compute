@@ -59,10 +59,14 @@ def send_notification(message):
 
 def git_sync(message):
     try:
-        subprocess.run(["git", "add", "."], cwd=WORK_DIR)
+        # Fügt die CSV und die Log-Datei hinzu
+        subprocess.run(["git", "add", "Final_Electronic_Check.csv"], cwd=WORK_DIR)
+        subprocess.run(["git", "add", "pipeline_output.txt"], cwd=WORK_DIR) 
+        
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR)
         subprocess.run(["git", "push"], cwd=WORK_DIR)
-    except: pass
+    except Exception as e:
+        print(f"Git-Sync Fehler: {e}")
 
 def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-"):
     """Aktualisiert die CSV-Datei mit ALLEN Feldern."""

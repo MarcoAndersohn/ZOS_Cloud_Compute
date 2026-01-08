@@ -66,13 +66,13 @@ def get_error_details(filepath, lines=60):
 
 def git_sync(message):
     try:
-        # Robuster Sync: Staged alles, was da ist (auch leere Logs)
-        subprocess.run(["git", "add", "."], cwd=WORK_DIR)
-        subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True)
-        # --autostash schützt vor Konflikten bei Änderungen während des Pulls
-        subprocess.run(["git", "pull", "origin", "main", "--rebase", "--autostash"], cwd=WORK_DIR)
-        subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR)
-    except: pass
+        # Nutze --quiet und ein Timeout, damit das Skript nicht ewig wartet
+        subprocess.run(["git", "add", "."], cwd=WORK_DIR, timeout=30)
+        subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, timeout=30)
+        subprocess.run(["git", "pull", "origin", "main", "--rebase", "--autostash", "-X", "ours"], cwd=WORK_DIR, timeout=60)
+        subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, timeout=60)
+    except Exception as e:
+        print(f"Git-Sync Timeout oder Fehler: {e}")
 
 def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-"):
     fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Timestamp']

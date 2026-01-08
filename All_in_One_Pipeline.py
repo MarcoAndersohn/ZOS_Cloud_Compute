@@ -16,7 +16,7 @@ from datetime import datetime
 TELEGRAM_TOKEN = "8589716957:AAHAAU26UrnwOWgL4OytPpmj0dSPnyWNwu0"
 TELEGRAM_CHAT_ID = "711461437"
 
-# KORRIGIERT: Name laut deinem Screenshot
+# KORREKTER NAME der Logic App
 LOGIC_APP_NAME = "AutoRestart-Supraleiter" 
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 
@@ -29,6 +29,7 @@ PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")
 LOG_FILE = os.path.join(WORK_DIR, "pipeline_smart.log")
 SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt") 
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
+TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 
 # Engine Suche
 def find_qe_exec(tool_names):
@@ -48,7 +49,7 @@ if not PW_EXE or not PH_EXE or not DOS_EXE:
     sys.exit()
 
 # =============================================================================
-# 2. HELFER & NOTIFICATION & CSV
+# 2. HELFER & NOTIFICATION & GIT
 # =============================================================================
 def send_notification(message):
     try:
@@ -58,23 +59,27 @@ def send_notification(message):
     except: pass
 
 def git_sync(message):
+    """Synchronisiert CSV und Log-Dateien robust mit GitHub."""
     try:
-        # Fügt die CSV und die Log-Datei hinzu
-        subprocess.run(["git", "add", "Final_Electronic_Check.csv"], cwd=WORK_DIR)
-        subprocess.run(["git", "add", "pipeline_output.txt"], cwd=WORK_DIR) 
+        # 1. Alles hinzufügen (CSV, TXT Log, etc.)
+        subprocess.run(["git", "add", "."], cwd=WORK_DIR)
         
+        # 2. Commit erstellen (lokal)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR)
-        subprocess.run(["git", "push"], cwd=WORK_DIR)
+        
+        # 3. Pull mit Rebase (verhindert 'rejected' Fehler)
+        subprocess.run(["git", "pull", "origin", "main", "--rebase"], cwd=WORK_DIR)
+        
+        # 4. Hochladen
+        subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR)
     except Exception as e:
         print(f"Git-Sync Fehler: {e}")
 
 def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-"):
-    """Aktualisiert die CSV-Datei mit ALLEN Feldern."""
     file_exists = os.path.isfile(CSV_FILE)
     rows = []
     updated = False
     
-    # Hier müssen ALLE Spalten stehen, die jemals vorkommen könnten
     fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Timestamp']
 
     if file_exists:
@@ -136,11 +141,13 @@ def emergency_shutdown(error_msg):
     full_error = f"{error_msg}\n{traceback.format_exc()}"
     with open(LOG_FILE, "w") as f: f.write(full_error)
     send_notification(f"🚨 STOPP: {error_msg}")
+    # Versuche noch schnell das Log hochzuladen
+    git_sync("Emergency Shutdown Log")
     smart_shutdown(reason="Emergency Error")
     sys.exit()
 
 # =============================================================================
-# 3. PHYSIK-CHECKER
+# 3. PHYSIK-CHECKER & ENGINE
 # =============================================================================
 def get_fermi_energy(scf_out_path):
     if not os.path.exists(scf_out_path): return None
@@ -152,12 +159,9 @@ def get_fermi_energy(scf_out_path):
     return None
 
 def check_metallicity(dos_out_path, e_fermi):
-    """Prüft, ob DOS am Fermi-Level hoch genug ist."""
     if not os.path.exists(dos_out_path) or e_fermi is None: return False, 0.0
-    
     dos_at_fermi = 0.0
     closest_diff = 99.9
-    
     try:
         with open(dos_out_path, 'r') as f:
             for line in f:
@@ -167,20 +171,14 @@ def check_metallicity(dos_out_path, e_fermi):
                     try:
                         e = float(parts[0])
                         d = float(parts[1])
-                        # Finde den Wert am nächsten an E_Fermi
                         diff = abs(e - e_fermi)
                         if diff < closest_diff:
                             closest_diff = diff
                             dos_at_fermi = d
                     except: continue
-        
-        is_metal = dos_at_fermi > DOS_THRESHOLD
-        return is_metal, dos_at_fermi
+        return (dos_at_fermi > DOS_THRESHOLD), dos_at_fermi
     except: return False, 0.0
 
-# =============================================================================
-# 4. PUPPET MASTER (Optimierung)
-# =============================================================================
 def get_prefix_from_content(content):
     match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
     return match.group(1) if match else "calc"
@@ -231,7 +229,6 @@ def run_monitored_pw(input_file, output_file, cwd):
         file_mode = 'a' if mode == 'restart' else 'w'
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-            # 4 Kerne nutzen!
             cmd = ["mpirun", "--oversubscribe", "-np", "4", PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, cwd=cwd)
             
@@ -253,7 +250,7 @@ def run_monitored_pw(input_file, output_file, cwd):
         return False
 
 # =============================================================================
-# 5. HAUPTPROGRAMM
+# 4. HAUPTPROGRAMM
 # =============================================================================
 def main():
     try:
@@ -261,7 +258,7 @@ def main():
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
-        input_files = glob.glob(os.path.join(INPUTS_DIR, "*.in"))
+        input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
         
         if not input_files:
             smart_shutdown("Leerlauf - Keine Inputs")
@@ -294,7 +291,10 @@ def main():
                     print("   ❌ SCF fehlgeschlagen.")
                     update_csv(name, "Fehler (SCF)")
                     send_notification(f"⚠️ {name}: SCF fehlgeschlagen.")
-                    continue
+                    
+                    # JETZT WIRD AUCH BEI FEHLER SYNCHRONISIERT
+                    git_sync(f"SCF Fehler: {name}")
+                    continue 
             
             with open(scf_in, 'r') as f: scf_content = f.read()
             prefix = get_prefix_from_content(scf_content)
@@ -304,13 +304,7 @@ def main():
             update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
             if not os.path.exists(dos_out):
                 print("   2️⃣  DOS Berechnung...")
-                dos_content = f"""&DOS
-  prefix='{prefix}',
-  outdir='./tmp',
-  fildos='{name}.dos',
-  Emin=-20.0, Emax=30.0, DeltaE=0.1
-/
-"""
+                dos_content = f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n"
                 with open(dos_in, "w") as f: f.write(dos_content)
                 with open(dos_in, "r") as f_in, open(dos_out, "w") as f_out:
                     subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, cwd=work_dir)
@@ -321,10 +315,9 @@ def main():
             if not is_metal:
                 print(f"   🛑 {name} ist ein Isolator (DOS={dos_val:.3f}). Phononen übersprungen.")
                 update_csv(name, "Fertig (Isolator)", e_fermi, round(dos_val, 4), "NEIN")
-                # KORRIGIERT: Telegram Nachricht pro Isolator
                 send_notification(f"🛑 {name} fertig: Isolator (Skip Phonons).")
                 git_sync(f"Fertig: {name} (Isolator)")
-                continue # Nächster Kandidat in der Schleife
+                continue
 
             # --- 4. PHONONEN (Nur wenn Metall) ---
             print(f"   ⚡ {name} ist ein Metall (DOS={dos_val:.3f}). Berechne Phononen...")
@@ -335,22 +328,12 @@ def main():
             
             if not os.path.exists(ph_out):
                 print("   3️⃣  Phononen Berechnung...")
-                ph_content = f"""Phonons for {name}
-&INPUTPH
-  tr2_ph=1.0d-14,
-  prefix='{prefix}',
-  outdir='./tmp',
-  fildyn='{name}.dyn',
-  ldisp=.true.,
-  nq1=2, nq2=2, nq3=2
-/
-"""
+                ph_content = f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n"
                 with open(ph_in, "w") as f: f.write(ph_content)
                 with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
-                    cmd_ph = ["mpirun", "--oversubscribe", "-np", "4", PH_EXE] # 4 Kerne!
+                    cmd_ph = ["mpirun", "--oversubscribe", "-np", "4", PH_EXE]
                     subprocess.run(cmd_ph, stdin=f_in, stdout=f_out, cwd=work_dir)
 
-            # Frequenzen checken, falls PH fertig ist
             if os.path.exists(ph_out):
                  with open(ph_out, 'r') as f:
                      content = f.read()
@@ -362,8 +345,7 @@ def main():
                              stab = "STABIL" if min_f > -0.05 else "INSTABIL"
 
             update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
-            # KORRIGIERT: Telegram Nachricht pro Metall
-            send_notification(f"✅ {name} fertig: Metall & Phononen berechnet.")
+            send_notification(f"✅ {name} fertig: Metall ({stab}).")
             git_sync(f"Fertig: {name} (Metall)")
 
         send_notification("🎉 Alle Jobs der Liste abgearbeitet.")

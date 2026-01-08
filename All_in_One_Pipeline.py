@@ -25,6 +25,9 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
+# ANGEPASST: Anzahl der Kerne auf 2 gesetzt (entspricht deiner VM)
+NUM_CORES = "2"
+
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")
@@ -66,23 +69,17 @@ def get_error_details(filepath, lines=60):
 def git_sync(message):
     """
     Synchronisiert mit GitHub.
-    Strategie: Timeout (60s) + Konflikte automatisch lösen (Ours).
+    Strategie: Timeout + Konflikte automatisch lösen (Ours).
     """
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
     
     try:
-        # Commit
         subprocess.run(["git", "add", "."], cwd=WORK_DIR, env=env, timeout=30)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, env=env, timeout=30)
-        
-        # Pull (Fetch + Merge statt Rebase, ist oft robuster bei Log-Files)
-        # Wir akzeptieren, dass bei Konflikten unsere lokale Version (ours) gewinnt.
+        # Pull mit 'ours' Strategie -> HPC gewinnt immer bei Konflikten
         subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60)
-        
-        # Push
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=60)
-        
     except subprocess.TimeoutExpired:
         print("⚠️ Git-Sync Timeout. Mache weiter...")
     except Exception as e:
@@ -179,7 +176,8 @@ def run_monitored_pw(input_file, output_file, cwd):
         file_mode = 'a' if mode == 'restart' else 'w'
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-            cmd = ["mpirun", "--oversubscribe", "-np", "4", PW_EXE]
+            # Hier nutzen wir jetzt NUM_CORES (2)
+            cmd = ["mpirun", "--oversubscribe", "-np", NUM_CORES, PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
             killed = False
@@ -202,7 +200,7 @@ def run_monitored_pw(input_file, output_file, cwd):
 # =============================================================================
 def main():
     try:
-        # CLEANUP (Vereinfacht & Syntax Fix)
+        # CLEANUP
         if os.path.exists(TXT_LOG_FILE):
             open(TXT_LOG_FILE, 'w').close()
         if os.path.exists(SMART_LOG_FILE):
@@ -233,7 +231,12 @@ def main():
                 git_sync(f"Retry Start: {name}")
 
             if not os.path.exists(work_dir): os.makedirs(work_dir)
+            
+            # --- NEU: SOFORTIGES SYNC BEIM START ---
             print(f"\n💎 Job: {name}")
+            # Wir updaten die CSV kurz damit der Status "Startet..." sichtbar wird (optional)
+            # und pushen dann sofort, damit du weißt: "Aha, er ist beim nächsten Job!"
+            git_sync(f"Start Job: {name}") 
 
             scf_in, scf_out = os.path.join(work_dir, "scf.in"), os.path.join(work_dir, "scf.out")
             dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
@@ -245,6 +248,9 @@ def main():
             update_csv(name, "Rechnet SCF...")
             if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out).read()):
                 print("   1️⃣  Starte SCF...")
+                # Auch hier ein kurzer Sync, falls du sehen willst, dass SCF losgeht
+                git_sync(f"Start SCF: {name}")
+                
                 success = run_monitored_pw(scf_in, scf_out, work_dir)
                 
                 if not success:
@@ -305,11 +311,14 @@ def main():
             update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
             if not os.path.exists(ph_out):
                 print("   3️⃣  Phononen Berechnung...")
+                git_sync(f"Start Phononen: {name}") # Auch hier ein Sync
+                
                 corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
                 with open(ph_in, "w") as f: 
                     f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                 with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
-                    subprocess.run(["mpirun", "--oversubscribe", "-np", "4", PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                    # Hier nutzen wir jetzt auch NUM_CORES (2)
+                    subprocess.run(["mpirun", "--oversubscribe", "-np", NUM_CORES, PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
 
             # --- 5. ENDE ---
             min_f, stab = "-", "Unbekannt"

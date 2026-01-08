@@ -31,6 +31,8 @@ PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")
 SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt") 
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 LOG_FILE = os.path.join(WORK_DIR, "pipeline_smart.log")
+# NEU: Der Pfad zur Output Datei, damit wir sie leeren können
+TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 
 PW_EXE = shutil.which("pw.x") or "/usr/bin/pw.x"
 PH_EXE = shutil.which("ph.x") or "/usr/bin/ph.x"
@@ -63,14 +65,9 @@ def get_error_details(filepath, lines=40):
 
 def git_sync(message):
     try:
-        # 1. Erst alles stagen und committen
         subprocess.run(["git", "add", "."], cwd=WORK_DIR)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True)
-        
-        # 2. Dann pullen (Konflikte vermeiden)
         subprocess.run(["git", "pull", "origin", "main", "--rebase"], cwd=WORK_DIR)
-        
-        # 3. Dann pushen
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR)
     except: pass
 
@@ -111,18 +108,16 @@ def get_csv_status(name):
 # 3. PUPPET MASTER (CORE LOGIC)
 # =============================================================================
 def fix_input_file(input_file, iteration_count=0):
-    """Repariert Pfade und setzt Konvergenz-Parameter."""
     with open(input_file, 'r') as f: content = f.read()
     
-    # 1. PSEUDO DIR ERZWINGEN (Der wichtige Fix!)
-    # Wir nutzen Regex, um jeden bestehenden pseudo_dir Eintrag zu finden und zu ersetzen
+    # 1. Pfade korrigieren
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" in content:
         content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    # 2. KONVERGENZ PARAMETER
+    # 2. Konvergenz erzwingen
     target_beta = 0.7
     if iteration_count >= 90: target_beta = 0.15
     elif iteration_count >= 60: target_beta = 0.25
@@ -151,9 +146,7 @@ def get_last_iteration(output_file):
     except: return 0
 
 def run_monitored_pw(input_file, output_file, cwd):
-    # Sofortiger Pfad-Fix vor dem Start!
     fix_input_file(input_file, 0)
-
     while True:
         with open(input_file, 'r') as f: content = f.read()
         mode = 'restart' if os.path.exists(output_file) else 'from_scratch'
@@ -176,17 +169,12 @@ def run_monitored_pw(input_file, output_file, cwd):
                 while process.poll() is None:
                     time.sleep(10)
                     cur_iter = get_last_iteration(output_file)
-                    # Dynamisches Update während der Laufzeit
-                    if cur_iter > 30: # Erst ab Iteration 30 eingreifen
+                    if cur_iter > 30:
                          fix_input_file(input_file, cur_iter)
             except: 
                 process.kill(); return False
             
-        if process.returncode != 0:
-             # Wenn Prozess crasht (z.B. MPI Error), prüfen wir ob es an Parametern lag
-             # Wir geben False zurück, damit der Error im Main-Loop geloggt wird
-             return False
-
+        if process.returncode != 0: return False
         with open(output_file, 'r') as f:
             if "JOB DONE" in f.read(): return True
             return False
@@ -196,6 +184,15 @@ def run_monitored_pw(input_file, output_file, cwd):
 # =============================================================================
 def main():
     try:
+        # --- HIER WIRD DIE DATEI GELEERT ---
+        if os.path.exists(TXT_LOG_FILE):
+            try:
+                # Wir öffnen die Datei im Schreibmodus ('w'), was den Inhalt löscht,
+                # aber die Datei selbst existieren lässt. Das ist sicher für 'screen'.
+                with open(TXT_LOG_FILE, 'w') as f:
+                    f.truncate(0)
+            except: pass
+            
         set_logic_app_state("Enabled")
         print(f"\n\n{'='*40}\n🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
@@ -209,7 +206,6 @@ def main():
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             
-            # AUTO-RETRY
             last_status = get_csv_status(name)
             if "Fehler" in last_status or "INTERRUPTED" in last_status:
                 print(f"\n♻️  Auto-Retry für {name} (Status war: {last_status}) -> Lösche alten Ordner.")
@@ -240,7 +236,6 @@ def main():
                     git_sync(f"SCF Fehler: {name}")
                     continue 
 
-            # Helper lesen
             with open(scf_in, 'r') as f: 
                 match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
                 prefix = match.group(1) if match else "calc"
@@ -255,7 +250,6 @@ def main():
             update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
             if not os.path.exists(dos_out):
                 print("   2️⃣  DOS Berechnung...")
-                # Fix Pseudo Path auch für DOS Input
                 corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
                 with open(dos_in, "w") as f: 
                     f.write(f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n")

@@ -19,8 +19,6 @@ sys.stderr.reconfigure(line_buffering=True)
 # =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
-# KEIN TOKEN IM CODE! Wird über Terminal-Config (git remote set-url) gesteuert.
-
 TELEGRAM_TOKEN = "8589716957:AAHAAU26UrnwOWgL4OytPpmj0dSPnyWNwu0"
 TELEGRAM_CHAT_ID = "711461437"
 LOGIC_APP_NAME = "AutoRestart-Supraleiter" 
@@ -68,18 +66,25 @@ def get_error_details(filepath, lines=60):
 def git_sync(message):
     """
     Synchronisiert mit GitHub.
-    Verlässt sich auf die im Terminal hinterlegten Credentials.
+    Strategie: Timeout (60s) + Konflikte automatisch lösen (Ours).
     """
     env = os.environ.copy()
-    env["GIT_TERMINAL_PROMPT"] = "0" 
+    env["GIT_TERMINAL_PROMPT"] = "0"
     
     try:
-        subprocess.run(["git", "add", "."], cwd=WORK_DIR, env=env, timeout=60)
-        subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, env=env, timeout=60)
-        subprocess.run(["git", "pull", "origin", "main", "--rebase", "--autostash", "-X", "ours"], cwd=WORK_DIR, env=env, timeout=120)
-        subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=120)
+        # Commit
+        subprocess.run(["git", "add", "."], cwd=WORK_DIR, env=env, timeout=30)
+        subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, env=env, timeout=30)
+        
+        # Pull (Fetch + Merge statt Rebase, ist oft robuster bei Log-Files)
+        # Wir akzeptieren, dass bei Konflikten unsere lokale Version (ours) gewinnt.
+        subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60)
+        
+        # Push
+        subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=60)
+        
     except subprocess.TimeoutExpired:
-        print("⚠️ Git-Sync Timeout. Rechnungen laufen weiter!")
+        print("⚠️ Git-Sync Timeout. Mache weiter...")
     except Exception as e:
         print(f"⚠️ Git Fehler: {e}")
 
@@ -197,11 +202,11 @@ def run_monitored_pw(input_file, output_file, cwd):
 # =============================================================================
 def main():
     try:
-        # CLEANUP
-        for log in [TXT_LOG_FILE, SMART_LOG_FILE]:
-            if os.path.exists(log):
-                try: with open(log, 'w') as f: f.truncate(0)
-                except: pass
+        # CLEANUP (Vereinfacht & Syntax Fix)
+        if os.path.exists(TXT_LOG_FILE):
+            open(TXT_LOG_FILE, 'w').close()
+        if os.path.exists(SMART_LOG_FILE):
+            open(SMART_LOG_FILE, 'w').close()
             
         set_logic_app_state("Enabled")
         print(f"\n\n{'='*40}\n🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")

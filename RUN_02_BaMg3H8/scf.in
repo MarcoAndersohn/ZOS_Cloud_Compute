@@ -18,6 +18,8 @@
   degauss = 0.02
 /
 &ELECTRONS
+ electron_maxstep = 300,
+ mixing_ndim = 12,
   conv_thr = 1.0d-6
 /
 &IONS

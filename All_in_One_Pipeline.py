@@ -25,7 +25,7 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-# ANGEPASST: Anzahl der Kerne auf 2 gesetzt (entspricht deiner VM)
+# KORRIGIERT: Deine VM hat 2 vCPUs
 NUM_CORES = "2"
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -52,6 +52,10 @@ def send_notification(message):
     except: pass
 
 def set_logic_app_state(state="Enabled"):
+    """
+    Schaltet die Logic App an oder aus.
+    Wichtig: 'Disabled' verhindert den automatischen Neustart der VM.
+    """
     if not shutil.which("az"): return
     try:
         subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True, timeout=30)
@@ -67,10 +71,6 @@ def get_error_details(filepath, lines=60):
     except: return "   (Fehler beim Lesen des Logs)"
 
 def git_sync(message):
-    """
-    Synchronisiert mit GitHub.
-    Strategie: Timeout + Konflikte automatisch lösen (Ours).
-    """
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
     
@@ -176,17 +176,16 @@ def run_monitored_pw(input_file, output_file, cwd):
         file_mode = 'a' if mode == 'restart' else 'w'
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-            # Hier nutzen wir jetzt NUM_CORES (2)
+            # NUM_CORES wird hier verwendet
             cmd = ["mpirun", "--oversubscribe", "-np", NUM_CORES, PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
-            killed = False
             try:
                 while process.poll() is None:
                     time.sleep(10)
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter > 30:
-                         fix_input_file(input_file, cur_iter)
+                          fix_input_file(input_file, cur_iter)
             except: 
                 process.kill(); return False
             
@@ -196,11 +195,11 @@ def run_monitored_pw(input_file, output_file, cwd):
             return False
 
 # =============================================================================
-# 4. HAUPTPROGRAMM
+# 4. HAUPTPROGRAMM (Mit Not-Aus & Zombie-Schutz)
 # =============================================================================
 def main():
     try:
-        # CLEANUP
+        # CLEANUP & SETUP
         if os.path.exists(TXT_LOG_FILE):
             open(TXT_LOG_FILE, 'w').close()
         if os.path.exists(SMART_LOG_FILE):
@@ -212,6 +211,29 @@ def main():
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         
+        # --- 1. LEICHENSCHAU: Jobs finden, die das letzte Skript getötet haben ---
+        # Wenn Status noch "Rechnet..." ist, ist das Skript beim letzten Mal HIER gestorben.
+        # Wir markieren diese Jobs als CRASHED, damit sie nicht erneut das System killen.
+        if os.path.exists(CSV_FILE):
+            rows = []
+            with open(CSV_FILE, 'r') as f: rows = list(csv.DictReader(f))
+            dirty = False
+            for row in rows:
+                if "Rechnet" in row['Status']:
+                    killer_name = row['Name']
+                    print(f"💀 Gefunden: {killer_name} hat den letzten Run abstürzen lassen. Wird markiert.")
+                    row['Status'] = "CRASHED (System Absturz)"
+                    row['Timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    dirty = True
+            
+            if dirty:
+                with open(CSV_FILE, 'w', newline='') as f:
+                    writer = csv.DictWriter(f, fieldnames=['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Timestamp'])
+                    writer.writeheader()
+                    writer.writerows(rows)
+                git_sync("Cleanup: Crashed Jobs geflaggt")
+
+        # --- 2. NORMALE PIPELINE ---
         input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
         send_notification(f"Start: {len(input_files)} Jobs in der Queue.")
 
@@ -220,131 +242,142 @@ def main():
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             
             last_status = get_csv_status(name)
-            is_zombie = "Rechnet" in last_status
-            is_failed = "Fehler" in last_status or "INTERRUPTED" in last_status
             
-            if is_failed or is_zombie:
-                reason = "Fehler" if is_failed else "Absturz (Zombie)"
-                print(f"\n♻️  Auto-Retry für {name} ({reason}) -> Lösche alten Ordner.")
-                if os.path.exists(work_dir): shutil.rmtree(work_dir)
-                update_csv(name, "Neustart (Retry)")
-                git_sync(f"Retry Start: {name}")
-
-            if not os.path.exists(work_dir): os.makedirs(work_dir)
-            
-            # --- NEU: SOFORTIGES SYNC BEIM START ---
-            print(f"\n💎 Job: {name}")
-            # Wir updaten die CSV kurz damit der Status "Startet..." sichtbar wird (optional)
-            # und pushen dann sofort, damit du weißt: "Aha, er ist beim nächsten Job!"
-            git_sync(f"Start Job: {name}") 
-
-            scf_in, scf_out = os.path.join(work_dir, "scf.in"), os.path.join(work_dir, "scf.out")
-            dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
-            ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
-
-            if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
-
-            # --- 1. SCF ---
-            update_csv(name, "Rechnet SCF...")
-            if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out).read()):
-                print("   1️⃣  Starte SCF...")
-                # Auch hier ein kurzer Sync, falls du sehen willst, dass SCF losgeht
-                git_sync(f"Start SCF: {name}")
-                
-                success = run_monitored_pw(scf_in, scf_out, work_dir)
-                
-                if not success:
-                    print(f"   ❌ SCF fehlgeschlagen! Letzte Ausgaben:")
-                    print("-" * 40 + "\n" + get_error_details(scf_out) + "\n" + "-" * 40)
-                    update_csv(name, "Fehler (SCF)")
-                    send_notification(f"⚠️ {name}: SCF fehlgeschlagen (Check Log).")
-                    git_sync(f"SCF Fehler: {name}")
-                    continue 
-
-            with open(scf_in, 'r') as f: 
-                match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
-                prefix = match.group(1) if match else "calc"
-            
-            e_fermi = "-"
-            if os.path.exists(scf_out):
-                with open(scf_out, 'r') as f:
-                    match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
-                    if match: e_fermi = float(match.group(1))
-
-            # --- 2. DOS ---
-            update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
-            if not os.path.exists(dos_out):
-                print("   2️⃣  DOS Berechnung...")
-                corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
-                with open(dos_in, "w") as f: 
-                    f.write(f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n")
-                with open(dos_in, "r") as f_in, open(dos_out, "w") as f_out:
-                    subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
-
-            # --- 3. METALL CHECK ---
-            is_metal = False
-            dos_val = 0.0
-            if os.path.exists(dos_out) and e_fermi != "-":
-                closest_diff = 99.9
-                with open(dos_out, 'r') as f:
-                    for line in f:
-                        if line.strip().startswith("#"): continue
-                        p = line.split()
-                        if len(p) >= 2:
-                            try:
-                                e, d = float(p[0]), float(p[1])
-                                if abs(e - e_fermi) < closest_diff:
-                                    closest_diff = abs(e - e_fermi)
-                                    dos_val = d
-                            except: continue
-                is_metal = dos_val > DOS_THRESHOLD
-
-            if not is_metal:
-                print(f"   🛑 {name} ist ein Isolator (DOS={dos_val:.3f}). Phononen übersprungen.")
-                update_csv(name, "Fertig (Isolator)", e_fermi, round(dos_val, 4), "NEIN")
-                send_notification(f"🛑 {name} fertig: Isolator.")
-                git_sync(f"Fertig: {name} (Isolator)")
+            # Skip Logik: Fertige oder gecrashte Jobs überspringen
+            if "Fertig" in last_status or "CRASHED" in last_status or "SKIPPED" in last_status:
+                print(f"⏩ Überspringe {name} (Status: {last_status})")
                 continue
 
-            # --- 4. PHONONEN ---
-            print(f"   ⚡ {name} ist ein Metall (DOS={dos_val:.3f}). Berechne Phononen...")
-            update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
-            if not os.path.exists(ph_out):
-                print("   3️⃣  Phononen Berechnung...")
-                git_sync(f"Start Phononen: {name}") # Auch hier ein Sync
+            # --- INNERER SCHUTZRING: Fängt Fehler pro Job ab ---
+            try:
+                if not os.path.exists(work_dir): os.makedirs(work_dir)
                 
-                corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
-                with open(ph_in, "w") as f: 
-                    f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
-                with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
-                    # Hier nutzen wir jetzt auch NUM_CORES (2)
-                    subprocess.run(["mpirun", "--oversubscribe", "-np", NUM_CORES, PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                print(f"\n💎 Job: {name}")
+                git_sync(f"Start Job: {name}") 
 
-            # --- 5. ENDE ---
-            min_f, stab = "-", "Unbekannt"
-            if os.path.exists(ph_out):
-                 with open(ph_out, 'r') as f:
-                     content = f.read()
-                     if "JOB DONE" in content:
-                         freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
-                         if freqs:
-                             min_f = min([float(f) for f in freqs])
-                             stab = "STABIL" if min_f > -0.05 else "INSTABIL"
+                scf_in, scf_out = os.path.join(work_dir, "scf.in"), os.path.join(work_dir, "scf.out")
+                dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
+                ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
 
-            update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
-            send_notification(f"✅ {name} fertig: Metall ({stab}).")
-            git_sync(f"Fertig: {name} (Metall)")
+                if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
+                # --- 1. SCF ---
+                update_csv(name, "Rechnet SCF...") # Status setzen BEVOR wir rechnen
+                if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out).read()):
+                    print("   1️⃣  Starte SCF...")
+                    success = run_monitored_pw(scf_in, scf_out, work_dir)
+                    
+                    if not success:
+                        print(f"   ❌ SCF fehlgeschlagen!")
+                        # Fehler in CSV schreiben und zum NÄCHSTEN Job springen
+                        update_csv(name, "Fehler (SCF)")
+                        git_sync(f"SCF Fehler: {name}")
+                        continue 
+
+                with open(scf_in, 'r') as f: 
+                    match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
+                    prefix = match.group(1) if match else "calc"
+                
+                e_fermi = "-"
+                if os.path.exists(scf_out):
+                    with open(scf_out, 'r') as f:
+                        match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
+                        if match: e_fermi = float(match.group(1))
+
+                # --- 2. DOS ---
+                update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
+                if not os.path.exists(dos_out):
+                    print("   2️⃣  DOS Berechnung...")
+                    with open(dos_in, "w") as f: 
+                        f.write(f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n")
+                    with open(dos_in, "r") as f_in, open(dos_out, "w") as f_out:
+                        subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+
+                # --- 3. METALL CHECK ---
+                is_metal = False
+                dos_val = 0.0
+                if os.path.exists(dos_out) and e_fermi != "-":
+                    closest_diff = 99.9
+                    with open(dos_out, 'r') as f:
+                        for line in f:
+                            if line.strip().startswith("#"): continue
+                            p = line.split()
+                            if len(p) >= 2:
+                                try:
+                                    e, d = float(p[0]), float(p[1])
+                                    if abs(e - e_fermi) < closest_diff:
+                                        closest_diff = abs(e - e_fermi)
+                                        dos_val = d
+                                except: continue
+                    is_metal = dos_val > DOS_THRESHOLD
+
+                if not is_metal:
+                    print(f"   🛑 {name} ist ein Isolator (DOS={dos_val:.3f}). Phononen übersprungen.")
+                    update_csv(name, "Fertig (Isolator)", e_fermi, round(dos_val, 4), "NEIN")
+                    git_sync(f"Fertig: {name} (Isolator)")
+                    continue
+
+                # --- 4. PHONONEN ---
+                print(f"   ⚡ {name} ist ein Metall (DOS={dos_val:.3f}). Berechne Phononen...")
+                update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
+                if not os.path.exists(ph_out):
+                    print("   3️⃣  Phononen Berechnung...")
+                    
+                    with open(ph_in, "w") as f: 
+                        f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
+                    with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
+                        subprocess.run(["mpirun", "--oversubscribe", "-np", NUM_CORES, PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+
+                # --- 5. ENDE ---
+                min_f, stab = "-", "Unbekannt"
+                if os.path.exists(ph_out):
+                     with open(ph_out, 'r') as f:
+                         content = f.read()
+                         if "JOB DONE" in content:
+                             freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
+                             if freqs:
+                                 min_f = min([float(f) for f in freqs])
+                                 stab = "STABIL" if min_f > -0.05 else "INSTABIL"
+
+                update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                send_notification(f"✅ {name} fertig: Metall ({stab}).")
+                git_sync(f"Fertig: {name} (Metall)")
+
+            except Exception as job_err:
+                # --- FEHLERBEHANDLUNG PRO JOB ---
+                # Fängt Python-Fehler im Loop ab, damit der nächste Job laufen kann.
+                print(f"🚨 Fehler bei Job {name}: {job_err}")
+                update_csv(name, f"ERROR (Python: {str(job_err)[:30]})")
+                git_sync(f"Error caught: {name}")
+                continue # Weiter zum nächsten Job
+
+        # --- ENDE DES SKRIPTS (Normal) ---
         send_notification("🎉 Alle Jobs erledigt.")
-        set_logic_app_state("Disabled")
+        set_logic_app_state("Disabled") # Sauber abschalten
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")
         if os.name != 'nt': os.system("sudo shutdown -h now")
 
     except Exception as e:
+        # --- NOT-AUS (SYSTEM CRASH) ---
+        # Wenn hier ein Fehler landet, ist das Skript selbst kaputt.
         full_error = f"{e}\n{traceback.format_exc()}"
-        with open(LOG_FILE, "w") as f: f.write(full_error)
-        send_notification(f"🚨 KRITISCHER FEHLER: {e}")
+        
+        # 1. Log schreiben (Fix Zeile 345)
+        with open(TXT_LOG_FILE, "w") as f: f.write(full_error)
+        
+        # 2. Bescheid sagen
+        send_notification(f"🚨 KRITISCHER FEHLER: {e} -> Schalte Logic App & VM ab.")
         git_sync("Emergency Shutdown")
+        
+        # 3. WICHTIG: Logic App deaktivieren, damit sie uns NICHT wieder weckt!
+        print("🔕 Deaktiviere Logic App (Not-Aus)...")
+        set_logic_app_state("Disabled")
+        
+        # 4. VM herunterfahren
+        print("💤 Fahre VM herunter...")
+        if os.name != 'nt': 
+            os.system("sudo shutdown -h now")
+            
         sys.exit()
 
 if __name__ == "__main__":

@@ -124,12 +124,14 @@ def get_csv_status(name):
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
     
+    # 1. Pseudo Directory fixen
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" in content:
         content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
+    # 2. Mixing Beta dynamisch anpassen
     target_beta = 0.7
     if iteration_count >= 90: target_beta = 0.15
     elif iteration_count >= 60: target_beta = 0.25
@@ -138,8 +140,19 @@ def fix_input_file(input_file, iteration_count=0):
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
     
-    if "mixing_ndim" not in content:
-        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 12,")
+    # 3. RAM-OPTIMIERUNG (FIX: mixing_ndim auf 6 für Balance)
+    if "mixing_ndim" in content:
+        content = re.sub(r"mixing_ndim\s*=\s*\d+", "mixing_ndim = 6", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 6,")
+
+    # 3b. diago_david_ndim auf 2 setzen (Diagonalisierungs-RAM sparen)
+    if "diago_david_ndim" in content:
+        content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n diago_david_ndim = 2,")
+
+    # 4. Max Steps
     if "electron_maxstep" not in content:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 300,")
 
@@ -185,7 +198,7 @@ def run_monitored_pw(input_file, output_file, cwd):
                     time.sleep(10)
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter > 30:
-                          fix_input_file(input_file, cur_iter)
+                         fix_input_file(input_file, cur_iter)
             except: 
                 process.kill(); return False
             
@@ -195,7 +208,7 @@ def run_monitored_pw(input_file, output_file, cwd):
             return False
 
 # =============================================================================
-# 4. HAUPTPROGRAMM (Mit Not-Aus & Zombie-Schutz)
+# 4. HAUPTPROGRAMM (CRASH-RETRY MODUS)
 # =============================================================================
 def main():
     try:
@@ -212,8 +225,6 @@ def main():
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         
         # --- 1. LEICHENSCHAU: Jobs finden, die das letzte Skript getötet haben ---
-        # Wenn Status noch "Rechnet..." ist, ist das Skript beim letzten Mal HIER gestorben.
-        # Wir markieren diese Jobs als CRASHED, damit sie nicht erneut das System killen.
         if os.path.exists(CSV_FILE):
             rows = []
             with open(CSV_FILE, 'r') as f: rows = list(csv.DictReader(f))
@@ -222,6 +233,8 @@ def main():
                 if "Rechnet" in row['Status']:
                     killer_name = row['Name']
                     print(f"💀 Gefunden: {killer_name} hat den letzten Run abstürzen lassen. Wird markiert.")
+                    # Wir markieren es, damit wir wissen, was passiert ist, aber der Loop unten
+                    # wird es trotzdem retryen (wegen der Änderungen in Schritt 2).
                     row['Status'] = "CRASHED (System Absturz)"
                     row['Timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M")
                     dirty = True
@@ -243,10 +256,18 @@ def main():
             
             last_status = get_csv_status(name)
             
-            # Skip Logik: Fertige oder gecrashte Jobs überspringen
-            if "Fertig" in last_status or "CRASHED" in last_status or "SKIPPED" in last_status:
+            # KORREKTUR: CRASHED wird NICHT MEHR übersprungen, sondern neu gerechnet!
+            if "Fertig" in last_status or "SKIPPED" in last_status:
                 print(f"⏩ Überspringe {name} (Status: {last_status})")
                 continue
+
+            # --- CRASH CLEANUP ---
+            # Wenn der Job vorher gecrasht ist, müssen wir die alten Daten löschen,
+            # sonst stürzt QE beim Versuch, die korrupten Dateien zu lesen, sofort wieder ab.
+            if "CRASHED" in last_status:
+                print(f"♻️  Retry: Lösche alten Ordner für {name} um sauber zu starten...")
+                if os.path.exists(work_dir):
+                    shutil.rmtree(work_dir) # Löscht den RUN-Ordner komplett
 
             # --- INNERER SCHUTZRING: Fängt Fehler pro Job ab ---
             try:
@@ -262,14 +283,13 @@ def main():
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
                 # --- 1. SCF ---
-                update_csv(name, "Rechnet SCF...") # Status setzen BEVOR wir rechnen
+                update_csv(name, "Rechnet SCF...") 
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out).read()):
                     print("   1️⃣  Starte SCF...")
                     success = run_monitored_pw(scf_in, scf_out, work_dir)
                     
                     if not success:
                         print(f"   ❌ SCF fehlgeschlagen!")
-                        # Fehler in CSV schreiben und zum NÄCHSTEN Job springen
                         update_csv(name, "Fehler (SCF)")
                         git_sync(f"SCF Fehler: {name}")
                         continue 
@@ -344,40 +364,28 @@ def main():
                 git_sync(f"Fertig: {name} (Metall)")
 
             except Exception as job_err:
-                # --- FEHLERBEHANDLUNG PRO JOB ---
-                # Fängt Python-Fehler im Loop ab, damit der nächste Job laufen kann.
                 print(f"🚨 Fehler bei Job {name}: {job_err}")
                 update_csv(name, f"ERROR (Python: {str(job_err)[:30]})")
                 git_sync(f"Error caught: {name}")
-                continue # Weiter zum nächsten Job
+                continue 
 
         # --- ENDE DES SKRIPTS (Normal) ---
         send_notification("🎉 Alle Jobs erledigt.")
-        set_logic_app_state("Disabled") # Sauber abschalten
+        set_logic_app_state("Disabled") 
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")
         if os.name != 'nt': os.system("sudo shutdown -h now")
 
     except Exception as e:
         # --- NOT-AUS (SYSTEM CRASH) ---
-        # Wenn hier ein Fehler landet, ist das Skript selbst kaputt.
         full_error = f"{e}\n{traceback.format_exc()}"
-        
-        # 1. Log schreiben (Fix Zeile 345)
         with open(TXT_LOG_FILE, "w") as f: f.write(full_error)
-        
-        # 2. Bescheid sagen
         send_notification(f"🚨 KRITISCHER FEHLER: {e} -> Schalte Logic App & VM ab.")
         git_sync("Emergency Shutdown")
-        
-        # 3. WICHTIG: Logic App deaktivieren, damit sie uns NICHT wieder weckt!
         print("🔕 Deaktiviere Logic App (Not-Aus)...")
         set_logic_app_state("Disabled")
-        
-        # 4. VM herunterfahren
         print("💤 Fahre VM herunter...")
         if os.name != 'nt': 
             os.system("sudo shutdown -h now")
-            
         sys.exit()
 
 if __name__ == "__main__":

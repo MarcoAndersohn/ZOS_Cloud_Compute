@@ -1,5 +1,5 @@
 &CONTROL
- restart_mode='restart',
+ restart_mode='from_scratch',
   calculation = 'vc-relax'
   prefix = 'LaH32S15'
   outdir = './tmp/'
@@ -19,6 +19,8 @@
   degauss = 0.02
 /
 &ELECTRONS
+ electron_maxstep = 300,
+ mixing_ndim = 12,
   conv_thr = 1.0d-6
 /
 &IONS

@@ -21,17 +21,17 @@ sys.stderr.reconfigure(line_buffering=True)
 # =============================================================================
 TELEGRAM_TOKEN = "8589716957:AAHAAU26UrnwOWgL4OytPpmj0dSPnyWNwu0"
 TELEGRAM_CHAT_ID = "711461437"
-LOGIC_APP_NAME = "AutoRestart-Supraleiter" 
+LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-# KORRIGIERT: Deine VM hat 2 vCPUs
+# VM Konfiguration (2 Kerne)
 NUM_CORES = "2"
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")
-SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt") 
+SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
@@ -60,15 +60,6 @@ def set_logic_app_state(state="Enabled"):
     try:
         subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True, timeout=30)
     except: pass
-
-def get_error_details(filepath, lines=60):
-    if not os.path.exists(filepath): return "   (Keine Log-Datei gefunden)"
-    try:
-        with open(filepath, 'r', errors='ignore') as f:
-            content = f.readlines()
-            tail = content[-lines:] if len(content) > lines else content
-            return "".join(tail)
-    except: return "   (Fehler beim Lesen des Logs)"
 
 def git_sync(message):
     env = os.environ.copy()
@@ -213,12 +204,18 @@ def run_monitored_pw(input_file, output_file, cwd):
 def main():
     try:
         # CLEANUP & SETUP
-        if os.path.exists(TXT_LOG_FILE):
-            open(TXT_LOG_FILE, 'w').close()
-        if os.path.exists(SMART_LOG_FILE):
-            open(SMART_LOG_FILE, 'w').close()
+        # HIER GEÄNDERT: Wir löschen die Logs NICHT mehr, damit wir Historie haben!
+        # if os.path.exists(TXT_LOG_FILE):
+        #    open(TXT_LOG_FILE, 'w').close()
+        # if os.path.exists(SMART_LOG_FILE):
+        #    open(SMART_LOG_FILE, 'w').close()
             
         set_logic_app_state("Enabled")
+        
+        # HIER GEÄNDERT: "a" Modus zum Anhängen
+        with open(TXT_LOG_FILE, "a") as f:
+            f.write(f"\n\n{'='*40}\n🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
+        
         print(f"\n\n{'='*40}\n🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
@@ -351,13 +348,13 @@ def main():
                 # --- 5. ENDE ---
                 min_f, stab = "-", "Unbekannt"
                 if os.path.exists(ph_out):
-                     with open(ph_out, 'r') as f:
-                         content = f.read()
-                         if "JOB DONE" in content:
-                             freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
-                             if freqs:
-                                 min_f = min([float(f) for f in freqs])
-                                 stab = "STABIL" if min_f > -0.05 else "INSTABIL"
+                      with open(ph_out, 'r') as f:
+                          content = f.read()
+                          if "JOB DONE" in content:
+                              freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
+                              if freqs:
+                                  min_f = min([float(f) for f in freqs])
+                                  stab = "STABIL" if min_f > -0.05 else "INSTABIL"
 
                 update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                 send_notification(f"✅ {name} fertig: Metall ({stab}).")
@@ -377,8 +374,11 @@ def main():
 
     except Exception as e:
         # --- NOT-AUS (SYSTEM CRASH) ---
-        full_error = f"{e}\n{traceback.format_exc()}"
-        with open(TXT_LOG_FILE, "w") as f: f.write(full_error)
+        full_error = f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()}):\n{e}\n{traceback.format_exc()}\n"
+        
+        # HIER GEÄNDERT: "a" für append (anhängen), damit wir nichts überschreiben
+        with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
+        
         send_notification(f"🚨 KRITISCHER FEHLER: {e} -> Schalte Logic App & VM ab.")
         git_sync("Emergency Shutdown")
         print("🔕 Deaktiviere Logic App (Not-Aus)...")

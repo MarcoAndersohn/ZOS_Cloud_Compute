@@ -189,7 +189,7 @@ def run_monitored_pw(input_file, output_file, cwd):
                     time.sleep(10)
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter > 30:
-                         fix_input_file(input_file, cur_iter)
+                          fix_input_file(input_file, cur_iter)
             except: 
                 process.kill(); return False
             
@@ -258,13 +258,13 @@ def main():
                 print(f"⏩ Überspringe {name} (Status: {last_status})")
                 continue
 
-            # --- CRASH CLEANUP ---
-            # Wenn der Job vorher gecrasht ist, müssen wir die alten Daten löschen,
-            # sonst stürzt QE beim Versuch, die korrupten Dateien zu lesen, sofort wieder ab.
+            # --- CRASH CLEANUP (MODIFIZIERT FÜR DEBUGGING) ---
+            # Wenn der Job vorher gecrasht ist, löschen wir den Ordner JETZT NICHT.
             if "CRASHED" in last_status:
-                print(f"♻️  Retry: Lösche alten Ordner für {name} um sauber zu starten...")
-                if os.path.exists(work_dir):
-                    shutil.rmtree(work_dir) # Löscht den RUN-Ordner komplett
+                print(f"♻️  Retry: {name} (CRASHED)")
+                print(f"⚠️ DEBUG-MODUS: Löschung von {work_dir} DEAKTIVIERT, um Logs zu retten!")
+                # if os.path.exists(work_dir):
+                #     shutil.rmtree(work_dir) # DEAKTIVIERT
 
             # --- INNERER SCHUTZRING: Fängt Fehler pro Job ab ---
             try:

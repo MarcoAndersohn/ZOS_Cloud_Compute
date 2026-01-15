@@ -122,7 +122,7 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    # 2. Mixing Beta dynamisch anpassen
+    # 2. Mixing Beta dynamisch anpassen (Konvergenzhilfe)
     target_beta = 0.7
     if iteration_count >= 90: target_beta = 0.15
     elif iteration_count >= 60: target_beta = 0.25
@@ -131,19 +131,30 @@ def fix_input_file(input_file, iteration_count=0):
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
     
-    # 3. RAM-OPTIMIERUNG (FIX: mixing_ndim auf 6 für Balance)
+    # =========================================================================
+    # RAM-NOTFALL-OPTIMIERUNG FÜR 2 KERNE / 8 GB RAM
+    # =========================================================================
+    
+    # 3. Wechsel auf 'cg' (Conjugate Gradient). 
+    # 'david' (Davidson) ist schneller, braucht aber viel mehr RAM für Subraum-Matrizen.
+    # Bei 92 Atomen und 8GB ist 'cg' die einzige Chance.
+    if "diagonalization" in content:
+        content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", "diagonalization='cg'", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n diagonalization='cg',")
+
+    # 4. Mixing History reduzieren (von 6 auf 4)
+    # Spart RAM, indem weniger alte SCF-Schritte gespeichert werden.
     if "mixing_ndim" in content:
-        content = re.sub(r"mixing_ndim\s*=\s*\d+", "mixing_ndim = 6", content)
+        content = re.sub(r"mixing_ndim\s*=\s*\d+", "mixing_ndim = 4", content)
     else:
-        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 6,")
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 4,")
 
-    # 3b. diago_david_ndim auf 2 setzen (Diagonalisierungs-RAM sparen)
+    # 5. diago_david_ndim entfernen (irrelevant für cg, aber sicherheitshalber auf 2 falls Fallback)
     if "diago_david_ndim" in content:
-        content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
-    else:
-        content = content.replace("&ELECTRONS", "&ELECTRONS\n diago_david_ndim = 2,")
+         content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
 
-    # 4. Max Steps
+    # 6. Max Steps sicherstellen
     if "electron_maxstep" not in content:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 300,")
 

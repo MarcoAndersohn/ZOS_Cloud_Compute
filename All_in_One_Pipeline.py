@@ -52,10 +52,6 @@ def send_notification(message):
     except: pass
 
 def set_logic_app_state(state="Enabled"):
-    """
-    Schaltet die Logic App an oder aus.
-    Wichtig: 'Disabled' verhindert den automatischen Neustart der VM.
-    """
     if not shutil.which("az"): return
     try:
         subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True, timeout=30)
@@ -64,11 +60,9 @@ def set_logic_app_state(state="Enabled"):
 def git_sync(message):
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
-    
     try:
         subprocess.run(["git", "add", "."], cwd=WORK_DIR, env=env, timeout=30)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, env=env, timeout=30)
-        # Pull mit 'ours' Strategie -> HPC gewinnt immer bei Konflikten
         subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60)
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=60)
     except subprocess.TimeoutExpired:
@@ -110,51 +104,98 @@ def get_csv_status(name):
     return "NEW"
 
 # =============================================================================
-# 3. PUPPET MASTER (CORE LOGIC)
+# 3. PUPPET MASTER (SMART LOGIC)
 # =============================================================================
+
+def analyze_crash_reason(output_file):
+    """
+    Entscheidet, ob es ein HARD CRASH (Dateien korrupt/Error) oder 
+    ein SOFT CRASH (Timeout/Abbruch) war.
+    Rückgabe: 'HARD', 'SOFT', 'NONE' (wenn Datei fehlt)
+    """
+    if not os.path.exists(output_file): return "NONE"
+    
+    try:
+        # Lese die letzten 100 Zeilen
+        with open(output_file, 'rb') as f:
+            try:
+                f.seek(-10000, 2) # Gehe ans Ende
+            except OSError:
+                f.seek(0) # Datei ist zu klein, lese alles
+            lines = f.read().decode('utf-8', errors='ignore')
+            
+        # 1. Erfolgreich?
+        if "JOB DONE" in lines:
+            return "DONE"
+            
+        # 2. Hard Crash Keywords
+        error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed"]
+        for key in error_keywords:
+            if key in lines:
+                return "HARD"
+        
+        # 3. Soft Crash (Einfach aufgehört -> Timeout)
+        return "SOFT"
+    except:
+        return "HARD" # Im Zweifel neu machen
+
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
     
-    # 1. Pseudo Directory fixen
+    # --- A. Standard Pfade fixen ---
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" in content:
         content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    # 2. Mixing Beta dynamisch anpassen (Konvergenzhilfe)
+    # --- B. Dynamische Parameter (Smart Logic) ---
+    
+    # 1. Mixing Beta (gegen Oszillationen)
     target_beta = 0.7
+    if iteration_count >= 30: target_beta = 0.4
+    if iteration_count >= 60: target_beta = 0.25
     if iteration_count >= 90: target_beta = 0.15
-    elif iteration_count >= 60: target_beta = 0.25
-    elif iteration_count >= 30: target_beta = 0.4
 
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
     
-    # =========================================================================
-    # RAM-NOTFALL-OPTIMIERUNG FÜR 2 KERNE / 8 GB RAM
-    # =========================================================================
+    # 2. Convergence Threshold Lockern (Wenn er ewig rechnet)
+    # Normale SCF Konvergenz
+    if iteration_count >= 60:
+        new_conv = "1.0d-5"
+        if "conv_thr" in content:
+             content = re.sub(r"conv_thr\s*=\s*[0-9\.dD\-]+", f"conv_thr = {new_conv}", content)
+        else:
+             content = content.replace("&ELECTRONS", f"&ELECTRONS\n conv_thr = {new_conv},")
+             
+    # 3. Geometrie Optimierung lockern (für vc-relax)
+    # Wenn er bei Schritt 100 immer noch relaxiert, sind wir weniger streng.
+    if iteration_count >= 100:
+        new_etot = "1.0d-3"
+        new_forc = "1.0d-2"
+        
+        if "etot_conv_thr" in content:
+            content = re.sub(r"etot_conv_thr\s*=\s*[0-9\.dD\-]+", f"etot_conv_thr = {new_etot}", content)
+        else:
+            content = content.replace("&CONTROL", f"&CONTROL\n etot_conv_thr = {new_etot},")
+            
+        if "forc_conv_thr" in content:
+            content = re.sub(r"forc_conv_thr\s*=\s*[0-9\.dD\-]+", f"forc_conv_thr = {new_forc}", content)
+        else:
+            content = content.replace("&CONTROL", f"&CONTROL\n forc_conv_thr = {new_forc},")
     
-    # 3. Wechsel auf 'cg' (Conjugate Gradient). 
-    # 'david' (Davidson) ist schneller, braucht aber viel mehr RAM für Subraum-Matrizen.
-    # Bei 92 Atomen und 8GB ist 'cg' die einzige Chance.
+    # --- C. RAM Optimierung (fix) ---
     if "diagonalization" in content:
         content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", "diagonalization='cg'", content)
     else:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n diagonalization='cg',")
 
-    # 4. Mixing History reduzieren (von 6 auf 4)
-    # Spart RAM, indem weniger alte SCF-Schritte gespeichert werden.
     if "mixing_ndim" in content:
         content = re.sub(r"mixing_ndim\s*=\s*\d+", "mixing_ndim = 4", content)
     else:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 4,")
 
-    # 5. diago_david_ndim entfernen (irrelevant für cg, aber sicherheitshalber auf 2 falls Fallback)
-    if "diago_david_ndim" in content:
-         content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
-
-    # 6. Max Steps sicherstellen
     if "electron_maxstep" not in content:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 300,")
 
@@ -168,16 +209,26 @@ def get_last_iteration(output_file):
         with open(output_file, 'rb') as f:
             f.seek(max(0, file_size - 10000), 0) 
             chunk = f.read().decode('utf-8', errors='ignore')
-        matches = re.findall(r"iteration #\s*(\d+)", chunk)
-        return int(matches[-1]) if matches else 0
+        # Zähle SCF iterationen ODER BFGS steps
+        bfgs_matches = re.findall(r"number of bfgs steps\s*=\s*(\d+)", chunk)
+        scf_matches = re.findall(r"iteration #\s*(\d+)", chunk)
+        
+        val = 0
+        if bfgs_matches: val = int(bfgs_matches[-1])
+        elif scf_matches: val = int(scf_matches[-1])
+        return val
     except: return 0
 
 def run_monitored_pw(input_file, output_file, cwd):
+    # Initial Setup (Iter 0)
     fix_input_file(input_file, 0)
+    
     while True:
         with open(input_file, 'r') as f: content = f.read()
         tmp_dir = os.path.join(cwd, "tmp")
-        can_restart = os.path.exists(output_file) and os.path.exists(tmp_dir) and os.listdir(tmp_dir)
+        
+        # Check ob wir Resumen können
+        can_restart = os.path.exists(output_file) and os.path.exists(tmp_dir)
         mode = 'restart' if can_restart else 'from_scratch'
         
         if "restart_mode" in content:
@@ -191,13 +242,13 @@ def run_monitored_pw(input_file, output_file, cwd):
         file_mode = 'a' if mode == 'restart' else 'w'
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-            # NUM_CORES wird hier verwendet
             cmd = ["mpirun", "--oversubscribe", "-np", NUM_CORES, PW_EXE]
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
             try:
                 while process.poll() is None:
                     time.sleep(10)
+                    # Live Überwachung für Parameter-Anpassung
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter > 30:
                           fix_input_file(input_file, cur_iter)
@@ -210,20 +261,12 @@ def run_monitored_pw(input_file, output_file, cwd):
             return False
 
 # =============================================================================
-# 4. HAUPTPROGRAMM (CRASH-RETRY MODUS)
+# 4. HAUPTPROGRAMM
 # =============================================================================
 def main():
     try:
-        # CLEANUP & SETUP
-        # HIER GEÄNDERT: Wir löschen die Logs NICHT mehr, damit wir Historie haben!
-        # if os.path.exists(TXT_LOG_FILE):
-        #    open(TXT_LOG_FILE, 'w').close()
-        # if os.path.exists(SMART_LOG_FILE):
-        #    open(SMART_LOG_FILE, 'w').close()
-            
         set_logic_app_state("Enabled")
         
-        # HIER GEÄNDERT: "a" Modus zum Anhängen
         with open(TXT_LOG_FILE, "a") as f:
             f.write(f"\n\n{'='*40}\n🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
@@ -232,59 +275,44 @@ def main():
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         
-        # --- 1. LEICHENSCHAU: Jobs finden, die das letzte Skript getötet haben ---
-        if os.path.exists(CSV_FILE):
-            rows = []
-            with open(CSV_FILE, 'r') as f: rows = list(csv.DictReader(f))
-            dirty = False
-            for row in rows:
-                if "Rechnet" in row['Status']:
-                    killer_name = row['Name']
-                    print(f"💀 Gefunden: {killer_name} hat den letzten Run abstürzen lassen. Wird markiert.")
-                    # Wir markieren es, damit wir wissen, was passiert ist, aber der Loop unten
-                    # wird es trotzdem retryen (wegen der Änderungen in Schritt 2).
-                    row['Status'] = "CRASHED (System Absturz)"
-                    row['Timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M")
-                    dirty = True
-            
-            if dirty:
-                with open(CSV_FILE, 'w', newline='') as f:
-                    writer = csv.DictWriter(f, fieldnames=['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Timestamp'])
-                    writer.writeheader()
-                    writer.writerows(rows)
-                git_sync("Cleanup: Crashed Jobs geflaggt")
-
-        # --- 2. NORMALE PIPELINE ---
+        # --- PIPELINE START ---
         input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
         send_notification(f"Start: {len(input_files)} Jobs in der Queue.")
 
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
+            scf_out = os.path.join(work_dir, "scf.out")
             
             last_status = get_csv_status(name)
             
-            # KORREKTUR: CRASHED wird NICHT MEHR übersprungen, sondern neu gerechnet!
             if "Fertig" in last_status or "SKIPPED" in last_status:
                 print(f"⏩ Überspringe {name} (Status: {last_status})")
                 continue
 
-            # --- CRASH CLEANUP (MODIFIZIERT FÜR DEBUGGING) ---
-            # Wenn der Job vorher gecrasht ist, löschen wir den Ordner JETZT NICHT.
-            if "CRASHED" in last_status:
-                print(f"♻️  Retry: {name} (CRASHED)")
-                print(f"⚠️ DEBUG-MODUS: Löschung von {work_dir} DEAKTIVIERT, um Logs zu retten!")
-                # if os.path.exists(work_dir):
-                #     shutil.rmtree(work_dir) # DEAKTIVIERT
-
-            # --- INNERER SCHUTZRING: Fängt Fehler pro Job ab ---
+            # --- SMART CRASH HANDLING ---
+            # Prüfen, warum er letztes Mal gestorben ist
+            crash_type = analyze_crash_reason(scf_out)
+            
+            if crash_type == "HARD":
+                print(f"♻️  Retry: {name} (HARD CRASH detected -> Lösche Ordner)")
+                if os.path.exists(work_dir):
+                    shutil.rmtree(work_dir) # Löschen, da Datei korrupt
+            elif crash_type == "SOFT":
+                print(f"♻️  Retry: {name} (SOFT CRASH/TIMEOUT -> Resume ohne Löschen)")
+                # Hier löschen wir NICHTS. Das Skript setzt restart_mode='restart' automatisch.
+            elif crash_type == "DONE":
+                print(f"✅ {name} scheint fertig zu sein (laut Log). Update Status.")
+                # Fallback, falls CSV nicht aktuell war
+            
+            # --- JOB STARTEN ---
             try:
                 if not os.path.exists(work_dir): os.makedirs(work_dir)
                 
                 print(f"\n💎 Job: {name}")
                 git_sync(f"Start Job: {name}") 
 
-                scf_in, scf_out = os.path.join(work_dir, "scf.in"), os.path.join(work_dir, "scf.out")
+                scf_in = os.path.join(work_dir, "scf.in")
                 dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
                 ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
 
@@ -293,15 +321,16 @@ def main():
                 # --- 1. SCF ---
                 update_csv(name, "Rechnet SCF...") 
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out).read()):
-                    print("   1️⃣  Starte SCF...")
+                    print("   1️⃣  Starte SCF (Monitored)...")
                     success = run_monitored_pw(scf_in, scf_out, work_dir)
                     
                     if not success:
                         print(f"   ❌ SCF fehlgeschlagen!")
-                        update_csv(name, "Fehler (SCF)")
+                        update_csv(name, "CRASHED (SCF)")
                         git_sync(f"SCF Fehler: {name}")
                         continue 
 
+                # Daten extrahieren
                 with open(scf_in, 'r') as f: 
                     match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
                     prefix = match.group(1) if match else "calc"
@@ -386,8 +415,6 @@ def main():
     except Exception as e:
         # --- NOT-AUS (SYSTEM CRASH) ---
         full_error = f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()}):\n{e}\n{traceback.format_exc()}\n"
-        
-        # HIER GEÄNDERT: "a" für append (anhängen), damit wir nichts überschreiben
         with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
         
         send_notification(f"🚨 KRITISCHER FEHLER: {e} -> Schalte Logic App & VM ab.")

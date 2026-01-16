@@ -18,9 +18,10 @@
   degauss = 0.02
 /
 &ELECTRONS
+ diagonalization='cg',
  electron_maxstep = 300,
  diago_david_ndim = 2,
- mixing_ndim = 6,
+ mixing_ndim = 4,
   conv_thr = 1.0d-6
 /
 &IONS

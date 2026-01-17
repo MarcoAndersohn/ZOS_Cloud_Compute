@@ -109,9 +109,7 @@ def get_csv_status(name):
 
 def analyze_crash_reason(output_file):
     """
-    Entscheidet, ob es ein HARD CRASH (Dateien korrupt/Error) oder 
-    ein SOFT CRASH (Timeout/Abbruch) war.
-    Rückgabe: 'HARD', 'SOFT', 'NONE' (wenn Datei fehlt)
+    Entscheidet zwischen DONE, HARD (Error), SOFT (Timeout) und NON_CONVERGED.
     """
     if not os.path.exists(output_file): return "NONE"
     
@@ -128,13 +126,17 @@ def analyze_crash_reason(output_file):
         if "JOB DONE" in lines:
             return "DONE"
             
-        # 2. Hard Crash Keywords
+        # 2. NEU: Konvergenz nicht erreicht (Iter > 150)
+        if "convergence NOT achieved" in lines:
+            return "NON_CONVERGED"
+            
+        # 3. Hard Crash Keywords
         error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed"]
         for key in error_keywords:
             if key in lines:
                 return "HARD"
         
-        # 3. Soft Crash (Einfach aufgehört -> Timeout)
+        # 4. Soft Crash (Einfach aufgehört -> Timeout)
         return "SOFT"
     except:
         return "HARD" # Im Zweifel neu machen
@@ -160,8 +162,7 @@ def fix_input_file(input_file, iteration_count=0):
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
     
-    # 2. Convergence Threshold Lockern (Wenn er ewig rechnet)
-    # Normale SCF Konvergenz
+    # 2. Convergence Threshold Lockern
     if iteration_count >= 60:
         new_conv = "1.0d-5"
         if "conv_thr" in content:
@@ -169,8 +170,7 @@ def fix_input_file(input_file, iteration_count=0):
         else:
              content = content.replace("&ELECTRONS", f"&ELECTRONS\n conv_thr = {new_conv},")
              
-    # 3. Geometrie Optimierung lockern (für vc-relax)
-    # Wenn er bei Schritt 100 immer noch relaxiert, sind wir weniger streng.
+    # 3. Geometrie Optimierung lockern
     if iteration_count >= 100:
         new_etot = "1.0d-3"
         new_forc = "1.0d-2"
@@ -185,7 +185,7 @@ def fix_input_file(input_file, iteration_count=0):
         else:
             content = content.replace("&CONTROL", f"&CONTROL\n forc_conv_thr = {new_forc},")
     
-    # --- C. RAM Optimierung (fix) ---
+    # --- C. RAM Optimierung & LIMITS ---
     if "diagonalization" in content:
         content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", "diagonalization='cg'", content)
     else:
@@ -196,8 +196,11 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 4,")
 
-    if "electron_maxstep" not in content:
-        content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 300,")
+    # NEU: Limit auf 150 setzen
+    if "electron_maxstep" in content:
+        content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 150", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 150,")
 
     with open(input_file, 'w') as f: f.write(content)
     return True
@@ -291,19 +294,24 @@ def main():
                 continue
 
             # --- SMART CRASH HANDLING ---
-            # Prüfen, warum er letztes Mal gestorben ist
             crash_type = analyze_crash_reason(scf_out)
             
             if crash_type == "HARD":
                 print(f"♻️  Retry: {name} (HARD CRASH detected -> Lösche Ordner)")
                 if os.path.exists(work_dir):
-                    shutil.rmtree(work_dir) # Löschen, da Datei korrupt
+                    shutil.rmtree(work_dir)
+            
+            elif crash_type == "NON_CONVERGED":
+                print(f"⏩ {name} konvergiert nicht (Max Steps erreicht). Wird übersprungen.")
+                update_csv(name, "SKIPPED (Non-Conv)")
+                git_sync(f"Skipped: {name} (Non-Conv)")
+                continue
+
             elif crash_type == "SOFT":
                 print(f"♻️  Retry: {name} (SOFT CRASH/TIMEOUT -> Resume ohne Löschen)")
-                # Hier löschen wir NICHTS. Das Skript setzt restart_mode='restart' automatisch.
+            
             elif crash_type == "DONE":
                 print(f"✅ {name} scheint fertig zu sein (laut Log). Update Status.")
-                # Fallback, falls CSV nicht aktuell war
             
             # --- JOB STARTEN ---
             try:
@@ -325,9 +333,16 @@ def main():
                     success = run_monitored_pw(scf_in, scf_out, work_dir)
                     
                     if not success:
-                        print(f"   ❌ SCF fehlgeschlagen!")
-                        update_csv(name, "CRASHED (SCF)")
-                        git_sync(f"SCF Fehler: {name}")
+                        # Nach Fehlschlag: Prüfen ob es an Konvergenz lag
+                        fail_reason = analyze_crash_reason(scf_out)
+                        if fail_reason == "NON_CONVERGED":
+                             print(f"   ❌ SCF nicht konvergiert (Limit 150). Skip.")
+                             update_csv(name, "SKIPPED (Non-Conv)")
+                             git_sync(f"Skipped: {name} (Non-Conv)")
+                        else:
+                             print(f"   ❌ SCF fehlgeschlagen (Crash)!")
+                             update_csv(name, "CRASHED (SCF)")
+                             git_sync(f"SCF Fehler: {name}")
                         continue 
 
                 # Daten extrahieren

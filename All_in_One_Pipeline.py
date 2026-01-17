@@ -297,9 +297,11 @@ def main():
             crash_type = analyze_crash_reason(scf_out)
             
             if crash_type == "HARD":
-                print(f"♻️  Retry: {name} (HARD CRASH detected -> Lösche Ordner)")
-                if os.path.exists(work_dir):
-                    shutil.rmtree(work_dir)
+                # --- ÄNDERUNG HIER: Ordner behalten & überspringen ---
+                print(f"❌ {name}: HARD CRASH erkannt. Überspringe Job, um Logs zu sichern.")
+                update_csv(name, "SKIPPED (Hard Crash)")
+                git_sync(f"Hard Crash preserved: {name}")
+                continue
             
             elif crash_type == "NON_CONVERGED":
                 print(f"⏩ {name} konvergiert nicht (Max Steps erreicht). Wird übersprungen.")

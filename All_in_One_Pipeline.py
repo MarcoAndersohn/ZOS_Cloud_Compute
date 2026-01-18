@@ -8,6 +8,7 @@ import sys
 import traceback
 import requests
 import csv
+import psutil  # <--- WICHTIG: pip install psutil
 from datetime import datetime
 
 # =============================================================================
@@ -25,8 +26,10 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-# VM Konfiguration (2 Kerne)
-NUM_CORES = "2"
+# Standard Konfiguration
+DEFAULT_CORES = "2"
+SAFE_CORES = "1"
+MEMORY_LIMIT_PERCENT = 88.0  # Bei 88% RAM-Auslastung wird die Notbremse gezogen
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
@@ -35,7 +38,6 @@ SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
-SMART_LOG_FILE = os.path.join(WORK_DIR, "pipeline_smart.log")
 
 PW_EXE = shutil.which("pw.x") or "/usr/bin/pw.x"
 PH_EXE = shutil.which("ph.x") or "/usr/bin/ph.x"
@@ -108,52 +110,32 @@ def get_csv_status(name):
 # =============================================================================
 
 def analyze_crash_reason(output_file):
-    """
-    Entscheidet zwischen DONE, HARD (Error), SOFT (Timeout) und NON_CONVERGED.
-    """
     if not os.path.exists(output_file): return "NONE"
-    
     try:
-        # Lese die letzten 100 Zeilen
         with open(output_file, 'rb') as f:
-            try:
-                f.seek(-10000, 2) # Gehe ans Ende
-            except OSError:
-                f.seek(0) # Datei ist zu klein, lese alles
+            try: f.seek(-10000, 2) 
+            except OSError: f.seek(0)
             lines = f.read().decode('utf-8', errors='ignore')
             
-        # 1. Erfolgreich?
-        if "JOB DONE" in lines:
-            return "DONE"
-            
-        # 2. NEU: Konvergenz nicht erreicht (Iter > 150)
-        if "convergence NOT achieved" in lines:
-            return "NON_CONVERGED"
-            
-        # 3. Hard Crash Keywords
+        if "JOB DONE" in lines: return "DONE"
+        if "convergence NOT achieved" in lines: return "NON_CONVERGED"
+        
         error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed"]
         for key in error_keywords:
-            if key in lines:
-                return "HARD"
+            if key in lines: return "HARD"
         
-        # 4. Soft Crash (Einfach aufgehört -> Timeout)
         return "SOFT"
-    except:
-        return "HARD" # Im Zweifel neu machen
+    except: return "HARD"
 
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
     
-    # --- A. Standard Pfade fixen ---
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" in content:
         content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    # --- B. Dynamische Parameter (Smart Logic) ---
-    
-    # 1. Mixing Beta (gegen Oszillationen)
     target_beta = 0.7
     if iteration_count >= 30: target_beta = 0.4
     if iteration_count >= 60: target_beta = 0.25
@@ -162,7 +144,6 @@ def fix_input_file(input_file, iteration_count=0):
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
     
-    # 2. Convergence Threshold Lockern
     if iteration_count >= 60:
         new_conv = "1.0d-5"
         if "conv_thr" in content:
@@ -170,22 +151,18 @@ def fix_input_file(input_file, iteration_count=0):
         else:
              content = content.replace("&ELECTRONS", f"&ELECTRONS\n conv_thr = {new_conv},")
              
-    # 3. Geometrie Optimierung lockern
     if iteration_count >= 100:
         new_etot = "1.0d-3"
         new_forc = "1.0d-2"
-        
         if "etot_conv_thr" in content:
             content = re.sub(r"etot_conv_thr\s*=\s*[0-9\.dD\-]+", f"etot_conv_thr = {new_etot}", content)
         else:
             content = content.replace("&CONTROL", f"&CONTROL\n etot_conv_thr = {new_etot},")
-            
         if "forc_conv_thr" in content:
             content = re.sub(r"forc_conv_thr\s*=\s*[0-9\.dD\-]+", f"forc_conv_thr = {new_forc}", content)
         else:
             content = content.replace("&CONTROL", f"&CONTROL\n forc_conv_thr = {new_forc},")
     
-    # --- C. RAM Optimierung & LIMITS ---
     if "diagonalization" in content:
         content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", "diagonalization='cg'", content)
     else:
@@ -196,7 +173,6 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 4,")
 
-    # NEU: Limit auf 150 setzen
     if "electron_maxstep" in content:
         content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 150", content)
     else:
@@ -212,7 +188,6 @@ def get_last_iteration(output_file):
         with open(output_file, 'rb') as f:
             f.seek(max(0, file_size - 10000), 0) 
             chunk = f.read().decode('utf-8', errors='ignore')
-        # Zähle SCF iterationen ODER BFGS steps
         bfgs_matches = re.findall(r"number of bfgs steps\s*=\s*(\d+)", chunk)
         scf_matches = re.findall(r"iteration #\s*(\d+)", chunk)
         
@@ -222,15 +197,14 @@ def get_last_iteration(output_file):
         return val
     except: return 0
 
-def run_monitored_pw(input_file, output_file, cwd):
-    # Initial Setup (Iter 0)
+# --- INTELLIGENTE LAUF-FUNKTION ---
+def run_monitored_pw(input_file, output_file, cwd, active_cores):
     fix_input_file(input_file, 0)
     
     while True:
         with open(input_file, 'r') as f: content = f.read()
         tmp_dir = os.path.join(cwd, "tmp")
         
-        # Check ob wir Resumen können
         can_restart = os.path.exists(output_file) and os.path.exists(tmp_dir)
         mode = 'restart' if can_restart else 'from_scratch'
         
@@ -245,23 +219,36 @@ def run_monitored_pw(input_file, output_file, cwd):
         file_mode = 'a' if mode == 'restart' else 'w'
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-            cmd = ["mpirun", "--oversubscribe", "-np", NUM_CORES, PW_EXE]
+            cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE]
+            print(f"      ⚙️ Starte PWSCF mit {active_cores} Kern(en)...")
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
             try:
                 while process.poll() is None:
-                    time.sleep(10)
-                    # Live Überwachung für Parameter-Anpassung
+                    time.sleep(2)
+                    
+                    # 1. RAM CHECK
+                    mem_usage = psutil.virtual_memory().percent
+                    if mem_usage > MEMORY_LIMIT_PERCENT:
+                        print(f"      ⚠️ RAM WARNUNG: {mem_usage}% > {MEMORY_LIMIT_PERCENT}%. NOT-AUS!")
+                        process.terminate()  # Sanftes Killen
+                        try:
+                            process.wait(timeout=10)
+                        except subprocess.TimeoutExpired:
+                            process.kill()   # Hartes Killen falls es klemmt
+                        return "OOM" # Out of Memory Signal zurückgeben
+
+                    # 2. Iteration Check
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter > 30:
                           fix_input_file(input_file, cur_iter)
             except: 
-                process.kill(); return False
+                process.kill(); return "CRASH"
             
-        if process.returncode != 0: return False
+        if process.returncode != 0: return "CRASH"
         with open(output_file, 'r') as f:
-            if "JOB DONE" in f.read(): return True
-            return False
+            if "JOB DONE" in f.read(): return "DONE"
+            return "CRASH"
 
 # =============================================================================
 # 4. HAUPTPROGRAMM
@@ -271,16 +258,15 @@ def main():
         set_logic_app_state("Enabled")
         
         with open(TXT_LOG_FILE, "a") as f:
-            f.write(f"\n\n{'='*40}\n🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
+            f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
-        print(f"\n\n{'='*40}\n🚀 NEUSTART DER PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
+        print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         
-        # --- PIPELINE START ---
         input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
-        send_notification(f"Start: {len(input_files)} Jobs in der Queue.")
+        send_notification(f"Start: {len(input_files)} Jobs in Queue.")
 
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
@@ -293,58 +279,70 @@ def main():
                 print(f"⏩ Überspringe {name} (Status: {last_status})")
                 continue
 
-            # --- SMART CRASH HANDLING ---
+            # Crash Check vorab
             crash_type = analyze_crash_reason(scf_out)
-            
-            if crash_type == "HARD":
-                # --- ÄNDERUNG HIER: Ordner behalten & überspringen ---
-                print(f"❌ {name}: HARD CRASH erkannt. Überspringe Job, um Logs zu sichern.")
-                update_csv(name, "SKIPPED (Hard Crash)")
-                git_sync(f"Hard Crash preserved: {name}")
-                continue
-            
-            elif crash_type == "NON_CONVERGED":
-                print(f"⏩ {name} konvergiert nicht (Max Steps erreicht). Wird übersprungen.")
+            if crash_type == "NON_CONVERGED":
+                print(f"⏩ {name} konvergiert nicht. Skip.")
                 update_csv(name, "SKIPPED (Non-Conv)")
-                git_sync(f"Skipped: {name} (Non-Conv)")
                 continue
-
-            elif crash_type == "SOFT":
-                print(f"♻️  Retry: {name} (SOFT CRASH/TIMEOUT -> Resume ohne Löschen)")
-            
             elif crash_type == "DONE":
-                print(f"✅ {name} scheint fertig zu sein (laut Log). Update Status.")
+                print(f"✅ {name} ist bereits fertig (SCF).")
             
-            # --- JOB STARTEN ---
+            # --- JOB LOGIK ---
             try:
                 if not os.path.exists(work_dir): os.makedirs(work_dir)
                 
                 print(f"\n💎 Job: {name}")
-                git_sync(f"Start Job: {name}") 
-
                 scf_in = os.path.join(work_dir, "scf.in")
                 dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
                 ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-                # --- 1. SCF ---
-                update_csv(name, "Rechnet SCF...") 
-                if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out).read()):
-                    print("   1️⃣  Starte SCF (Monitored)...")
-                    success = run_monitored_pw(scf_in, scf_out, work_dir)
+                # --- 1. SCF LOOP (Mit RAM Schutz) ---
+                if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
                     
-                    if not success:
-                        # Nach Fehlschlag: Prüfen ob es an Konvergenz lag
-                        fail_reason = analyze_crash_reason(scf_out)
-                        if fail_reason == "NON_CONVERGED":
-                             print(f"   ❌ SCF nicht konvergiert (Limit 150). Skip.")
-                             update_csv(name, "SKIPPED (Non-Conv)")
-                             git_sync(f"Skipped: {name} (Non-Conv)")
-                        else:
-                             print(f"   ❌ SCF fehlgeschlagen (Crash)!")
-                             update_csv(name, "CRASHED (SCF)")
-                             git_sync(f"SCF Fehler: {name}")
+                    update_csv(name, "Rechnet SCF...")
+                    current_cores = int(DEFAULT_CORES)
+                    
+                    # Versuche Job zu starten / fortzusetzen
+                    while True:
+                        print(f"   1️⃣  SCF (Cores: {current_cores})")
+                        result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
+                        
+                        if result == "DONE":
+                            break # Alles super
+                        
+                        elif result == "OOM":
+                            # Speicher voll! Strategie ändern
+                            if current_cores > 1:
+                                print(f"      ⚠️ OOM erkannt! Wechsle für nächsten Restart auf {SAFE_CORES} Kern.")
+                                current_cores = int(SAFE_CORES)
+                                update_csv(name, "SCF (Low Mem Mode)")
+                                time.sleep(5) # Kurz warten bis RAM frei ist
+                                continue # Nächster Loop-Durchlauf mit restart & weniger Kernen
+                            else:
+                                print(f"      ❌ OOM trotz 1 Kern! Job ist zu fett.")
+                                update_csv(name, "FAILED (OOM)")
+                                break
+                        
+                        elif result == "CRASH":
+                            # Prüfen ob Konvergenzproblem oder Hard Error
+                            reason = analyze_crash_reason(scf_out)
+                            if reason == "NON_CONVERGED":
+                                update_csv(name, "SKIPPED (Non-Conv)")
+                                break
+                            elif reason == "SOFT":
+                                print("      ♻️ Timeout/Soft Crash -> Retry.")
+                                continue # Einfach nochmal probieren (Restart)
+                            else:
+                                print("      ❌ Hard Crash.")
+                                update_csv(name, "CRASHED")
+                                break
+                    
+                    # Wenn Schleife beendet ist, prüfen ob wir Erfolg hatten
+                    if analyze_crash_reason(scf_out) != "DONE":
+                        git_sync(f"Failed: {name}")
                         continue 
 
                 # Daten extrahieren
@@ -354,7 +352,7 @@ def main():
                 
                 e_fermi = "-"
                 if os.path.exists(scf_out):
-                    with open(scf_out, 'r') as f:
+                    with open(scf_out, 'r', errors='ignore') as f:
                         match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
                         if match: e_fermi = float(match.group(1))
 
@@ -368,8 +366,7 @@ def main():
                         subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
 
                 # --- 3. METALL CHECK ---
-                is_metal = False
-                dos_val = 0.0
+                is_metal, dos_val = False, 0.0
                 if os.path.exists(dos_out) and e_fermi != "-":
                     closest_diff = 99.9
                     with open(dos_out, 'r') as f:
@@ -386,21 +383,22 @@ def main():
                     is_metal = dos_val > DOS_THRESHOLD
 
                 if not is_metal:
-                    print(f"   🛑 {name} ist ein Isolator (DOS={dos_val:.3f}). Phononen übersprungen.")
+                    print(f"   🛑 Isolator (DOS={dos_val:.3f}).")
                     update_csv(name, "Fertig (Isolator)", e_fermi, round(dos_val, 4), "NEIN")
                     git_sync(f"Fertig: {name} (Isolator)")
                     continue
 
-                # --- 4. PHONONEN ---
-                print(f"   ⚡ {name} ist ein Metall (DOS={dos_val:.3f}). Berechne Phononen...")
+                # --- 4. PHONONEN (RAM INTENSIV!) ---
+                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 if not os.path.exists(ph_out):
                     print("   3️⃣  Phononen Berechnung...")
-                    
+                    # Auch hier könnte man RAM überwachen, aber oft ist SCF das Problem
                     with open(ph_in, "w") as f: 
                         f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                     with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
-                        subprocess.run(["mpirun", "--oversubscribe", "-np", NUM_CORES, PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                        # Phononen laufen wir standardmäßig mit 2 Kernen, da weniger RAM Peak als SCF Diagonalsierung
+                        subprocess.run(["mpirun", "--oversubscribe", "-np", DEFAULT_CORES, PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
 
                 # --- 5. ENDE ---
                 min_f, stab = "-", "Unbekannt"
@@ -414,13 +412,11 @@ def main():
                                   stab = "STABIL" if min_f > -0.05 else "INSTABIL"
 
                 update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
-                send_notification(f"✅ {name} fertig: Metall ({stab}).")
                 git_sync(f"Fertig: {name} (Metall)")
 
             except Exception as job_err:
                 print(f"🚨 Fehler bei Job {name}: {job_err}")
                 update_csv(name, f"ERROR (Python: {str(job_err)[:30]})")
-                git_sync(f"Error caught: {name}")
                 continue 
 
         # --- ENDE DES SKRIPTS (Normal) ---
@@ -430,17 +426,11 @@ def main():
         if os.name != 'nt': os.system("sudo shutdown -h now")
 
     except Exception as e:
-        # --- NOT-AUS (SYSTEM CRASH) ---
         full_error = f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()}):\n{e}\n{traceback.format_exc()}\n"
         with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
-        
-        send_notification(f"🚨 KRITISCHER FEHLER: {e} -> Schalte Logic App & VM ab.")
-        git_sync("Emergency Shutdown")
-        print("🔕 Deaktiviere Logic App (Not-Aus)...")
+        send_notification(f"🚨 KRITISCHER FEHLER: {e} -> Shutdown.")
         set_logic_app_state("Disabled")
-        print("💤 Fahre VM herunter...")
-        if os.name != 'nt': 
-            os.system("sudo shutdown -h now")
+        if os.name != 'nt': os.system("sudo shutdown -h now")
         sys.exit()
 
 if __name__ == "__main__":

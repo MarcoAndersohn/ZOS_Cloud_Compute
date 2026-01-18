@@ -1,0 +1,53 @@
+&CONTROL
+  calculation = 'vc-relax'
+  prefix = 'LiTaH6Ru'
+  outdir = './tmp/'
+  pseudo_dir='/home/marco/ZOS_Cloud_Compute/pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 9
+  ntyp = 4
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+ electron_maxstep = 150,
+ mixing_ndim = 4,
+ diagonalization='cg',
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  H  1.00  H.UPF
+  Li  1.00  Li.UPF
+  Ru  1.00  Ru.UPF
+  Ta  1.00  Ta.UPF
+ATOMIC_POSITIONS (angstrom)
+  Ta  4.730561  4.730562  4.730561
+  Li  1.576854  1.576854  1.576854
+  H  3.153707  3.153708  4.630618
+  H  3.153707  1.676796  3.153707
+  H  1.676796  3.153708  3.153707
+  H  3.153708  3.153708  1.676796
+  H  3.153708  4.630619  3.153707
+  H  4.630619  3.153708  3.153707
+  Ru  0.000000  -0.000000  0.000000
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  3.153708  3.153708  -0.000000
+  -0.000000  3.153708  3.153707
+  3.153707  0.000000  3.153707

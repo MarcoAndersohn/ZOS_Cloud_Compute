@@ -20,8 +20,10 @@ sys.stderr.reconfigure(line_buffering=True)
 # =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
-TELEGRAM_TOKEN = "8202414068:AAHnnLMa7nfo0E3gCDLUVnUmIomoyveDPBA"
+# HIER DEINE TOKEN EINFÜGEN
+TELEGRAM_TOKEN = "8202414068:AAHnnLMa7nfo0E3gCDLUVnUmIomoyveDPBA" 
 TELEGRAM_CHAT_ID = "711461437"
+
 LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
@@ -120,7 +122,7 @@ def analyze_crash_reason(output_file):
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
         
-        error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed"]
+        error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed", "fatal error reading xml"]
         for key in error_keywords:
             if key in lines: return "HARD"
         
@@ -203,10 +205,21 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
     
     while True:
         with open(input_file, 'r') as f: content = f.read()
-        tmp_dir = os.path.join(cwd, "tmp")
+        tmp_dir = os.path.join(cwd, "tmp") # HIER DEFINIERT
         
-        can_restart = os.path.exists(output_file) and os.path.exists(tmp_dir)
+        # 1. Sicherer Restart-Check (XML Prüfen!)
+        prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
+        current_prefix = prefix_match.group(1) if prefix_match else "calc"
+        xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")
+        
+        can_restart = os.path.exists(output_file) and os.path.exists(xml_path)
         mode = 'restart' if can_restart else 'from_scratch'
+        
+        # WICHTIG: Wenn from_scratch, dann MUSS der alte tmp Ordner weg, 
+        # sonst liest er Müll ein!
+        if mode == 'from_scratch' and os.path.exists(tmp_dir):
+            try: shutil.rmtree(tmp_dir)
+            except: pass
         
         if "restart_mode" in content:
             content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
@@ -220,7 +233,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
             cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE]
-            print(f"      ⚙️ Starte PWSCF mit {active_cores} Kern(en)...")
+            print(f"      ⚙️ Starte PWSCF ({mode}) mit {active_cores} Kern(en)...")
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
             try:
@@ -271,6 +284,7 @@ def main():
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
+            tmp_dir = os.path.join(work_dir, "tmp") # <--- HIER FIX: Variable für Main Scope definiert
             scf_out = os.path.join(work_dir, "scf.out")
             
             last_status = get_csv_status(name)
@@ -332,14 +346,16 @@ def main():
                             if reason == "NON_CONVERGED":
                                 update_csv(name, "SKIPPED (Non-Conv)")
                                 break
-                            elif reason == "SOFT":
-                                print("      ♻️ Timeout/Soft Crash -> Retry.")
-                                continue # Einfach nochmal probieren (Restart)
                             else:
-                                print("      ❌ Hard Crash.")
-                                update_csv(name, "CRASHED")
-                                break
-                    
+                                # FIX: Bei Hard Crash sofort aufräumen
+                                print(f"      🗑️ Hard Crash ({reason}) erkannt. Lösche korrupten tmp-Ordner für sauberen Neustart...")
+                                if os.path.exists(tmp_dir):
+                                    try: shutil.rmtree(tmp_dir)
+                                    except: pass
+                                update_csv(name, "Retrying (Crash)")
+                                time.sleep(2)
+                                continue # Neustart
+
                     # Wenn Schleife beendet ist, prüfen ob wir Erfolg hatten
                     if analyze_crash_reason(scf_out) != "DONE":
                         git_sync(f"Failed: {name}")

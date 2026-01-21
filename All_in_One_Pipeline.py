@@ -20,8 +20,7 @@ sys.stderr.reconfigure(line_buffering=True)
 # =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
-# HIER DEINE TOKEN EINFÜGEN
-TELEGRAM_TOKEN = "8202414068:AAHnnLMa7nfo0E3gCDLUVnUmIomoyveDPBA" 
+TELEGRAM_TOKEN = "8202414068:AAHnnLMa7nfo0E3gCDLUVnUmIomoyveDPBA"
 TELEGRAM_CHAT_ID = "711461437"
 
 LOGIC_APP_NAME = "AutoRestart-Supraleiter"
@@ -65,9 +64,14 @@ def git_sync(message):
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
     try:
+        # 1. Alles lokale hinzufügen und committen
         subprocess.run(["git", "add", "."], cwd=WORK_DIR, env=env, timeout=30)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, env=env, timeout=30)
-        subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60)
+        
+        # 2. Versuch zu Pullen (mit Strategie "Ours" -> Wir gewinnen Konflikte)
+        subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60, capture_output=True)
+        
+        # 3. Push
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=60)
     except subprocess.TimeoutExpired:
         print("⚠️ Git-Sync Timeout. Mache weiter...")
@@ -205,7 +209,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
     
     while True:
         with open(input_file, 'r') as f: content = f.read()
-        tmp_dir = os.path.join(cwd, "tmp") # HIER DEFINIERT
+        tmp_dir = os.path.join(cwd, "tmp") 
         
         # 1. Sicherer Restart-Check (XML Prüfen!)
         prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
@@ -215,8 +219,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         can_restart = os.path.exists(output_file) and os.path.exists(xml_path)
         mode = 'restart' if can_restart else 'from_scratch'
         
-        # WICHTIG: Wenn from_scratch, dann MUSS der alte tmp Ordner weg, 
-        # sonst liest er Müll ein!
+        # WICHTIG: Wenn from_scratch, dann MUSS der alte tmp Ordner weg!
         if mode == 'from_scratch' and os.path.exists(tmp_dir):
             try: shutil.rmtree(tmp_dir)
             except: pass
@@ -281,10 +284,14 @@ def main():
         input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
         send_notification(f"Start: {len(input_files)} Jobs in Queue.")
 
+        # --- UPDATE FIX: SOFORT GIT SYNC ---
+        git_sync("🚀 Pipeline Start: Initial Update")
+        # -----------------------------------
+
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
-            tmp_dir = os.path.join(work_dir, "tmp") # <--- HIER FIX: Variable für Main Scope definiert
+            tmp_dir = os.path.join(work_dir, "tmp") # <--- FIX: Hier definiert!
             scf_out = os.path.join(work_dir, "scf.out")
             
             last_status = get_csv_status(name)

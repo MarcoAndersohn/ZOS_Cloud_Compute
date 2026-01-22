@@ -8,7 +8,7 @@ import sys
 import traceback
 import requests
 import csv
-import psutil  # <--- WICHTIG: pip install psutil
+import psutil
 from datetime import datetime
 
 # =============================================================================
@@ -27,10 +27,9 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-# Standard Konfiguration
 DEFAULT_CORES = "2"
 SAFE_CORES = "1"
-MEMORY_LIMIT_PERCENT = 88.0  # Bei 88% RAM-Auslastung wird die Notbremse gezogen
+MEMORY_LIMIT_PERCENT = 88.0
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
@@ -64,17 +63,10 @@ def git_sync(message):
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
     try:
-        # 1. Alles lokale hinzufügen und committen
         subprocess.run(["git", "add", "."], cwd=WORK_DIR, env=env, timeout=30)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, env=env, timeout=30)
-        
-        # 2. Versuch zu Pullen (mit Strategie "Ours" -> Wir gewinnen Konflikte)
         subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60, capture_output=True)
-        
-        # 3. Push
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=60)
-    except subprocess.TimeoutExpired:
-        print("⚠️ Git-Sync Timeout. Mache weiter...")
     except Exception as e:
         print(f"⚠️ Git Fehler: {e}")
 
@@ -83,7 +75,6 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     rows = []
     if os.path.exists(CSV_FILE):
         with open(CSV_FILE, 'r') as f: rows = list(csv.DictReader(f))
-    
     found = False
     for row in rows:
         if row['Name'] == name:
@@ -95,10 +86,8 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             if stab != "-": row['Stabilität'] = str(stab)
             found = True
             break
-            
     if not found:
         rows.append({'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
-    
     with open(CSV_FILE, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -112,7 +101,7 @@ def get_csv_status(name):
     return "NEW"
 
 # =============================================================================
-# 3. PUPPET MASTER (SMART LOGIC)
+# 3. SMART LOGIC & VALIDATION
 # =============================================================================
 
 def analyze_crash_reason(output_file):
@@ -122,26 +111,42 @@ def analyze_crash_reason(output_file):
             try: f.seek(-10000, 2) 
             except OSError: f.seek(0)
             lines = f.read().decode('utf-8', errors='ignore')
-            
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
-        
         error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed", "fatal error reading xml"]
         for key in error_keywords:
             if key in lines: return "HARD"
-        
         return "SOFT"
     except: return "HARD"
 
+def is_xml_valid(xml_path):
+    """
+    Prüft intelligent, ob die XML-Datei vollständig geschrieben wurde.
+    Wir schauen uns nur die letzten Bytes an, um das End-Tag zu finden.
+    """
+    if not os.path.exists(xml_path): return False
+    try:
+        with open(xml_path, 'rb') as f:
+            try: f.seek(-1000, 2) # Lese nur die letzten 1000 Bytes
+            except: f.seek(0)
+            tail = f.read().decode('utf-8', errors='ignore')
+        
+        # Das sind die Zeichen, dass QE fertig mit Schreiben war:
+        if "</qes:espresso>" in tail or "</qes:data-file-schema>" in tail:
+            return True
+        return False
+    except:
+        return False
+
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
-    
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" in content:
         content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
+    # Dynamische Anpassung der Konvergenzparameter bei Problemen
     target_beta = 0.7
     if iteration_count >= 30: target_beta = 0.4
     if iteration_count >= 60: target_beta = 0.25
@@ -196,7 +201,6 @@ def get_last_iteration(output_file):
             chunk = f.read().decode('utf-8', errors='ignore')
         bfgs_matches = re.findall(r"number of bfgs steps\s*=\s*(\d+)", chunk)
         scf_matches = re.findall(r"iteration #\s*(\d+)", chunk)
-        
         val = 0
         if bfgs_matches: val = int(bfgs_matches[-1])
         elif scf_matches: val = int(scf_matches[-1])
@@ -207,23 +211,56 @@ def get_last_iteration(output_file):
 def run_monitored_pw(input_file, output_file, cwd, active_cores):
     fix_input_file(input_file, 0)
     
+    last_git_sync = time.time()
+    last_checkpoint_time = 0 # Timer für lokale Checkpoints
+
     while True:
         with open(input_file, 'r') as f: content = f.read()
         tmp_dir = os.path.join(cwd, "tmp") 
-        
-        # 1. Sicherer Restart-Check (XML Prüfen!)
+        checkpoint_dir = os.path.join(cwd, "tmp_SAFE_CHECKPOINT") # Unser Sicherheits-Ordner
+
+        # Pfade ermitteln
         prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
         current_prefix = prefix_match.group(1) if prefix_match else "calc"
         xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")
         
-        can_restart = os.path.exists(output_file) and os.path.exists(xml_path)
-        mode = 'restart' if can_restart else 'from_scratch'
+        # --- INTELLIGENTER START-CHECK ---
+        mode = 'from_scratch'
         
-        # WICHTIG: Wenn from_scratch, dann MUSS der alte tmp Ordner weg!
-        if mode == 'from_scratch' and os.path.exists(tmp_dir):
-            try: shutil.rmtree(tmp_dir)
-            except: pass
+        # 1. Ist der aktuelle tmp-Ordner heil?
+        if os.path.exists(output_file) and is_xml_valid(xml_path):
+            mode = 'restart'
+            print("      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.")
+            
+        # 2. Ist tmp kaputt, aber wir haben einen Safe-Checkpoint?
+        elif os.path.exists(output_file) and os.path.exists(checkpoint_dir):
+            print("      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...")
+            try:
+                # Wir löschen den kaputten tmp Ordner
+                if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir)
+                # Wir kopieren den heilen Checkpoint zurück
+                shutil.copytree(checkpoint_dir, tmp_dir)
+                
+                # Kurzer Check ob das geklappt hat
+                if is_xml_valid(xml_path):
+                    mode = 'restart'
+                    print("      ✅ Checkpoint erfolgreich geladen! Mache weiter wo wir sicher waren.")
+                else:
+                    print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
+            except Exception as e:
+                print(f"      ❌ Fehler beim Laden des Checkpoints: {e}")
         
+        else:
+            print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
+
+        # Aufräumen wenn wir eh von vorne anfangen
+        if mode == 'from_scratch':
+            if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir, ignore_errors=True)
+            # Checkpoint lassen wir leben, vielleicht brauchen wir ihn später noch? 
+            # Nein, bei from_scratch ist er veraltet.
+            if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir, ignore_errors=True)
+
+        # Input File anpassen
         if "restart_mode" in content:
             content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
         else:
@@ -236,28 +273,46 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
             cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE]
-            print(f"      ⚙️ Starte PWSCF ({mode}) mit {active_cores} Kern(en)...")
+            print(f"      ⚙️ Starte PWSCF ({mode})...")
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
             try:
                 while process.poll() is None:
-                    time.sleep(2)
+                    time.sleep(5) # Nicht zu oft pollen
                     
-                    # 1. RAM CHECK
+                    # A. GIT SYNC (Logs, nicht Daten!) - Alle 30 Min
+                    if time.time() - last_git_sync > 1800:
+                        print("      ☁️ Sync Logs to Git...")
+                        git_sync("Log Update")
+                        last_git_sync = time.time()
+
+                    # B. INTELLIGENTER CHECKPOINT (Alle 15 Min prüfen)
+                    if time.time() - last_checkpoint_time > 900: # 15 min
+                        # Wir kopieren NUR, wenn die XML gerade heil ist!
+                        if is_xml_valid(xml_path):
+                            print("      💾 XML ist valide -> Erstelle Sicherheits-Kopie (Checkpoint)...")
+                            try:
+                                # Alte Kopie weg (wir brauchen nur den letzten heilen Stand)
+                                if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
+                                # Neue Kopie hin (das dauert kurz, ist aber sicher)
+                                shutil.copytree(tmp_dir, checkpoint_dir)
+                                last_checkpoint_time = time.time()
+                                print("      ✅ Checkpoint erstellt.")
+                            except Exception as e:
+                                print(f"      ⚠️ Checkpoint fehlgeschlagen: {e}")
+                        # Wenn XML nicht valide (weil QE gerade schreibt), machen wir nix und probieren es beim nächsten Loop
+
+                    # C. RAM CHECK
                     mem_usage = psutil.virtual_memory().percent
                     if mem_usage > MEMORY_LIMIT_PERCENT:
-                        print(f"      ⚠️ RAM WARNUNG: {mem_usage}% > {MEMORY_LIMIT_PERCENT}%. NOT-AUS!")
-                        process.terminate()  # Sanftes Killen
-                        try:
-                            process.wait(timeout=10)
-                        except subprocess.TimeoutExpired:
-                            process.kill()   # Hartes Killen falls es klemmt
-                        return "OOM" # Out of Memory Signal zurückgeben
+                        print(f"      ⚠️ RAM NOT-AUS!")
+                        process.kill()
+                        return "OOM" 
 
-                    # 2. Iteration Check
+                    # D. Input Tweaking bei Problemen
                     cur_iter = get_last_iteration(output_file)
-                    if cur_iter > 30:
-                          fix_input_file(input_file, cur_iter)
+                    if cur_iter > 30: fix_input_file(input_file, cur_iter)
+
             except: 
                 process.kill(); return "CRASH"
             
@@ -272,47 +327,37 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
 def main():
     try:
         set_logic_app_state("Enabled")
-        
         with open(TXT_LOG_FILE, "a") as f:
             f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
-        
         print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         
         input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
-        send_notification(f"Start: {len(input_files)} Jobs in Queue.")
-
-        # --- UPDATE FIX: SOFORT GIT SYNC ---
-        git_sync("🚀 Pipeline Start: Initial Update")
-        # -----------------------------------
+        send_notification(f"Start: {len(input_files)} Jobs.")
+        git_sync("🚀 Start")
 
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
-            tmp_dir = os.path.join(work_dir, "tmp") # <--- FIX: Hier definiert!
             scf_out = os.path.join(work_dir, "scf.out")
             
             last_status = get_csv_status(name)
-            
             if "Fertig" in last_status or "SKIPPED" in last_status:
-                print(f"⏩ Überspringe {name} (Status: {last_status})")
+                print(f"⏩ Überspringe {name}")
                 continue
 
             # Crash Check vorab
             crash_type = analyze_crash_reason(scf_out)
             if crash_type == "NON_CONVERGED":
-                print(f"⏩ {name} konvergiert nicht. Skip.")
                 update_csv(name, "SKIPPED (Non-Conv)")
                 continue
             elif crash_type == "DONE":
-                print(f"✅ {name} ist bereits fertig (SCF).")
+                print(f"✅ {name} ist fertig.")
             
-            # --- JOB LOGIK ---
             try:
                 if not os.path.exists(work_dir): os.makedirs(work_dir)
-                
                 print(f"\n💎 Job: {name}")
                 scf_in = os.path.join(work_dir, "scf.in")
                 dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
@@ -320,50 +365,34 @@ def main():
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-                # --- 1. SCF LOOP (Mit RAM Schutz) ---
+                # --- SCF LOOP ---
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
-                    
                     update_csv(name, "Rechnet SCF...")
                     current_cores = int(DEFAULT_CORES)
                     
-                    # Versuche Job zu starten / fortzusetzen
                     while True:
-                        print(f"   1️⃣  SCF (Cores: {current_cores})")
+                        print(f"   1️⃣  SCF ({current_cores} Cores)")
                         result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
                         
-                        if result == "DONE":
-                            break # Alles super
-                        
+                        if result == "DONE": break 
                         elif result == "OOM":
-                            # Speicher voll! Strategie ändern
                             if current_cores > 1:
-                                print(f"      ⚠️ OOM erkannt! Wechsle für nächsten Restart auf {SAFE_CORES} Kern.")
                                 current_cores = int(SAFE_CORES)
-                                update_csv(name, "SCF (Low Mem Mode)")
-                                time.sleep(5) # Kurz warten bis RAM frei ist
-                                continue # Nächster Loop-Durchlauf mit restart & weniger Kernen
+                                update_csv(name, "SCF (Low Mem)")
+                                continue 
                             else:
-                                print(f"      ❌ OOM trotz 1 Kern! Job ist zu fett.")
                                 update_csv(name, "FAILED (OOM)")
                                 break
-                        
                         elif result == "CRASH":
-                            # Prüfen ob Konvergenzproblem oder Hard Error
                             reason = analyze_crash_reason(scf_out)
                             if reason == "NON_CONVERGED":
                                 update_csv(name, "SKIPPED (Non-Conv)")
                                 break
                             else:
-                                # FIX: Bei Hard Crash sofort aufräumen
-                                print(f"      🗑️ Hard Crash ({reason}) erkannt. Lösche korrupten tmp-Ordner für sauberen Neustart...")
-                                if os.path.exists(tmp_dir):
-                                    try: shutil.rmtree(tmp_dir)
-                                    except: pass
                                 update_csv(name, "Retrying (Crash)")
                                 time.sleep(2)
-                                continue # Neustart
+                                continue 
 
-                    # Wenn Schleife beendet ist, prüfen ob wir Erfolg hatten
                     if analyze_crash_reason(scf_out) != "DONE":
                         git_sync(f"Failed: {name}")
                         continue 
@@ -379,16 +408,14 @@ def main():
                         match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
                         if match: e_fermi = float(match.group(1))
 
-                # --- 2. DOS ---
+                # --- DOS ---
                 update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
                 if not os.path.exists(dos_out):
-                    print("   2️⃣  DOS Berechnung...")
                     with open(dos_in, "w") as f: 
                         f.write(f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n")
                     with open(dos_in, "r") as f_in, open(dos_out, "w") as f_out:
                         subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
 
-                # --- 3. METALL CHECK ---
                 is_metal, dos_val = False, 0.0
                 if os.path.exists(dos_out) and e_fermi != "-":
                     closest_diff = 99.9
@@ -411,19 +438,15 @@ def main():
                     git_sync(f"Fertig: {name} (Isolator)")
                     continue
 
-                # --- 4. PHONONEN (RAM INTENSIV!) ---
+                # --- PHONONEN ---
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 if not os.path.exists(ph_out):
-                    print("   3️⃣  Phononen Berechnung...")
-                    # Auch hier könnte man RAM überwachen, aber oft ist SCF das Problem
                     with open(ph_in, "w") as f: 
                         f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                     with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
-                        # Phononen laufen wir standardmäßig mit 2 Kernen, da weniger RAM Peak als SCF Diagonalsierung
                         subprocess.run(["mpirun", "--oversubscribe", "-np", DEFAULT_CORES, PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
 
-                # --- 5. ENDE ---
                 min_f, stab = "-", "Unbekannt"
                 if os.path.exists(ph_out):
                       with open(ph_out, 'r') as f:
@@ -442,7 +465,6 @@ def main():
                 update_csv(name, f"ERROR (Python: {str(job_err)[:30]})")
                 continue 
 
-        # --- ENDE DES SKRIPTS (Normal) ---
         send_notification("🎉 Alle Jobs erledigt.")
         set_logic_app_state("Disabled") 
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")

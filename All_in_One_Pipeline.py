@@ -120,18 +120,12 @@ def analyze_crash_reason(output_file):
     except: return "HARD"
 
 def is_xml_valid(xml_path):
-    """
-    Prüft intelligent, ob die XML-Datei vollständig geschrieben wurde.
-    Wir schauen uns nur die letzten Bytes an, um das End-Tag zu finden.
-    """
     if not os.path.exists(xml_path): return False
     try:
         with open(xml_path, 'rb') as f:
-            try: f.seek(-1000, 2) # Lese nur die letzten 1000 Bytes
+            try: f.seek(-1000, 2) 
             except: f.seek(0)
             tail = f.read().decode('utf-8', errors='ignore')
-        
-        # Das sind die Zeichen, dass QE fertig mit Schreiben war:
         if "</qes:espresso>" in tail or "</qes:data-file-schema>" in tail:
             return True
         return False
@@ -146,7 +140,6 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    # Dynamische Anpassung der Konvergenzparameter bei Problemen
     target_beta = 0.7
     if iteration_count >= 30: target_beta = 0.4
     if iteration_count >= 60: target_beta = 0.25
@@ -212,14 +205,13 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
     fix_input_file(input_file, 0)
     
     last_git_sync = time.time()
-    last_checkpoint_time = 0 # Timer für lokale Checkpoints
+    last_checkpoint_time = 0 
 
     while True:
         with open(input_file, 'r') as f: content = f.read()
         tmp_dir = os.path.join(cwd, "tmp") 
-        checkpoint_dir = os.path.join(cwd, "tmp_SAFE_CHECKPOINT") # Unser Sicherheits-Ordner
+        checkpoint_dir = os.path.join(cwd, "tmp_SAFE_CHECKPOINT") 
 
-        # Pfade ermitteln
         prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
         current_prefix = prefix_match.group(1) if prefix_match else "calc"
         xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")
@@ -227,40 +219,30 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         # --- INTELLIGENTER START-CHECK ---
         mode = 'from_scratch'
         
-        # 1. Ist der aktuelle tmp-Ordner heil?
         if os.path.exists(output_file) and is_xml_valid(xml_path):
             mode = 'restart'
             print("      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.")
             
-        # 2. Ist tmp kaputt, aber wir haben einen Safe-Checkpoint?
         elif os.path.exists(output_file) and os.path.exists(checkpoint_dir):
             print("      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...")
             try:
-                # Wir löschen den kaputten tmp Ordner
                 if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir)
-                # Wir kopieren den heilen Checkpoint zurück
                 shutil.copytree(checkpoint_dir, tmp_dir)
                 
-                # Kurzer Check ob das geklappt hat
                 if is_xml_valid(xml_path):
                     mode = 'restart'
-                    print("      ✅ Checkpoint erfolgreich geladen! Mache weiter wo wir sicher waren.")
+                    print("      ✅ Checkpoint erfolgreich geladen!")
                 else:
                     print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
             except Exception as e:
                 print(f"      ❌ Fehler beim Laden des Checkpoints: {e}")
-        
         else:
             print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
 
-        # Aufräumen wenn wir eh von vorne anfangen
         if mode == 'from_scratch':
             if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir, ignore_errors=True)
-            # Checkpoint lassen wir leben, vielleicht brauchen wir ihn später noch? 
-            # Nein, bei from_scratch ist er veraltet.
             if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir, ignore_errors=True)
 
-        # Input File anpassen
         if "restart_mode" in content:
             content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
         else:
@@ -278,38 +260,45 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
             
             try:
                 while process.poll() is None:
-                    time.sleep(5) # Nicht zu oft pollen
+                    time.sleep(5)
                     
-                    # A. GIT SYNC (Logs, nicht Daten!) - Alle 30 Min
-                    if time.time() - last_git_sync > 1800:
-                        print("      ☁️ Sync Logs to Git...")
-                        git_sync("Log Update")
-                        last_git_sync = time.time()
-
-                    # B. INTELLIGENTER CHECKPOINT (Alle 15 Min prüfen)
-                    if time.time() - last_checkpoint_time > 900: # 15 min
-                        # Wir kopieren NUR, wenn die XML gerade heil ist!
+                    # ---------------------------------------------------------
+                    # EREIGNIS-BASIERTER SYNC (Intelligent)
+                    # ---------------------------------------------------------
+                    
+                    # 1. Prüfen ob Zeit für Checkpoint (alle 15 Min)
+                    if time.time() - last_checkpoint_time > 900: 
                         if is_xml_valid(xml_path):
-                            print("      💾 XML ist valide -> Erstelle Sicherheits-Kopie (Checkpoint)...")
+                            print("      💾 XML valide -> Erstelle Checkpoint...")
                             try:
-                                # Alte Kopie weg (wir brauchen nur den letzten heilen Stand)
                                 if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
-                                # Neue Kopie hin (das dauert kurz, ist aber sicher)
                                 shutil.copytree(tmp_dir, checkpoint_dir)
                                 last_checkpoint_time = time.time()
                                 print("      ✅ Checkpoint erstellt.")
+                                
+                                # HIER IST DER FIX: SOFORT SYNCEN!
+                                print("      ☁️ Trigger Git Sync (wegen Checkpoint)...")
+                                git_sync("Checkpoint & Log Update")
+                                last_git_sync = time.time() # Heartbeat zurücksetzen
+                                
                             except Exception as e:
-                                print(f"      ⚠️ Checkpoint fehlgeschlagen: {e}")
-                        # Wenn XML nicht valide (weil QE gerade schreibt), machen wir nix und probieren es beim nächsten Loop
+                                print(f"      ⚠️ Checkpoint fail: {e}")
 
-                    # C. RAM CHECK
+                    # 2. HEARTBEAT (Nur wenn lange NICHTS passiert ist, z.B. 60 Min)
+                    # Falls QE hängt oder extrem langsam rechnet, wollen wir trotzdem ein Lebenszeichen.
+                    if time.time() - last_git_sync > 3600:
+                        print("      ❤️ Git Heartbeat (No Checkpoint recently)...")
+                        git_sync("Log Update (Heartbeat)")
+                        last_git_sync = time.time()
+
+                    # 3. RAM CHECK
                     mem_usage = psutil.virtual_memory().percent
                     if mem_usage > MEMORY_LIMIT_PERCENT:
                         print(f"      ⚠️ RAM NOT-AUS!")
                         process.kill()
                         return "OOM" 
 
-                    # D. Input Tweaking bei Problemen
+                    # 4. Input Tweaking
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter > 30: fix_input_file(input_file, cur_iter)
 

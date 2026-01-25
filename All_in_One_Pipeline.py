@@ -12,7 +12,7 @@ import psutil
 from datetime import datetime
 
 # =============================================================================
-# 0. LIVE-LOGGING
+# 0. LIVE-LOGGING KONFIGURATION
 # =============================================================================
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
@@ -108,14 +108,30 @@ def analyze_crash_reason(output_file):
     if not os.path.exists(output_file): return "NONE"
     try:
         with open(output_file, 'rb') as f:
-            try: f.seek(-10000, 2) 
+            try: f.seek(-5000, 2) # Lese letzte 5KB
             except OSError: f.seek(0)
             lines = f.read().decode('utf-8', errors='ignore')
+        
+        # 1. Alles gut?
         if "JOB DONE" in lines: return "DONE"
+        
+        # 2. Konvergenz Probleme?
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
+
+        # 3. OOM Signatur Check (DAS IST NEU)
+        # Suche nach der RAM Schätzung
+        ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
+        if ram_match:
+            # Wenn wir eine RAM Schätzung sehen, aber KEINE erste Iteration danach...
+            if "Self-consistent Calculation" not in lines and "iteration #" not in lines:
+                print(f"      🕵️ Verdacht auf OOM: Letzte Meldung war {ram_match.group(1)} GB RAM Bedarf.")
+                return "LIKELY_OOM"
+
+        # 4. Harte Fehler Keywords
         error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed", "fatal error reading xml"]
         for key in error_keywords:
             if key in lines: return "HARD"
+            
         return "SOFT"
     except: return "HARD"
 
@@ -131,6 +147,25 @@ def is_xml_valid(xml_path):
         return False
     except:
         return False
+
+def set_low_memory_mode(input_file):
+    """Setzt disk_io = 'low' in der Input-Datei, um RAM zu sparen."""
+    print(f"      📉 Aktiviere LOW MEMORY Mode (disk_io='low') für {os.path.basename(input_file)}...")
+    
+    with open(input_file, 'r') as f: content = f.read()
+    
+    # Prüfen, ob schon gesetzt
+    if "disk_io" in content:
+        if "disk_io='low'" in content or 'disk_io="low"' in content:
+            return False # War schon an
+        # Ersetzen wenn anderer Wert
+        content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"]", "disk_io='low'", content)
+    else:
+        # Neu einfügen in &CONTROL
+        content = content.replace("&CONTROL", "&CONTROL\n disk_io='low',")
+    
+    with open(input_file, 'w') as f: f.write(content)
+    return True
 
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
@@ -255,7 +290,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
             cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE]
-            print(f"      ⚙️ Starte PWSCF ({mode})...")
+            print(f"      ⚙️ Starte PWSCF ({mode}, {active_cores} Cores)...")
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
             try:
@@ -276,27 +311,27 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                                 last_checkpoint_time = time.time()
                                 print("      ✅ Checkpoint erstellt.")
                                 
-                                # HIER IST DER FIX: SOFORT SYNCEN!
                                 print("      ☁️ Trigger Git Sync (wegen Checkpoint)...")
                                 git_sync("Checkpoint & Log Update")
-                                last_git_sync = time.time() # Heartbeat zurücksetzen
+                                last_git_sync = time.time() 
                                 
                             except Exception as e:
                                 print(f"      ⚠️ Checkpoint fail: {e}")
 
                     # 2. HEARTBEAT (Nur wenn lange NICHTS passiert ist, z.B. 60 Min)
-                    # Falls QE hängt oder extrem langsam rechnet, wollen wir trotzdem ein Lebenszeichen.
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat (No Checkpoint recently)...")
                         git_sync("Log Update (Heartbeat)")
                         last_git_sync = time.time()
 
-                    # 3. RAM CHECK
-                    mem_usage = psutil.virtual_memory().percent
-                    if mem_usage > MEMORY_LIMIT_PERCENT:
-                        print(f"      ⚠️ RAM NOT-AUS!")
-                        process.kill()
-                        return "OOM" 
+                    # 3. RAM CHECK (Python Monitor)
+                    try:
+                        mem_usage = psutil.virtual_memory().percent
+                        if mem_usage > MEMORY_LIMIT_PERCENT:
+                            print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
+                            process.kill()
+                            return "OOM" 
+                    except: pass
 
                     # 4. Input Tweaking
                     cur_iter = get_last_iteration(output_file)
@@ -305,9 +340,29 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
             except: 
                 process.kill(); return "CRASH"
             
-        if process.returncode != 0: return "CRASH"
-        with open(output_file, 'r') as f:
-            if "JOB DONE" in f.read(): return "DONE"
+            # --- PROZESS ENDE ANALYSE ---
+
+            # Fall A: Exit Code -9 (SIGKILL durch OS/OOM-Killer)
+            if process.returncode == -9:
+                print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
+                return "OOM"
+
+            # Fall B: Exit Code != 0 (Anderer Crash)
+            if process.returncode != 0:
+                reason = analyze_crash_reason(output_file)
+                if reason == "LIKELY_OOM":
+                    print("      💀 Logfile endet abrupt nach RAM-Schätzung -> OOM.")
+                    return "OOM"
+                return "CRASH"
+
+            # Fall C: Exit Code 0 
+            # Noch mal sichergehen, dass "JOB DONE" im File steht
+            final_reason = analyze_crash_reason(output_file)
+            if final_reason == "DONE":
+                return "DONE"
+            elif final_reason == "LIKELY_OOM": 
+                 return "OOM"
+            
             return "CRASH"
 
 # =============================================================================
@@ -363,15 +418,32 @@ def main():
                         print(f"   1️⃣  SCF ({current_cores} Cores)")
                         result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
                         
-                        if result == "DONE": break 
+                        if result == "DONE": 
+                            break 
+
                         elif result == "OOM":
-                            if current_cores > 1:
+                            # STRATEGIE BEI OOM:
+                            # 1. Versuche disk_io='low' zu aktivieren
+                            was_changed = set_low_memory_mode(scf_in)
+                            
+                            if was_changed:
+                                update_csv(name, "Retrying (Low I/O)")
+                                print("      🔄 Starte neu mit disk_io='low'...")
+                                continue # Neustart mit gleichen Cores aber disk_io='low'
+                            
+                            # 2. Wenn disk_io schon an war -> Cores reduzieren (Safe Mode)
+                            elif current_cores > 1:
                                 current_cores = int(SAFE_CORES)
-                                update_csv(name, "SCF (Low Mem)")
-                                continue 
+                                update_csv(name, "SCF (Low Mem / 1 Core)")
+                                print("      ⬇️ Reduziere auf 1 Core...")
+                                continue
+                            
+                            # 3. Alles versucht -> Abbruch
                             else:
                                 update_csv(name, "FAILED (OOM)")
+                                print("      ❌ Keine weiteren RAM-Optionen verfügbar.")
                                 break
+
                         elif result == "CRASH":
                             reason = analyze_crash_reason(scf_out)
                             if reason == "NON_CONVERGED":

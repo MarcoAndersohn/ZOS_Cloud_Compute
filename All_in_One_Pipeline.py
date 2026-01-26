@@ -12,7 +12,7 @@ import psutil
 from datetime import datetime
 
 # =============================================================================
-# 0. LIVE-LOGGING KONFIGURATION
+# 0. LIVE-LOGGING
 # =============================================================================
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
@@ -101,33 +101,35 @@ def get_csv_status(name):
     return "NEW"
 
 # =============================================================================
-# 3. SMART LOGIC & VALIDATION
+# 3. SMART LOGIC & VALIDATION & OOM DETEKTION
 # =============================================================================
 
 def analyze_crash_reason(output_file):
     if not os.path.exists(output_file): return "NONE"
     try:
         with open(output_file, 'rb') as f:
-            try: f.seek(-5000, 2) # Lese letzte 5KB
+            try: f.seek(-5000, 2) 
             except OSError: f.seek(0)
             lines = f.read().decode('utf-8', errors='ignore')
         
-        # 1. Alles gut?
         if "JOB DONE" in lines: return "DONE"
-        
-        # 2. Konvergenz Probleme?
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
 
-        # 3. OOM Signatur Check (DAS IST NEU)
-        # Suche nach der RAM Schätzung
+        # OOM Signatur Check (Start-Phase)
         ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
         if ram_match:
-            # Wenn wir eine RAM Schätzung sehen, aber KEINE erste Iteration danach...
             if "Self-consistent Calculation" not in lines and "iteration #" not in lines:
-                print(f"      🕵️ Verdacht auf OOM: Letzte Meldung war {ram_match.group(1)} GB RAM Bedarf.")
+                print(f"      🕵️ Verdacht auf OOM (Start): Letzte Meldung war {ram_match.group(1)} GB RAM Bedarf.")
                 return "LIKELY_OOM"
 
-        # 4. Harte Fehler Keywords
+        # OOM Signatur Check (Mitten in Iteration - "Silent Death")
+        if "iteration #" in lines or "diagonalization" in lines:
+            error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "fatal"]
+            has_error_msg = any(key in lines for key in error_keywords)
+            if not has_error_msg:
+                print("      🕵️ Verdacht auf OOM (Silent Death): Abbruch mitten in Iteration ohne Fehlermeldung.")
+                return "LIKELY_OOM"
+
         error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed", "fatal error reading xml"]
         for key in error_keywords:
             if key in lines: return "HARD"
@@ -148,26 +150,90 @@ def is_xml_valid(xml_path):
     except:
         return False
 
-def set_low_memory_mode(input_file):
-    """Setzt disk_io = 'low' in der Input-Datei, um RAM zu sparen."""
-    print(f"      📉 Aktiviere LOW MEMORY Mode (disk_io='low') für {os.path.basename(input_file)}...")
+# --- NEU: PERSISTENZ-LOGIK ---
+def detect_oom_level(input_file):
+    """
+    Analysiert die Input-Datei, um herauszufinden, auf welchem OOM-Level
+    wir VOR dem Absturz waren. (Gedächtnis über Reboots hinweg)
+    """
+    if not os.path.exists(input_file): return 0
+    with open(input_file, 'r', errors='ignore') as f: content = f.read()
     
+    # Level 4: mixing_ndim = 2
+    if "mixing_ndim = 2" in content or "mixing_ndim=2" in content: return 4
+    # Level 3: mixing_ndim = 3
+    if "mixing_ndim = 3" in content or "mixing_ndim=3" in content: return 3
+    # Level 2: disk_io = 'low'
+    if "disk_io='low'" in content or 'disk_io="low"' in content: return 2
+    # Level 1: diagonalization = 'cg'
+    if "diagonalization='cg'" in content or 'diagonalization="cg"' in content: return 1
+    
+    return 0 # Level 0: Standard (David, Mix 8)
+
+def apply_oom_settings(input_file, level):
+    """
+    Schreibt die Einstellungen basierend auf dem OOM-Level hart in die Datei.
+    Das dient als Konfiguration UND als 'Savegame' falls die VM crasht.
+    """
     with open(input_file, 'r') as f: content = f.read()
     
-    # Prüfen, ob schon gesetzt
-    if "disk_io" in content:
-        if "disk_io='low'" in content or 'disk_io="low"' in content:
-            return False # War schon an
-        # Ersetzen wenn anderer Wert
-        content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"]", "disk_io='low'", content)
-    else:
-        # Neu einfügen in &CONTROL
-        content = content.replace("&CONTROL", "&CONTROL\n disk_io='low',")
+    # Standardwerte (Level 0)
+    diag = 'david'
+    mix = 8
+    disk = None 
     
+    msg = "Standard (david, mix=8)"
+
+    if level >= 1:
+        diag = 'cg'
+        mix = 4
+        msg = "Stufe 1 (cg, mix=4)"
+    
+    if level >= 2:
+        disk = 'low'
+        msg = "Stufe 2 (cg, mix=4, disk_io='low')"
+        
+    if level >= 3:
+        mix = 3
+        msg = "Stufe 3 (cg, mix=3, disk_io='low')"
+        
+    if level >= 4:
+        mix = 2
+        msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
+
+    print(f"      📉 Setze RAM-Strategie: {msg}")
+
+    # 1. Diagonalization
+    if "diagonalization" in content:
+        content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", f"diagonalization='{diag}'", content)
+    else:
+        content = content.replace("&ELECTRONS", f"&ELECTRONS\n diagonalization='{diag}',")
+
+    # 2. Mixing Ndim
+    if "mixing_ndim" in content:
+        content = re.sub(r"mixing_ndim\s*=\s*\d+", f"mixing_ndim = {mix}", content)
+    else:
+        content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_ndim = {mix},")
+
+    # 3. Disk I/O
+    if disk == 'low':
+        if "disk_io" in content:
+            content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"]", "disk_io='low'", content)
+        else:
+            content = content.replace("&CONTROL", "&CONTROL\n disk_io='low',")
+    else:
+        # Falls wir zurücksetzen (neuer Job oder Reset), 'low' entfernen
+        if "disk_io='low'" in content or 'disk_io="low"' in content:
+             content = re.sub(r"disk_io\s*=\s*['\"]low['\"],?", "", content)
+
     with open(input_file, 'w') as f: f.write(content)
     return True
 
 def fix_input_file(input_file, iteration_count=0):
+    """
+    Passt NUR Konvergenz-Parameter an (Beta, Conv_Thr).
+    Fasst KEINE RAM-kritischen Parameter (Algo, Mixing) mehr an!
+    """
     with open(input_file, 'r') as f: content = f.read()
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" in content:
@@ -183,35 +249,6 @@ def fix_input_file(input_file, iteration_count=0):
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
     
-    if iteration_count >= 60:
-        new_conv = "1.0d-5"
-        if "conv_thr" in content:
-             content = re.sub(r"conv_thr\s*=\s*[0-9\.dD\-]+", f"conv_thr = {new_conv}", content)
-        else:
-             content = content.replace("&ELECTRONS", f"&ELECTRONS\n conv_thr = {new_conv},")
-             
-    if iteration_count >= 100:
-        new_etot = "1.0d-3"
-        new_forc = "1.0d-2"
-        if "etot_conv_thr" in content:
-            content = re.sub(r"etot_conv_thr\s*=\s*[0-9\.dD\-]+", f"etot_conv_thr = {new_etot}", content)
-        else:
-            content = content.replace("&CONTROL", f"&CONTROL\n etot_conv_thr = {new_etot},")
-        if "forc_conv_thr" in content:
-            content = re.sub(r"forc_conv_thr\s*=\s*[0-9\.dD\-]+", f"forc_conv_thr = {new_forc}", content)
-        else:
-            content = content.replace("&CONTROL", f"&CONTROL\n forc_conv_thr = {new_forc},")
-    
-    if "diagonalization" in content:
-        content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", "diagonalization='cg'", content)
-    else:
-        content = content.replace("&ELECTRONS", "&ELECTRONS\n diagonalization='cg',")
-
-    if "mixing_ndim" in content:
-        content = re.sub(r"mixing_ndim\s*=\s*\d+", "mixing_ndim = 4", content)
-    else:
-        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 4,")
-
     if "electron_maxstep" in content:
         content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 150", content)
     else:
@@ -237,6 +274,7 @@ def get_last_iteration(output_file):
 
 # --- INTELLIGENTE LAUF-FUNKTION ---
 def run_monitored_pw(input_file, output_file, cwd, active_cores):
+    # Setup initial (Konvergenz Tweaks)
     fix_input_file(input_file, 0)
     
     last_git_sync = time.time()
@@ -251,26 +289,21 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         current_prefix = prefix_match.group(1) if prefix_match else "calc"
         xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")
         
-        # --- INTELLIGENTER START-CHECK ---
         mode = 'from_scratch'
-        
         if os.path.exists(output_file) and is_xml_valid(xml_path):
             mode = 'restart'
             print("      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.")
-            
         elif os.path.exists(output_file) and os.path.exists(checkpoint_dir):
             print("      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...")
             try:
                 if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir)
                 shutil.copytree(checkpoint_dir, tmp_dir)
-                
                 if is_xml_valid(xml_path):
                     mode = 'restart'
                     print("      ✅ Checkpoint erfolgreich geladen!")
                 else:
                     print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
-            except Exception as e:
-                print(f"      ❌ Fehler beim Laden des Checkpoints: {e}")
+            except Exception as e: print(f"      ❌ Fehler beim Laden des Checkpoints: {e}")
         else:
             print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
 
@@ -297,11 +330,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                 while process.poll() is None:
                     time.sleep(5)
                     
-                    # ---------------------------------------------------------
-                    # EREIGNIS-BASIERTER SYNC (Intelligent)
-                    # ---------------------------------------------------------
-                    
-                    # 1. Prüfen ob Zeit für Checkpoint (alle 15 Min)
+                    # 1. Checkpoint (alle 15 Min)
                     if time.time() - last_checkpoint_time > 900: 
                         if is_xml_valid(xml_path):
                             print("      💾 XML valide -> Erstelle Checkpoint...")
@@ -310,21 +339,18 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                                 shutil.copytree(tmp_dir, checkpoint_dir)
                                 last_checkpoint_time = time.time()
                                 print("      ✅ Checkpoint erstellt.")
-                                
                                 print("      ☁️ Trigger Git Sync (wegen Checkpoint)...")
                                 git_sync("Checkpoint & Log Update")
                                 last_git_sync = time.time() 
-                                
-                            except Exception as e:
-                                print(f"      ⚠️ Checkpoint fail: {e}")
+                            except Exception as e: print(f"      ⚠️ Checkpoint fail: {e}")
 
-                    # 2. HEARTBEAT (Nur wenn lange NICHTS passiert ist, z.B. 60 Min)
+                    # 2. Heartbeat (60 Min)
                     if time.time() - last_git_sync > 3600:
-                        print("      ❤️ Git Heartbeat (No Checkpoint recently)...")
+                        print("      ❤️ Git Heartbeat...")
                         git_sync("Log Update (Heartbeat)")
                         last_git_sync = time.time()
 
-                    # 3. RAM CHECK (Python Monitor)
+                    # 3. RAM Monitor
                     try:
                         mem_usage = psutil.virtual_memory().percent
                         if mem_usage > MEMORY_LIMIT_PERCENT:
@@ -333,35 +359,27 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                             return "OOM" 
                     except: pass
 
-                    # 4. Input Tweaking
+                    # 4. Input Tweaking (Nur Convergence)
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter > 30: fix_input_file(input_file, cur_iter)
 
-            except: 
-                process.kill(); return "CRASH"
+            except: process.kill(); return "CRASH"
             
             # --- PROZESS ENDE ANALYSE ---
-
-            # Fall A: Exit Code -9 (SIGKILL durch OS/OOM-Killer)
             if process.returncode == -9:
                 print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
                 return "OOM"
 
-            # Fall B: Exit Code != 0 (Anderer Crash)
             if process.returncode != 0:
                 reason = analyze_crash_reason(output_file)
                 if reason == "LIKELY_OOM":
-                    print("      💀 Logfile endet abrupt nach RAM-Schätzung -> OOM.")
+                    print("      💀 Logfile endet abrupt (Silent Death) -> OOM.")
                     return "OOM"
                 return "CRASH"
 
-            # Fall C: Exit Code 0 
-            # Noch mal sichergehen, dass "JOB DONE" im File steht
             final_reason = analyze_crash_reason(output_file)
-            if final_reason == "DONE":
-                return "DONE"
-            elif final_reason == "LIKELY_OOM": 
-                 return "OOM"
+            if final_reason == "DONE": return "DONE"
+            elif final_reason == "LIKELY_OOM": return "OOM"
             
             return "CRASH"
 
@@ -392,7 +410,6 @@ def main():
                 print(f"⏩ Überspringe {name}")
                 continue
 
-            # Crash Check vorab
             crash_type = analyze_crash_reason(scf_out)
             if crash_type == "NON_CONVERGED":
                 update_csv(name, "SKIPPED (Non-Conv)")
@@ -409,39 +426,45 @@ def main():
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-                # --- SCF LOOP ---
+                # --- SCF LOOP MIT OOM-KASKADE ---
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
                     update_csv(name, "Rechnet SCF...")
+                    
+                    # 1. Gedächtnis abrufen: Wo waren wir vor dem letzten Absturz?
+                    oom_level = detect_oom_level(scf_in)
                     current_cores = int(DEFAULT_CORES)
+                    if oom_level >= 4: current_cores = int(SAFE_CORES)
                     
                     while True:
-                        print(f"   1️⃣  SCF ({current_cores} Cores)")
+                        # 2. Einstellungen anwenden & speichern (für Absturzsicherheit)
+                        apply_oom_settings(scf_in, oom_level)
+                        
+                        print(f"   1️⃣  SCF ({current_cores} Cores, OOM-Lvl {oom_level})")
                         result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
                         
                         if result == "DONE": 
                             break 
 
                         elif result == "OOM":
-                            # STRATEGIE BEI OOM:
-                            # 1. Versuche disk_io='low' zu aktivieren
-                            was_changed = set_low_memory_mode(scf_in)
+                            oom_level += 1
+                            print(f"      ⚠️ OOM Fehler erkannt. Eskaliere zu Level {oom_level}...")
                             
-                            if was_changed:
-                                update_csv(name, "Retrying (Low I/O)")
-                                print("      🔄 Starte neu mit disk_io='low'...")
-                                continue # Neustart mit gleichen Cores aber disk_io='low'
-                            
-                            # 2. Wenn disk_io schon an war -> Cores reduzieren (Safe Mode)
-                            elif current_cores > 1:
-                                current_cores = int(SAFE_CORES)
-                                update_csv(name, "SCF (Low Mem / 1 Core)")
-                                print("      ⬇️ Reduziere auf 1 Core...")
+                            if oom_level == 1:
+                                update_csv(name, "Retrying (OOM Lvl 1: CG)")
                                 continue
-                            
-                            # 3. Alles versucht -> Abbruch
+                            elif oom_level == 2:
+                                update_csv(name, "Retrying (OOM Lvl 2: DiskIO)")
+                                continue
+                            elif oom_level == 3:
+                                update_csv(name, "Retrying (OOM Lvl 3: Mix3)")
+                                continue
+                            elif oom_level == 4:
+                                update_csv(name, "Retrying (OOM Lvl 4: 1Core)")
+                                current_cores = int(SAFE_CORES)
+                                continue
                             else:
-                                update_csv(name, "FAILED (OOM)")
-                                print("      ❌ Keine weiteren RAM-Optionen verfügbar.")
+                                update_csv(name, "SKIPPED (OOM Limit)")
+                                print("      ❌ System zu komplex für verfügbaren RAM. Skippe.")
                                 break
 
                         elif result == "CRASH":
@@ -454,6 +477,7 @@ def main():
                                 time.sleep(2)
                                 continue 
 
+                    if oom_level > 4: continue
                     if analyze_crash_reason(scf_out) != "DONE":
                         git_sync(f"Failed: {name}")
                         continue 

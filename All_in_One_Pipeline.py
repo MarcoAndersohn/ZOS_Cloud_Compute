@@ -30,6 +30,7 @@ DOS_THRESHOLD = 0.05
 DEFAULT_CORES = "2"
 SAFE_CORES = "1"
 MEMORY_LIMIT_PERCENT = 88.0
+MAX_BFGS_STEPS = 100  # Abbruchgrenze für Iterationen
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
@@ -359,13 +360,19 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                             return "OOM" 
                     except: pass
 
-                    # 4. Input Tweaking (Nur Convergence)
+                    # 4. Input Tweaking & LIMIT CHECK
                     cur_iter = get_last_iteration(output_file)
+                    
+                    # --- NEU: ABBRUCH BEI ZU VIELEN SCHRITTEN ---
+                    if cur_iter >= MAX_BFGS_STEPS:
+                        print(f"      🛑 Limit erreicht ({cur_iter}/{MAX_BFGS_STEPS} BFGS Schritte). Breche ab.")
+                        process.kill()
+                        return "MAX_STEPS"
+                    
                     if cur_iter > 30: fix_input_file(input_file, cur_iter)
 
             except: process.kill(); return "CRASH"
             
-            # --- PROZESS ENDE ANALYSE ---
             if process.returncode == -9:
                 print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
                 return "OOM"
@@ -426,7 +433,6 @@ def main():
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-                # --- SCF LOOP MIT OOM-KASKADE ---
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
                     update_csv(name, "Rechnet SCF...")
                     
@@ -444,28 +450,28 @@ def main():
                         
                         if result == "DONE": 
                             break 
+                        
+                        # --- NEU: ABBRUCH BEI ZU VIELEN SCHRITTEN ---
+                        elif result == "MAX_STEPS":
+                            update_csv(name, "SKIPPED (Max BFGS Steps)")
+                            git_sync(f"Skipped {name}: >{MAX_BFGS_STEPS} BFGS Steps")
+                            break # Bricht while-loop ab, geht zum nächsten Kandidaten
 
                         elif result == "OOM":
                             oom_level += 1
                             print(f"      ⚠️ OOM Fehler erkannt. Eskaliere zu Level {oom_level}...")
                             
-                            if oom_level == 1:
-                                update_csv(name, "Retrying (OOM Lvl 1: CG)")
-                                continue
-                            elif oom_level == 2:
-                                update_csv(name, "Retrying (OOM Lvl 2: DiskIO)")
-                                continue
-                            elif oom_level == 3:
-                                update_csv(name, "Retrying (OOM Lvl 3: Mix3)")
-                                continue
+                            if oom_level == 1: update_csv(name, "Retrying (OOM Lvl 1: CG)")
+                            elif oom_level == 2: update_csv(name, "Retrying (OOM Lvl 2: DiskIO)")
+                            elif oom_level == 3: update_csv(name, "Retrying (OOM Lvl 3: Mix3)")
                             elif oom_level == 4:
                                 update_csv(name, "Retrying (OOM Lvl 4: 1Core)")
                                 current_cores = int(SAFE_CORES)
-                                continue
                             else:
                                 update_csv(name, "SKIPPED (OOM Limit)")
                                 print("      ❌ System zu komplex für verfügbaren RAM. Skippe.")
                                 break
+                            continue
 
                         elif result == "CRASH":
                             reason = analyze_crash_reason(scf_out)
@@ -477,12 +483,11 @@ def main():
                                 time.sleep(2)
                                 continue 
 
-                    if oom_level > 4: continue
+                    if result == "MAX_STEPS" or result == "OOM": continue # Zum nächsten for-loop Kandidaten
                     if analyze_crash_reason(scf_out) != "DONE":
                         git_sync(f"Failed: {name}")
                         continue 
 
-                # Daten extrahieren
                 with open(scf_in, 'r') as f: 
                     match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
                     prefix = match.group(1) if match else "calc"
@@ -493,7 +498,6 @@ def main():
                         match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
                         if match: e_fermi = float(match.group(1))
 
-                # --- DOS ---
                 update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
                 if not os.path.exists(dos_out):
                     with open(dos_in, "w") as f: 
@@ -523,7 +527,6 @@ def main():
                     git_sync(f"Fertig: {name} (Isolator)")
                     continue
 
-                # --- PHONONEN ---
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 if not os.path.exists(ph_out):

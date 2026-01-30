@@ -31,6 +31,7 @@ DEFAULT_CORES = "2"
 SAFE_CORES = "1"
 MEMORY_LIMIT_PERCENT = 88.0
 MAX_BFGS_STEPS = 100  # Abbruchgrenze für Iterationen
+MAX_RETRIES_LEVEL = 3 # Wie oft darf er crashen, bevor wir das Level erhöhen?
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
@@ -100,6 +101,29 @@ def get_csv_status(name):
         for row in csv.DictReader(f):
             if row['Name'] == name: return row['Status']
     return "NEW"
+
+def count_job_attempts(log_file, job_name):
+    """Zählt, wie oft der Job im Log hintereinander gestartet wurde."""
+    if not os.path.exists(log_file): return 1
+    count = 0
+    try:
+        with open(log_file, 'rb') as f:
+            # Wir lesen die letzten 50 KB, das reicht für die Historie
+            f.seek(0, 2) 
+            size = f.tell()
+            f.seek(max(0, size - 50000), 0)
+            lines = f.read().decode('utf-8', errors='ignore').splitlines()
+        
+        # Rückwärts lesen: Suche nach "💎 Job: NAME"
+        # Wir zählen, wie oft der Job hintereinander auftaucht, ohne dass ein anderer Job dazwischen war.
+        job_marker = f"💎 Job: {job_name}"
+        for line in reversed(lines):
+            if job_marker in line:
+                count += 1
+            elif "💎 Job:" in line and job_name not in line:
+                break # Ein anderer Job war dazwischen -> Kette unterbrochen
+    except: return 1
+    return max(1, count) # Mindestens 1
 
 # =============================================================================
 # 3. SMART LOGIC & VALIDATION & OOM DETEKTION
@@ -440,13 +464,21 @@ def main():
                     # 1. Gedächtnis abrufen
                     file_level = detect_oom_level(scf_in)
                     
-                    # 2. NEU: Tatort-Analyse VOR dem ersten Start (Fix für Endlosschleife)
+                    # 2. Tatort-Analyse VOR dem ersten Start (Mit Threshold)
                     start_crash_reason = analyze_crash_reason(scf_out)
                     
                     if start_crash_reason == "LIKELY_OOM":
-                        print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt! Eskaliere sofort (Level {file_level} -> {file_level + 1}).")
-                        oom_level = file_level + 1
-                        update_csv(name, f"Recovering (Escalating to Lvl {oom_level})")
+                        attempts = count_job_attempts(TXT_LOG_FILE, name)
+                        print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt. Versuch Nr. {attempts} auf diesem Level.")
+                        
+                        if attempts >= MAX_RETRIES_LEVEL:
+                            oom_level = file_level + 1
+                            print(f"      ❗ Threshold ({MAX_RETRIES_LEVEL}) erreicht! Eskaliere HÄRTER (Level {file_level} -> {oom_level}).")
+                            update_csv(name, f"Recovering (Escalating to Lvl {oom_level})")
+                        else:
+                            oom_level = file_level
+                            print(f"      🔄 Threshold noch nicht erreicht. Gebe Level {file_level} noch eine Chance.")
+                            update_csv(name, f"Retrying (Attempt {attempts}/{MAX_RETRIES_LEVEL})")
                     else:
                         oom_level = file_level
 

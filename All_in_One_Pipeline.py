@@ -433,16 +433,28 @@ def main():
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
+                # --- SCF LOOP MIT OOM-KASKADE ---
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
                     update_csv(name, "Rechnet SCF...")
                     
-                    # 1. Gedächtnis abrufen: Wo waren wir vor dem letzten Absturz?
-                    oom_level = detect_oom_level(scf_in)
+                    # 1. Gedächtnis abrufen
+                    file_level = detect_oom_level(scf_in)
+                    
+                    # 2. NEU: Tatort-Analyse VOR dem ersten Start (Fix für Endlosschleife)
+                    start_crash_reason = analyze_crash_reason(scf_out)
+                    
+                    if start_crash_reason == "LIKELY_OOM":
+                        print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt! Eskaliere sofort (Level {file_level} -> {file_level + 1}).")
+                        oom_level = file_level + 1
+                        update_csv(name, f"Recovering (Escalating to Lvl {oom_level})")
+                    else:
+                        oom_level = file_level
+
                     current_cores = int(DEFAULT_CORES)
                     if oom_level >= 4: current_cores = int(SAFE_CORES)
                     
                     while True:
-                        # 2. Einstellungen anwenden & speichern (für Absturzsicherheit)
+                        # 3. Einstellungen anwenden & speichern (für Absturzsicherheit)
                         apply_oom_settings(scf_in, oom_level)
                         
                         print(f"   1️⃣  SCF ({current_cores} Cores, OOM-Lvl {oom_level})")
@@ -451,11 +463,10 @@ def main():
                         if result == "DONE": 
                             break 
                         
-                        # --- NEU: ABBRUCH BEI ZU VIELEN SCHRITTEN ---
                         elif result == "MAX_STEPS":
                             update_csv(name, "SKIPPED (Max BFGS Steps)")
                             git_sync(f"Skipped {name}: >{MAX_BFGS_STEPS} BFGS Steps")
-                            break # Bricht while-loop ab, geht zum nächsten Kandidaten
+                            break
 
                         elif result == "OOM":
                             oom_level += 1

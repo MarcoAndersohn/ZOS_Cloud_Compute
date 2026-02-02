@@ -1,0 +1,69 @@
+&CONTROL
+ restart_mode='from_scratch',
+  calculation = 'vc-relax'
+  prefix = 'LiMgAl2H92'
+  outdir = './tmp/'
+  pseudo_dir='/home/marco/ZOS_Cloud_Compute/pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 24
+  ntyp = 4
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+ electron_maxstep = 150,
+ mixing_ndim = 8,
+ diagonalization='david',
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  Al  1.00  Al.UPF
+  H  1.00  H.UPF
+  Li  1.00  Li.UPF
+  Mg  1.00  Mg.UPF
+ATOMIC_POSITIONS (angstrom)
+  Al  1.190181  -0.000000  7.216078
+  Al  4.304699  0.000000  0.729442
+  Mg  3.884008  2.949657  4.785699
+  Al  0.026539  2.949657  0.049086
+  Al  1.555639  2.949657  3.206034
+  Li  2.781748  -0.000000  3.979594
+  H  4.371310  4.140559  0.716712
+  H  0.579939  -0.000000  0.998784
+  H  4.656851  2.949657  6.521516
+  H  1.170199  4.138242  7.296491
+  H  3.861158  -0.000000  2.295604
+  H  3.143103  2.949657  2.715128
+  H  3.923040  4.700172  4.713698
+  H  1.997527  2.949657  4.888690
+  H  0.908180  2.949657  1.496987
+  H  2.738024  0.000000  0.015663
+  H  4.913407  -0.000000  6.962911
+  H  1.551090  -0.000000  5.620369
+  H  1.595348  4.600689  3.161845
+  H  3.923040  1.199142  4.713698
+  H  1.170199  1.761071  7.296491
+  H  1.595348  1.298625  3.161845
+  H  4.371310  1.758755  0.716712
+  H  0.001729  2.949657  3.749950
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  5.436099  0.000000  0.027749
+  0.000000  5.899314  -0.000000
+  0.037867  -0.000000  7.882163

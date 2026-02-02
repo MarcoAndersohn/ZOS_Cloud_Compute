@@ -4990,3 +4990,40 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 🚀 NEUSTART SMART-PIPELINE: 2026-02-02 12:34
 ========================================
 
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   414d5a9..7ad8789  main -> main
+⏩ Überspringe 01_HfH3_Top1
+⏩ Überspringe 01_K7SrMg4AlB15H64
+⏩ Überspringe 01_LiTaH6Ru
+⏩ Überspringe 01_SrMgGaB3H16
+⏩ Überspringe 02_BaMg3H8
+⏩ Überspringe 02_K3Sr4TaGaB11H48
+⏩ Überspringe 02_K4BaGd2AlBH412
+⏩ Überspringe 02_Rb3BaCaGa3H16
+⏩ Überspringe 03_Hf2ZnB3H16
+⏩ Überspringe 03_LaH32S15
+⏩ Überspringe 03_Mg7ScH16
+⏩ Überspringe 03_TiH2
+⏩ Überspringe 04_K4SrLi2AlH12
+      🕵️ Verdacht auf OOM (Silent Death): Abbruch mitten in Iteration ohne Fehlermeldung.
+
+💎 Job: 04_La7YMgB23H96
+      🕵️ Verdacht auf OOM (Silent Death): Abbruch mitten in Iteration ohne Fehlermeldung.
+      🕵️ OOM-Signatur vom letzten Lauf erkannt. Versuch Nr. 4 auf diesem Level.
+      ❗ Threshold (3) erreicht! Eskaliere HÄRTER (Level 4 -> 5).
+      📉 Setze RAM-Strategie: Stufe 4 (cg, mix=2, disk_io='low', 1 Core)
+   1️⃣  SCF (1 Cores, OOM-Lvl 5)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 1 Cores)...
+      ⚠️ RAM NOT-AUS (Python Monitor)!
+      ⚠️ OOM Fehler erkannt. Eskaliere zu Level 6...
+      ❌ System zu komplex für verfügbaren RAM. Skippe.
+
+💎 Job: 04_Li5YTaBe5H18
+      📉 Setze RAM-Strategie: Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
+      💾 XML valide -> Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.
+      ☁️ Trigger Git Sync (wegen Checkpoint)...

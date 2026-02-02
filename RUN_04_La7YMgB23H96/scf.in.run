@@ -1,5 +1,6 @@
 &CONTROL
  restart_mode='from_scratch',
+ disk_io='low',
   calculation = 'vc-relax'
   prefix = 'La7YMgB23H96'
   outdir = './tmp/'
@@ -20,7 +21,7 @@
 /
 &ELECTRONS
  electron_maxstep = 150,
- mixing_ndim = 4,
+ mixing_ndim = 2,
  diagonalization='cg',
   conv_thr = 1.0d-6
 /

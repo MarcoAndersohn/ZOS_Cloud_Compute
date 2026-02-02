@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on  2Feb2026 at 10:11:15 
+     Program PWSCF v.6.7MaX starts on  2Feb2026 at 11:29:45 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,10 +9,9 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     2 processors
+     Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
@@ -28,11 +27,9 @@
      a serial algorithm will be used
 
 
-     Parallelization info
+     G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min        7577    3790   1012               692930   245050   33977
-     Max        7578    3791   1013               692931   245051   33978
      Sum       15155    7581   2025              1385861   490101   67955
 
 
@@ -48,7 +45,7 @@
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            4  plain     mixing
+     number of iterations used =            2  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -301,6 +298,19 @@
 
      Smooth grid:   490101 G-vectors     FFT dimensions: ( 100, 100, 100)
 
-     Estimated max dynamical RAM per process >       6.16 GB
+     Estimated max dynamical RAM per process >      12.23 GB
 
-     Estimated total dynamical RAM >      12.33 GB
+     Initial potential from superposition of free atoms
+
+     starting charge  262.76281, renormalised to  263.00000
+
+     negative rho (up, down):  4.329E-02 0.000E+00
+     Starting wfcs are  302 randomized atomic wfcs
+     Checking if some PAW data can be deallocated... 
+
+     total cpu time spent up to now is      267.3 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    50.00 Ry     beta= 0.70
+     CG style diagonalization

@@ -1,0 +1,57 @@
+&CONTROL
+ restart_mode='from_scratch',
+  calculation = 'vc-relax'
+  prefix = 'HfTiBH42'
+  outdir = './tmp/'
+  pseudo_dir='/home/marco/ZOS_Cloud_Compute/pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 12
+  ntyp = 4
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+ electron_maxstep = 150,
+ mixing_ndim = 8,
+ diagonalization='david',
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  B  1.00  B.UPF
+  H  1.00  H.UPF
+  Hf  1.00  Hf.UPF
+  Ti  1.00  Ti.UPF
+ATOMIC_POSITIONS (angstrom)
+  Ti  3.641733  0.034158  -0.001188
+  Hf  1.815604  1.820488  2.583088
+  B  1.830351  1.831688  0.008345
+  B  3.646248  -0.005850  2.574616
+  H  -0.010897  2.735324  3.306300
+  H  0.903237  -0.005276  1.846131
+  H  3.653652  0.946023  3.282744
+  H  1.823014  0.818781  4.481930
+  H  0.855591  1.834735  0.707724
+  H  2.810677  1.826752  0.704403
+  H  1.830602  2.774247  4.447024
+  H  2.687229  3.659364  1.874542
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  3.670349  -0.001162  -0.006981
+  -0.001402  3.672870  -0.000664
+  -0.018237  -0.018036  5.151482

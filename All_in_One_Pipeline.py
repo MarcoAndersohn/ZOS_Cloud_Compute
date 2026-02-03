@@ -95,12 +95,13 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
         writer.writeheader()
         writer.writerows(rows)
 
-def get_csv_status(name):
-    if not os.path.exists(CSV_FILE): return "NEW"
+def get_csv_full_info(name):
+    """Liest die komplette Zeile aus der CSV, um auch Stabilität zu prüfen."""
+    if not os.path.exists(CSV_FILE): return {}
     with open(CSV_FILE, 'r') as f:
         for row in csv.DictReader(f):
-            if row['Name'] == name: return row['Status']
-    return "NEW"
+            if row['Name'] == name: return row
+    return {}
 
 def count_job_attempts(log_file, job_name):
     if not os.path.exists(log_file): return 1
@@ -449,17 +450,38 @@ def main():
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             scf_out = os.path.join(work_dir, "scf.out")
             
-            last_status = get_csv_status(name)
-            if "Fertig" in last_status or "SKIPPED" in last_status:
-                print(f"⏩ Überspringe {name}")
+            # --- NEUE LOGIK START ---
+            row_data = get_csv_full_info(name)
+            last_status = row_data.get('Status', 'NEW')
+            stability = row_data.get('Stabilität', '-')
+
+            # 1. Wenn explizit geskippt (z.B. wegen Fehler oder Limit) -> Überspringen
+            if "SKIPPED" in last_status:
+                print(f"⏩ Überspringe {name} (Status: {last_status})")
                 continue
+            
+            # 2. Wenn Isolator -> Überspringen (da lohnt sich Phonon nicht)
+            if "Isolator" in last_status:
+                print(f"⏩ Überspringe {name} (Ist ein Isolator)")
+                continue
+
+            # 3. Wenn Metall UND Stabilität schon bekannt (Stabil/Instabil) -> Überspringen
+            if "Metall" in last_status and stability in ["STABIL", "INSTABIL"]:
+                print(f"⏩ Überspringe {name} (Bereits vollständig analysiert: {stability})")
+                continue
+
+            # 4. Wenn Metall ABER Stabilität unbekannt -> RECHNEN (Nicht überspringen!)
+            if "Metall" in last_status and (stability == "-" or stability == "Unbekannt"):
+                print(f"🔄 Retry Phonon für {name} (Metall, aber Stabilität unbekannt)...")
+                # Hier läuft er einfach weiter im Code und landet automatisch bei der Phononen-Logik
+            # --- NEUE LOGIK ENDE ---
 
             crash_type = analyze_crash_reason(scf_out)
             if crash_type == "NON_CONVERGED":
                 update_csv(name, "SKIPPED (Non-Conv)")
                 continue
             elif crash_type == "DONE":
-                print(f"✅ {name} ist fertig.")
+                print(f"✅ {name} SCF ist fertig.")
             
             try:
                 if not os.path.exists(work_dir): os.makedirs(work_dir)
@@ -602,7 +624,7 @@ def main():
                     
                     if ph_res != "DONE":
                          print("      ❌ Phononen fehlgeschlagen (OOM/Crash).")
-                         update_csv(name, "ERROR (Phonon Crash)")
+                         update_csv(name, "SKIPPED (Phonon Crash)") # VERHINDERT ENDLOSSCHLEIFE
                          git_sync(f"Phonon Crash: {name}")
                          continue
 

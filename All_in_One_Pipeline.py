@@ -30,8 +30,8 @@ DOS_THRESHOLD = 0.05
 DEFAULT_CORES = "2"
 SAFE_CORES = "1"
 MEMORY_LIMIT_PERCENT = 88.0
-MAX_BFGS_STEPS = 100  # Abbruchgrenze für Iterationen
-MAX_RETRIES_LEVEL = 3 # Wie oft darf er crashen, bevor wir das Level erhöhen?
+MAX_BFGS_STEPS = 100 
+MAX_RETRIES_LEVEL = 3
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
@@ -103,27 +103,22 @@ def get_csv_status(name):
     return "NEW"
 
 def count_job_attempts(log_file, job_name):
-    """Zählt, wie oft der Job im Log hintereinander gestartet wurde."""
     if not os.path.exists(log_file): return 1
     count = 0
     try:
         with open(log_file, 'rb') as f:
-            # Wir lesen die letzten 50 KB, das reicht für die Historie
             f.seek(0, 2) 
             size = f.tell()
             f.seek(max(0, size - 50000), 0)
             lines = f.read().decode('utf-8', errors='ignore').splitlines()
-        
-        # Rückwärts lesen: Suche nach "💎 Job: NAME"
-        # Wir zählen, wie oft der Job hintereinander auftaucht, ohne dass ein anderer Job dazwischen war.
         job_marker = f"💎 Job: {job_name}"
         for line in reversed(lines):
             if job_marker in line:
                 count += 1
             elif "💎 Job:" in line and job_name not in line:
-                break # Ein anderer Job war dazwischen -> Kette unterbrochen
+                break
     except: return 1
-    return max(1, count) # Mindestens 1
+    return max(1, count)
 
 # =============================================================================
 # 3. SMART LOGIC & VALIDATION & OOM DETEKTION
@@ -140,15 +135,13 @@ def analyze_crash_reason(output_file):
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
 
-        # OOM Signatur Check (Start-Phase)
         ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
         if ram_match:
             if "Self-consistent Calculation" not in lines and "iteration #" not in lines:
                 print(f"      🕵️ Verdacht auf OOM (Start): Letzte Meldung war {ram_match.group(1)} GB RAM Bedarf.")
                 return "LIKELY_OOM"
 
-        # OOM Signatur Check (Mitten in Iteration - "Silent Death")
-        if "iteration #" in lines or "diagonalization" in lines:
+        if "iteration #" in lines or "diagonalization" in lines or "Davidson diagonalization" in lines:
             error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "fatal"]
             has_error_msg = any(key in lines for key in error_keywords)
             if not has_error_msg:
@@ -175,79 +168,44 @@ def is_xml_valid(xml_path):
     except:
         return False
 
-# --- NEU: PERSISTENZ-LOGIK ---
+# --- PERSISTENZ-LOGIK ---
 def detect_oom_level(input_file):
-    """
-    Analysiert die Input-Datei, um herauszufinden, auf welchem OOM-Level
-    wir VOR dem Absturz waren. (Gedächtnis über Reboots hinweg)
-    """
     if not os.path.exists(input_file): return 0
     with open(input_file, 'r', errors='ignore') as f: content = f.read()
-    
-    # Level 4: mixing_ndim = 2
     if "mixing_ndim = 2" in content or "mixing_ndim=2" in content: return 4
-    # Level 3: mixing_ndim = 3
     if "mixing_ndim = 3" in content or "mixing_ndim=3" in content: return 3
-    # Level 2: disk_io = 'low'
     if "disk_io='low'" in content or 'disk_io="low"' in content: return 2
-    # Level 1: diagonalization = 'cg'
     if "diagonalization='cg'" in content or 'diagonalization="cg"' in content: return 1
-    
-    return 0 # Level 0: Standard (David, Mix 8)
+    return 0
 
 def apply_oom_settings(input_file, level):
-    """
-    Schreibt die Einstellungen basierend auf dem OOM-Level hart in die Datei.
-    Das dient als Konfiguration UND als 'Savegame' falls die VM crasht.
-    """
     with open(input_file, 'r') as f: content = f.read()
-    
-    # Standardwerte (Level 0)
-    diag = 'david'
-    mix = 8
-    disk = None 
-    
+    diag = 'david'; mix = 8; disk = None 
     msg = "Standard (david, mix=8)"
 
-    if level >= 1:
-        diag = 'cg'
-        mix = 4
-        msg = "Stufe 1 (cg, mix=4)"
-    
-    if level >= 2:
-        disk = 'low'
-        msg = "Stufe 2 (cg, mix=4, disk_io='low')"
-        
-    if level >= 3:
-        mix = 3
-        msg = "Stufe 3 (cg, mix=3, disk_io='low')"
-        
-    if level >= 4:
-        mix = 2
-        msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
+    if level >= 1: diag = 'cg'; mix = 4; msg = "Stufe 1 (cg, mix=4)"
+    if level >= 2: disk = 'low'; msg = "Stufe 2 (cg, mix=4, disk_io='low')"
+    if level >= 3: mix = 3; msg = "Stufe 3 (cg, mix=3, disk_io='low')"
+    if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
 
     print(f"      📉 Setze RAM-Strategie: {msg}")
 
-    # 1. Diagonalization
     if "diagonalization" in content:
         content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", f"diagonalization='{diag}'", content)
     else:
         content = content.replace("&ELECTRONS", f"&ELECTRONS\n diagonalization='{diag}',")
 
-    # 2. Mixing Ndim
     if "mixing_ndim" in content:
         content = re.sub(r"mixing_ndim\s*=\s*\d+", f"mixing_ndim = {mix}", content)
     else:
         content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_ndim = {mix},")
 
-    # 3. Disk I/O
     if disk == 'low':
         if "disk_io" in content:
             content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"]", "disk_io='low'", content)
         else:
             content = content.replace("&CONTROL", "&CONTROL\n disk_io='low',")
     else:
-        # Falls wir zurücksetzen (neuer Job oder Reset), 'low' entfernen
         if "disk_io='low'" in content or 'disk_io="low"' in content:
              content = re.sub(r"disk_io\s*=\s*['\"]low['\"],?", "", content)
 
@@ -255,10 +213,6 @@ def apply_oom_settings(input_file, level):
     return True
 
 def fix_input_file(input_file, iteration_count=0):
-    """
-    Passt NUR Konvergenz-Parameter an (Beta, Conv_Thr).
-    Fasst KEINE RAM-kritischen Parameter (Algo, Mixing) mehr an!
-    """
     with open(input_file, 'r') as f: content = f.read()
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" in content:
@@ -297,11 +251,9 @@ def get_last_iteration(output_file):
         return val
     except: return 0
 
-# --- INTELLIGENTE LAUF-FUNKTION ---
+# --- ROBUSTE PWSCF WRAPPER ---
 def run_monitored_pw(input_file, output_file, cwd, active_cores):
-    # Setup initial (Konvergenz Tweaks)
     fix_input_file(input_file, 0)
-    
     last_git_sync = time.time()
     last_checkpoint_time = 0 
 
@@ -384,10 +336,8 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                             return "OOM" 
                     except: pass
 
-                    # 4. Input Tweaking & LIMIT CHECK
+                    # 4. Limit Check
                     cur_iter = get_last_iteration(output_file)
-                    
-                    # --- NEU: ABBRUCH BEI ZU VIELEN SCHRITTEN ---
                     if cur_iter >= MAX_BFGS_STEPS:
                         print(f"      🛑 Limit erreicht ({cur_iter}/{MAX_BFGS_STEPS} BFGS Schritte). Breche ab.")
                         process.kill()
@@ -413,6 +363,69 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
             elif final_reason == "LIKELY_OOM": return "OOM"
             
             return "CRASH"
+
+# --- NEU: ROBUSTE PHONON WRAPPER ---
+def run_monitored_ph(input_file, output_file, cwd, active_cores):
+    """
+    Kopie der PW-Logik, aber angepasst für ph.x
+    """
+    last_git_sync = time.time()
+
+    # recover Flag setzen, falls Output schon existiert
+    with open(input_file, 'r') as f: content = f.read()
+    if os.path.exists(output_file):
+        # Wir fügen recover=.true. hinzu, wenn nicht vorhanden
+        if "recover" not in content:
+            content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
+    
+    run_input = input_file + ".run"
+    with open(run_input, 'w') as f: f.write(content)
+    
+    # Append mode, falls recover aktiv ist
+    file_mode = 'a' if "recover=.true." in content else 'w'
+
+    with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
+        cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
+        print(f"      ⚙️ Starte PHONONEN (Cores: {active_cores})...")
+        process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
+        
+        try:
+            while process.poll() is None:
+                time.sleep(5)
+                
+                # Git Heartbeat (Phononen dauern lange!)
+                if time.time() - last_git_sync > 1800: # Alle 30 min
+                    print("      ❤️ Git Heartbeat (Phonon)...")
+                    git_sync("Log Update (Phonon Running)")
+                    last_git_sync = time.time()
+
+                # RAM Monitor
+                try:
+                    mem_usage = psutil.virtual_memory().percent
+                    if mem_usage > MEMORY_LIMIT_PERCENT:
+                        print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
+                        process.kill()
+                        return "OOM"
+                except: pass
+
+        except: 
+            process.kill()
+            return "CRASH"
+        
+        if process.returncode == -9:
+            print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
+            return "OOM"
+
+        if process.returncode != 0:
+            return "CRASH"
+
+        # Check success
+        try:
+            with open(output_file, 'r', errors='ignore') as f:
+                if "JOB DONE" in f.read(): return "DONE"
+        except: pass
+        
+        return "CRASH"
 
 # =============================================================================
 # 4. HAUPTPROGRAMM
@@ -464,7 +477,7 @@ def main():
                     # 1. Gedächtnis abrufen
                     file_level = detect_oom_level(scf_in)
                     
-                    # 2. Tatort-Analyse VOR dem ersten Start (Mit Threshold)
+                    # 2. Tatort-Analyse VOR dem ersten Start
                     start_crash_reason = analyze_crash_reason(scf_out)
                     
                     if start_crash_reason == "LIKELY_OOM":
@@ -486,14 +499,12 @@ def main():
                     if oom_level >= 4: current_cores = int(SAFE_CORES)
                     
                     while True:
-                        # 3. Einstellungen anwenden & speichern (für Absturzsicherheit)
                         apply_oom_settings(scf_in, oom_level)
                         
                         print(f"   1️⃣  SCF ({current_cores} Cores, OOM-Lvl {oom_level})")
                         result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
                         
-                        if result == "DONE": 
-                            break 
+                        if result == "DONE": break 
                         
                         elif result == "MAX_STEPS":
                             update_csv(name, "SKIPPED (Max BFGS Steps)")
@@ -526,7 +537,7 @@ def main():
                                 time.sleep(2)
                                 continue 
 
-                    if result == "MAX_STEPS" or result == "OOM": continue # Zum nächsten for-loop Kandidaten
+                    if result == "MAX_STEPS" or result == "OOM": continue 
                     if analyze_crash_reason(scf_out) != "DONE":
                         git_sync(f"Failed: {name}")
                         continue 
@@ -572,11 +583,28 @@ def main():
 
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
-                if not os.path.exists(ph_out):
-                    with open(ph_in, "w") as f: 
-                        f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
-                    with open(ph_in, "r") as f_in, open(ph_out, "w") as f_out:
-                        subprocess.run(["mpirun", "--oversubscribe", "-np", DEFAULT_CORES, PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                
+                # --- PHONONEN BERECHNUNG (JETZT ROBUST) ---
+                if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
+                    if not os.path.exists(ph_in):
+                        with open(ph_in, "w") as f: 
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
+                    
+                    # Versuch 1: 2 Cores
+                    ph_cores = int(DEFAULT_CORES)
+                    ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                    
+                    # Wenn OOM oder CRASH -> Versuch 2: 1 Core (reduziert Speicherverbrauch drastisch)
+                    if ph_res == "OOM" or ph_res == "CRASH":
+                        print("      ⚠️ Phonon Crash/OOM. Versuche mit 1 Core & Recover...")
+                        ph_cores = 1
+                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                    
+                    if ph_res != "DONE":
+                         print("      ❌ Phononen fehlgeschlagen (OOM/Crash).")
+                         update_csv(name, "ERROR (Phonon Crash)")
+                         git_sync(f"Phonon Crash: {name}")
+                         continue
 
                 min_f, stab = "-", "Unbekannt"
                 if os.path.exists(ph_out):

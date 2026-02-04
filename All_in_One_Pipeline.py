@@ -128,14 +128,14 @@ def analyze_crash_reason(output_file):
     if not os.path.exists(output_file): return "NONE"
     try:
         with open(output_file, 'rb') as f:
-            try: f.seek(-10000, 2) # Mehr lesen für Symmetrie Fehler
+            try: f.seek(-10000, 2) 
             except OSError: f.seek(0)
             lines = f.read().decode('utf-8', errors='ignore')
         
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
 
-        # --- NEU: SPEZIFISCHER SYMMETRIE CHECK ---
+        # Symmetrie-Fehler erkennen
         if "not orthogonal" in lines and "D_S" in lines:
             print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
@@ -173,17 +173,26 @@ def is_xml_valid(xml_path):
     except:
         return False
 
-# --- NEU: SYMMETRIE KILLER ---
-def disable_symmetries(input_file):
-    """Fügt search_sym=.false. in die Input-Datei ein, falls nicht vorhanden."""
+# --- NEU: SYMMETRIE KILLER & GRID REDUCER ---
+def disable_symmetries_and_reduce_grid(input_file):
+    """
+    1. Fügt search_sym=.false. in die Input-Datei ein.
+    2. Reduziert das q-Grid auf 1 1 1 um RAM zu sparen.
+    """
     if not os.path.exists(input_file): return
     with open(input_file, 'r') as f: content = f.read()
     
+    # Symmetrie aus
     if "search_sym" not in content:
-        # Wir fügen es direkt nach dem Namelist-Start ein
         content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
-        with open(input_file, 'w') as f: f.write(content)
-        print(f"      🛡️ Symmetrien deaktiviert in {os.path.basename(input_file)}")
+    
+    # Grid reduzieren
+    content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
+    content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
+    content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
+
+    with open(input_file, 'w') as f: f.write(content)
+    print(f"      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert (RAM sparen).")
 
 # --- PERSISTENZ-LOGIK ---
 def detect_oom_level(input_file):
@@ -628,27 +637,33 @@ def main():
                         with open(ph_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                     
+                    # Logik: Wenn wir schon öfter probiert haben -> Direkt 1 Core (Safe Mode)
+                    attempts = count_job_attempts(TXT_LOG_FILE, name)
                     ph_cores = int(DEFAULT_CORES)
+                    if attempts > 1:
+                        ph_cores = 1
+                        print(f"      🔄 Wiederholter Versuch ({attempts}): Starte direkt mit 1 Core.")
+
                     ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                     
                     # 1. Fall: Expliziter Symmetrie-Fehler
                     if ph_res == "CRASH":
                         crash_reason = analyze_crash_reason(ph_out)
                         if crash_reason == "SYMMETRY_ERROR":
-                            print("      🧩 Symmetrie-Fehler erkannt! Schalte Symmetrien aus und starte Clean Restart...")
-                            disable_symmetries(ph_in)
+                            print("      🧩 Symmetrie-Fehler erkannt! Schalte Symmetrien aus, reduziere Grid & Clean Restart...")
+                            disable_symmetries_and_reduce_grid(ph_in)
                             
                             tmp_path = os.path.join(work_dir, "tmp")
                             if os.path.exists(tmp_path):
                                 shutil.rmtree(tmp_path, ignore_errors=True)
                             
-                            ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                            # Bei Symmetrie-Aus IMMER 1 Core nehmen (sicher ist sicher)
+                            ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
 
                     # 2. Fall: OOM (Fallback)
                     if ph_res == "OOM" or ph_res == "CRASH":
                         print("      ⚠️ Phonon Crash/OOM. Versuche mit 1 Core & Recover...")
-                        ph_cores = 1
-                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
                     
                     if ph_res != "DONE":
                          print("      ❌ Phononen fehlgeschlagen.")

@@ -96,7 +96,6 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
         writer.writerows(rows)
 
 def get_csv_full_info(name):
-    """Liest die komplette Zeile aus der CSV, um auch Stabilität zu prüfen."""
     if not os.path.exists(CSV_FILE): return {}
     with open(CSV_FILE, 'r') as f:
         for row in csv.DictReader(f):
@@ -129,12 +128,17 @@ def analyze_crash_reason(output_file):
     if not os.path.exists(output_file): return "NONE"
     try:
         with open(output_file, 'rb') as f:
-            try: f.seek(-5000, 2) 
+            try: f.seek(-10000, 2) # Mehr lesen für Symmetrie Fehler
             except OSError: f.seek(0)
             lines = f.read().decode('utf-8', errors='ignore')
         
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
+
+        # --- NEU: SPEZIFISCHER SYMMETRIE CHECK ---
+        if "not orthogonal" in lines and "D_S" in lines:
+            print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
+            return "SYMMETRY_ERROR"
 
         ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
         if ram_match:
@@ -142,7 +146,7 @@ def analyze_crash_reason(output_file):
                 print(f"      🕵️ Verdacht auf OOM (Start): Letzte Meldung war {ram_match.group(1)} GB RAM Bedarf.")
                 return "LIKELY_OOM"
 
-        if "iteration #" in lines or "diagonalization" in lines or "Davidson diagonalization" in lines:
+        if "iteration #" in lines or "diagonalization" in lines:
             error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "fatal"]
             has_error_msg = any(key in lines for key in error_keywords)
             if not has_error_msg:
@@ -168,6 +172,18 @@ def is_xml_valid(xml_path):
         return False
     except:
         return False
+
+# --- NEU: SYMMETRIE KILLER ---
+def disable_symmetries(input_file):
+    """Fügt search_sym=.false. in die Input-Datei ein, falls nicht vorhanden."""
+    if not os.path.exists(input_file): return
+    with open(input_file, 'r') as f: content = f.read()
+    
+    if "search_sym" not in content:
+        # Wir fügen es direkt nach dem Namelist-Start ein
+        content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
+        with open(input_file, 'w') as f: f.write(content)
+        print(f"      🛡️ Symmetrien deaktiviert in {os.path.basename(input_file)}")
 
 # --- PERSISTENZ-LOGIK ---
 def detect_oom_level(input_file):
@@ -365,7 +381,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
             
             return "CRASH"
 
-# --- NEU: ROBUSTE PHONON WRAPPER ---
+# --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     """
     Kopie der PW-Logik, aber angepasst für ph.x
@@ -606,25 +622,37 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
-                # --- PHONONEN BERECHNUNG (JETZT ROBUST) ---
+                # --- PHONONEN BERECHNUNG (SCHLAU) ---
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                     
-                    # Versuch 1: 2 Cores
                     ph_cores = int(DEFAULT_CORES)
                     ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                     
-                    # Wenn OOM oder CRASH -> Versuch 2: 1 Core (reduziert Speicherverbrauch drastisch)
+                    # 1. Fall: Expliziter Symmetrie-Fehler
+                    if ph_res == "CRASH":
+                        crash_reason = analyze_crash_reason(ph_out)
+                        if crash_reason == "SYMMETRY_ERROR":
+                            print("      🧩 Symmetrie-Fehler erkannt! Schalte Symmetrien aus und starte Clean Restart...")
+                            disable_symmetries(ph_in)
+                            
+                            tmp_path = os.path.join(work_dir, "tmp")
+                            if os.path.exists(tmp_path):
+                                shutil.rmtree(tmp_path, ignore_errors=True)
+                            
+                            ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+
+                    # 2. Fall: OOM (Fallback)
                     if ph_res == "OOM" or ph_res == "CRASH":
                         print("      ⚠️ Phonon Crash/OOM. Versuche mit 1 Core & Recover...")
                         ph_cores = 1
                         ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                     
                     if ph_res != "DONE":
-                         print("      ❌ Phononen fehlgeschlagen (OOM/Crash).")
-                         update_csv(name, "SKIPPED (Phonon Crash)") # VERHINDERT ENDLOSSCHLEIFE
+                         print("      ❌ Phononen fehlgeschlagen.")
+                         update_csv(name, "SKIPPED (Phonon Crash)") 
                          git_sync(f"Phonon Crash: {name}")
                          continue
 

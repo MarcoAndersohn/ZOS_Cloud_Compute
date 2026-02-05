@@ -135,22 +135,20 @@ def analyze_crash_reason(output_file):
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
 
-        # Symmetrie-Fehler erkennen
+        # Symmetrie-Check
         if "not orthogonal" in lines and "D_S" in lines:
-            print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
+            # print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).") -> Sparen wir uns für unten
             return "SYMMETRY_ERROR"
 
         ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
         if ram_match:
             if "Self-consistent Calculation" not in lines and "iteration #" not in lines:
-                print(f"      🕵️ Verdacht auf OOM (Start): Letzte Meldung war {ram_match.group(1)} GB RAM Bedarf.")
                 return "LIKELY_OOM"
 
         if "iteration #" in lines or "diagonalization" in lines:
             error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "fatal"]
             has_error_msg = any(key in lines for key in error_keywords)
             if not has_error_msg:
-                print("      🕵️ Verdacht auf OOM (Silent Death): Abbruch mitten in Iteration ohne Fehlermeldung.")
                 return "LIKELY_OOM"
 
         error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed", "fatal error reading xml"]
@@ -186,7 +184,7 @@ def disable_symmetries_and_reduce_grid(input_file):
     if "search_sym" not in content:
         content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
     
-    # Grid reduzieren
+    # Grid reduzieren (nq1=2 -> nq1=1)
     content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
     content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
     content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
@@ -333,7 +331,6 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                 while process.poll() is None:
                     time.sleep(5)
                     
-                    # 1. Checkpoint (alle 15 Min)
                     if time.time() - last_checkpoint_time > 900: 
                         if is_xml_valid(xml_path):
                             print("      💾 XML valide -> Erstelle Checkpoint...")
@@ -347,13 +344,11 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                                 last_git_sync = time.time() 
                             except Exception as e: print(f"      ⚠️ Checkpoint fail: {e}")
 
-                    # 2. Heartbeat (60 Min)
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
                         git_sync("Log Update (Heartbeat)")
                         last_git_sync = time.time()
 
-                    # 3. RAM Monitor
                     try:
                         mem_usage = psutil.virtual_memory().percent
                         if mem_usage > MEMORY_LIMIT_PERCENT:
@@ -362,7 +357,6 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                             return "OOM" 
                     except: pass
 
-                    # 4. Limit Check
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter >= MAX_BFGS_STEPS:
                         print(f"      🛑 Limit erreicht ({cur_iter}/{MAX_BFGS_STEPS} BFGS Schritte). Breche ab.")
@@ -400,7 +394,6 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
     # recover Flag setzen, falls Output schon existiert
     with open(input_file, 'r') as f: content = f.read()
     if os.path.exists(output_file):
-        # Wir fügen recover=.true. hinzu, wenn nicht vorhanden
         if "recover" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
     
@@ -445,7 +438,6 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         if process.returncode != 0:
             return "CRASH"
 
-        # Check success
         try:
             with open(output_file, 'r', errors='ignore') as f:
                 if "JOB DONE" in f.read(): return "DONE"
@@ -475,31 +467,24 @@ def main():
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             scf_out = os.path.join(work_dir, "scf.out")
             
-            # --- NEUE LOGIK START ---
             row_data = get_csv_full_info(name)
             last_status = row_data.get('Status', 'NEW')
             stability = row_data.get('Stabilität', '-')
 
-            # 1. Wenn explizit geskippt (z.B. wegen Fehler oder Limit) -> Überspringen
             if "SKIPPED" in last_status:
                 print(f"⏩ Überspringe {name} (Status: {last_status})")
                 continue
             
-            # 2. Wenn Isolator -> Überspringen (da lohnt sich Phonon nicht)
             if "Isolator" in last_status:
                 print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                 continue
 
-            # 3. Wenn Metall UND Stabilität schon bekannt (Stabil/Instabil) -> Überspringen
             if "Metall" in last_status and stability in ["STABIL", "INSTABIL"]:
                 print(f"⏩ Überspringe {name} (Bereits vollständig analysiert: {stability})")
                 continue
 
-            # 4. Wenn Metall ABER Stabilität unbekannt -> RECHNEN (Nicht überspringen!)
             if "Metall" in last_status and (stability == "-" or stability == "Unbekannt"):
                 print(f"🔄 Retry Phonon für {name} (Metall, aber Stabilität unbekannt)...")
-                # Hier läuft er einfach weiter im Code und landet automatisch bei der Phononen-Logik
-            # --- NEUE LOGIK ENDE ---
 
             crash_type = analyze_crash_reason(scf_out)
             if crash_type == "NON_CONVERGED":
@@ -517,14 +502,10 @@ def main():
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-                # --- SCF LOOP MIT OOM-KASKADE ---
+                # --- SCF LOOP ---
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
                     update_csv(name, "Rechnet SCF...")
-                    
-                    # 1. Gedächtnis abrufen
                     file_level = detect_oom_level(scf_in)
-                    
-                    # 2. Tatort-Analyse VOR dem ersten Start
                     start_crash_reason = analyze_crash_reason(scf_out)
                     
                     if start_crash_reason == "LIKELY_OOM":
@@ -631,42 +612,43 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
-                # --- PHONONEN BERECHNUNG (SCHLAU) ---
+                # --- PHONONEN BERECHNUNG (MIT NOTFALL-REPAIR) ---
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                     
-                    # Logik: Wenn wir schon öfter probiert haben -> Direkt 1 Core (Safe Mode)
-                    attempts = count_job_attempts(TXT_LOG_FILE, name)
+                    # Standard-Versuch (2 Cores)
                     ph_cores = int(DEFAULT_CORES)
-                    if attempts > 1:
-                        ph_cores = 1
-                        print(f"      🔄 Wiederholter Versuch ({attempts}): Starte direkt mit 1 Core.")
+                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = 1
 
                     ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                     
-                    # 1. Fall: Expliziter Symmetrie-Fehler
-                    if ph_res == "CRASH":
-                        crash_reason = analyze_crash_reason(ph_out)
-                        if crash_reason == "SYMMETRY_ERROR":
-                            print("      🧩 Symmetrie-Fehler erkannt! Schalte Symmetrien aus, reduziere Grid & Clean Restart...")
-                            disable_symmetries_and_reduce_grid(ph_in)
-                            
-                            tmp_path = os.path.join(work_dir, "tmp")
-                            if os.path.exists(tmp_path):
-                                shutil.rmtree(tmp_path, ignore_errors=True)
-                            
-                            # Bei Symmetrie-Aus IMMER 1 Core nehmen (sicher ist sicher)
+                    # --- NOTFALL-ROUTINE ---
+                    if ph_res != "DONE":
+                        print("      ⚠️ Crash/OOM! Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, 1 Core...")
+                        
+                        # 1. Input radikal vereinfachen
+                        disable_symmetries_and_reduce_grid(ph_in)
+                        
+                        # 2. tmp löschen (um Korruption zu entfernen)
+                        tmp_path = os.path.join(work_dir, "tmp")
+                        if os.path.exists(tmp_path):
+                            shutil.rmtree(tmp_path, ignore_errors=True)
+                        
+                        # 3. WICHTIG: SCF NEU RECHNEN! (Damit tmp wieder gefüllt ist)
+                        print("      🔄 Re-Calc SCF für sauberen Neustart...")
+                        scf_res = run_monitored_pw(scf_in, scf_out, work_dir, 1)
+                        
+                        if scf_res == "DONE":
+                            # 4. Jetzt Phononen nochmal probieren
                             ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
-
-                    # 2. Fall: OOM (Fallback)
-                    if ph_res == "OOM" or ph_res == "CRASH":
-                        print("      ⚠️ Phonon Crash/OOM. Versuche mit 1 Core & Recover...")
-                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
+                        else:
+                            print("      ❌ SCF-Repair fehlgeschlagen.")
+                            ph_res = "CRASH"
                     
                     if ph_res != "DONE":
-                         print("      ❌ Phononen fehlgeschlagen.")
+                         print("      ❌ Phononen endgültig fehlgeschlagen.")
                          update_csv(name, "SKIPPED (Phonon Crash)") 
                          git_sync(f"Phonon Crash: {name}")
                          continue

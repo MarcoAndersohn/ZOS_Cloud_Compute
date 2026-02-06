@@ -32226,3 +32226,36 @@ H             5.2896351330        1.4997692752        4.0868357210
      Smooth grid:   129171 G-vectors     FFT dimensions: (  45,  72,  96)
 
      Estimated max dynamical RAM per process >       1.70 GB
+
+     Atomic positions and unit cell read from directory:
+     ./tmp/Rb3BaCaGa3H16.save/
+     Atomic positions from file used, from input discarded
+
+
+     Check: negative core charge=   -0.000001
+
+     The initial density is read from file :
+     ./tmp/Rb3BaCaGa3H16.save/charge-density
+
+
+     negative rho (up, down):  6.982E-05 0.000E+00
+     Starting wfcs from file
+     Checking if some PAW data can be deallocated... 
+
+     total cpu time spent up to now is       47.8 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine davcio (10):
+     error reading file "./tmp/Rb3BaCaGa3H16.wfc1"
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     stopping ...
+[Supraleiter-HPC-Knoten:01016] [[30670,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501

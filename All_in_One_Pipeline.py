@@ -135,9 +135,9 @@ def analyze_crash_reason(output_file):
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
 
-        # Symmetrie-Check
+        # Symmetrie-Fehler erkennen
         if "not orthogonal" in lines and "D_S" in lines:
-            # print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).") -> Sparen wir uns für unten
+            print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
 
         ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
@@ -149,6 +149,9 @@ def analyze_crash_reason(output_file):
             error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "fatal"]
             has_error_msg = any(key in lines for key in error_keywords)
             if not has_error_msg:
+                # Strategie C: Check ob Datei extrem klein ist (Sofort-Crash), dann ist es kein klassischer OOM
+                if os.path.getsize(output_file) < 5000: 
+                     return "HARD" # Wahrscheinlich Config-Fehler, kein RAM-Problem
                 return "LIKELY_OOM"
 
         error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed", "fatal error reading xml"]
@@ -331,6 +334,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                 while process.poll() is None:
                     time.sleep(5)
                     
+                    # 1. Checkpoint (alle 15 Min)
                     if time.time() - last_checkpoint_time > 900: 
                         if is_xml_valid(xml_path):
                             print("      💾 XML valide -> Erstelle Checkpoint...")
@@ -344,11 +348,13 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                                 last_git_sync = time.time() 
                             except Exception as e: print(f"      ⚠️ Checkpoint fail: {e}")
 
+                    # 2. Heartbeat (60 Min)
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
                         git_sync("Log Update (Heartbeat)")
                         last_git_sync = time.time()
 
+                    # 3. RAM Monitor
                     try:
                         mem_usage = psutil.virtual_memory().percent
                         if mem_usage > MEMORY_LIMIT_PERCENT:
@@ -357,6 +363,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                             return "OOM" 
                     except: pass
 
+                    # 4. Limit Check
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter >= MAX_BFGS_STEPS:
                         print(f"      🛑 Limit erreicht ({cur_iter}/{MAX_BFGS_STEPS} BFGS Schritte). Breche ab.")
@@ -438,6 +445,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         if process.returncode != 0:
             return "CRASH"
 
+        # Check success
         try:
             with open(output_file, 'r', errors='ignore') as f:
                 if "JOB DONE" in f.read(): return "DONE"
@@ -467,24 +475,31 @@ def main():
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             scf_out = os.path.join(work_dir, "scf.out")
             
+            # --- NEUE LOGIK START ---
             row_data = get_csv_full_info(name)
             last_status = row_data.get('Status', 'NEW')
             stability = row_data.get('Stabilität', '-')
 
+            # 1. Wenn explizit geskippt (z.B. wegen Fehler oder Limit) -> Überspringen
             if "SKIPPED" in last_status:
                 print(f"⏩ Überspringe {name} (Status: {last_status})")
                 continue
             
+            # 2. Wenn Isolator -> Überspringen (da lohnt sich Phonon nicht)
             if "Isolator" in last_status:
                 print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                 continue
 
+            # 3. Wenn Metall UND Stabilität schon bekannt (Stabil/Instabil) -> Überspringen
             if "Metall" in last_status and stability in ["STABIL", "INSTABIL"]:
                 print(f"⏩ Überspringe {name} (Bereits vollständig analysiert: {stability})")
                 continue
 
+            # 4. Wenn Metall ABER Stabilität unbekannt -> RECHNEN (Nicht überspringen!)
             if "Metall" in last_status and (stability == "-" or stability == "Unbekannt"):
                 print(f"🔄 Retry Phonon für {name} (Metall, aber Stabilität unbekannt)...")
+                # Hier läuft er einfach weiter im Code und landet automatisch bei der Phononen-Logik
+            # --- NEUE LOGIK ENDE ---
 
             crash_type = analyze_crash_reason(scf_out)
             if crash_type == "NON_CONVERGED":
@@ -505,6 +520,7 @@ def main():
                 # --- SCF LOOP ---
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
                     update_csv(name, "Rechnet SCF...")
+                    
                     file_level = detect_oom_level(scf_in)
                     start_crash_reason = analyze_crash_reason(scf_out)
                     
@@ -512,6 +528,16 @@ def main():
                         attempts = count_job_attempts(TXT_LOG_FILE, name)
                         print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt. Versuch Nr. {attempts} auf diesem Level.")
                         
+                        # Strategie C: Ghost-File Rotation bei OOM-Verdacht
+                        # Wir benennen die alte Datei um, damit der nächste Check garantiert das NEUE Ergebnis prüft.
+                        if os.path.exists(scf_out):
+                            timestamp = datetime.now().strftime("%H%M%S")
+                            new_name = f"{scf_out}.crash_{timestamp}"
+                            try:
+                                os.rename(scf_out, new_name)
+                                print(f"      👻 Ghost-Protection: Alte scf.out zu {os.path.basename(new_name)} verschoben.")
+                            except: pass
+
                         if attempts >= MAX_RETRIES_LEVEL:
                             oom_level = file_level + 1
                             print(f"      ❗ Threshold ({MAX_RETRIES_LEVEL}) erreicht! Eskaliere HÄRTER (Level {file_level} -> {oom_level}).")
@@ -612,40 +638,42 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
-                # --- PHONONEN BERECHNUNG (MIT NOTFALL-REPAIR) ---
+                # --- PHONONEN BERECHNUNG (CHIRURGISCHE VARIANTE) ---
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                     
-                    # Standard-Versuch (2 Cores)
+                    # Versuch 1: Standard (2 Cores)
                     ph_cores = int(DEFAULT_CORES)
                     if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = 1
 
                     ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                     
-                    # --- NOTFALL-ROUTINE ---
+                    # --- NOTFALL-ROUTINE BEI CRASH ---
                     if ph_res != "DONE":
                         print("      ⚠️ Crash/OOM! Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, 1 Core...")
                         
-                        # 1. Input radikal vereinfachen
+                        # 1. Input radikal vereinfachen (Symmetrie aus, Grid klein)
                         disable_symmetries_and_reduce_grid(ph_in)
                         
-                        # 2. tmp löschen (um Korruption zu entfernen)
+                        # 2. CHIRURGISCHES LÖSCHEN: Nur Phononen-Cache (_ph0) entfernen
                         tmp_path = os.path.join(work_dir, "tmp")
-                        if os.path.exists(tmp_path):
-                            shutil.rmtree(tmp_path, ignore_errors=True)
+                        ph0_path = os.path.join(tmp_path, "_ph0")
                         
-                        # 3. WICHTIG: SCF NEU RECHNEN! (Damit tmp wieder gefüllt ist)
-                        print("      🔄 Re-Calc SCF für sauberen Neustart...")
-                        scf_res = run_monitored_pw(scf_in, scf_out, work_dir, 1)
+                        if os.path.exists(ph0_path):
+                            try:
+                                shutil.rmtree(ph0_path, ignore_errors=True)
+                                print("      🧹 Defekten Phononen-Cache (_ph0) gelöscht. SCF-Daten behalten.")
+                            except: pass
                         
-                        if scf_res == "DONE":
-                            # 4. Jetzt Phononen nochmal probieren
-                            ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
-                        else:
-                            print("      ❌ SCF-Repair fehlgeschlagen.")
-                            ph_res = "CRASH"
+                        # 3. Alte ph.out löschen/umbenennen
+                        if os.path.exists(ph_out):
+                            try: os.remove(ph_out)
+                            except: pass
+
+                        # 4. Neustart Phononen (nutzt existierende SCF-Daten im tmp Ordner)
+                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
                     
                     if ph_res != "DONE":
                          print("      ❌ Phononen endgültig fehlgeschlagen.")

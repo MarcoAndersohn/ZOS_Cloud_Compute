@@ -1,5 +1,4 @@
 &CONTROL
- disk_io='low',
   calculation = 'vc-relax'
   prefix = 'Rb4Y4ScB15H64'
   outdir = './tmp/'
@@ -20,8 +19,8 @@
 /
 &ELECTRONS
  electron_maxstep = 150,
- mixing_ndim = 2,
- diagonalization='cg',
+ mixing_ndim = 8,
+ diagonalization='david',
   conv_thr = 1.0d-6
 /
 &IONS

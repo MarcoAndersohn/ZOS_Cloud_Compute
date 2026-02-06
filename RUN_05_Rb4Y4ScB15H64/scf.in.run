@@ -20,8 +20,8 @@
 /
 &ELECTRONS
  electron_maxstep = 150,
- mixing_ndim = 8,
- diagonalization='david',
+ mixing_ndim = 4,
+ diagonalization='cg',
   conv_thr = 1.0d-6
 /
 &IONS

@@ -174,7 +174,64 @@ def is_xml_valid(xml_path):
     except:
         return False
 
-# --- NEU: SYMMETRIE KILLER & GRID REDUCER ---
+# --- NEU: SPEZIFISCHE FEHLERERKENNUNG (GGENS / DAVCIO) ---
+def is_recoverable_error(ph_output_file):
+    """Prüft, ob der Fehler durch 'Mismatched Cores' (ggens) oder fehlende Files (davcio) verursacht wurde."""
+    if not os.path.exists(ph_output_file): return False
+    try:
+        with open(ph_output_file, 'r', errors='ignore') as f:
+            content = f.read()
+        # ggens (2) = mismatch in G-vectors (Core mismatch)
+        # davcio (20) = error reading file (File missing/corrupt)
+        if "mismatch in number of G-vectors" in content or "error reading file" in content:
+            return True
+        return False
+    except: return False
+
+# --- NEU: RETTUNGSMANÖVER (SC FÜR WF_COLLECT) ---
+def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
+    """
+    Startet PWSCF mit nstep=0 und wf_collect=.true., um zerstückelte Daten
+    in eine saubere Datei zusammenzuführen.
+    """
+    print(f"      🚑 Starte RECOVERY-Modus (Collect Waves): Cores={cores_to_use}")
+    
+    with open(scf_input_file, 'r') as f: content = f.read()
+    
+    # 1. Sicherstellen: restart_mode='restart'
+    if "restart_mode" in content:
+        content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", "restart_mode='restart'", content)
+    else:
+        content = content.replace("&CONTROL", "&CONTROL\n restart_mode='restart',")
+        
+    # 2. Sicherstellen: wf_collect=.true.
+    if "wf_collect" in content:
+        content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
+    else:
+        content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
+
+    # 3. Sicherstellen: nstep=0 (Damit er nicht rechnet, sondern nur speichert)
+    if "nstep" in content:
+        content = re.sub(r"nstep\s*=\s*\d+", "nstep=0", content)
+    else:
+        content = content.replace("&CONTROL", "&CONTROL\n nstep=0,")
+
+    # 4. Input schreiben
+    recover_in = scf_input_file + ".recover"
+    recover_out = os.path.join(cwd, "scf_recover.out")
+    with open(recover_in, 'w') as f: f.write(content)
+    
+    # 5. Ausführen (auf original Cores!)
+    with open(recover_in, 'r') as f_in, open(recover_out, 'w') as f_out:
+        cmd = ["mpirun", "--oversubscribe", "-np", str(cores_to_use), PW_EXE]
+        try:
+            subprocess.run(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd, timeout=300)
+            print("      ✅ Recovery-Lauf beendet. Daten sollten jetzt consolidated sein.")
+            return True
+        except Exception as e:
+            print(f"      ❌ Recovery fehlgeschlagen: {e}")
+            return False
+
 def disable_symmetries_and_reduce_grid(input_file):
     """
     1. Fügt search_sym=.false. in die Input-Datei ein.
@@ -652,7 +709,18 @@ def main():
                     
                     # --- NOTFALL-ROUTINE BEI CRASH ---
                     if ph_res != "DONE":
-                        print("      ⚠️ Crash/OOM! Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, 1 Core...")
+                        print("      ⚠️ Crash/OOM!")
+                        
+                        # --- NEUE RETTUNG FÜR 'ggens' FEHLER (Core Mismatch) ---
+                        if is_recoverable_error(ph_out):
+                            print("      🤕 Diagnose: Datenfragmente passen nicht (ggens/davcio). Starte 'Collect-Recovery'...")
+                            # Wir nutzen DEFAULT_CORES (2), um die alten 2-Core-Schnipsel einzusammeln!
+                            if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
+                                print("      👍 Recovery erfolgreich. Bereit für Neustart.")
+                            else:
+                                print("      👎 Recovery fehlgeschlagen. Versuche trotzdem weiter...")
+
+                        print("      🛡️ Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, 1 Core...")
                         
                         # 1. Input radikal vereinfachen (Symmetrie aus, Grid klein)
                         disable_symmetries_and_reduce_grid(ph_in)
@@ -673,6 +741,7 @@ def main():
                             except: pass
 
                         # 4. Neustart Phononen (nutzt existierende SCF-Daten im tmp Ordner)
+                        # WICHTIG: Jetzt auf 1 Core, aber mit konsolidierten Daten (falls Recovery lief)
                         ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
                     
                     if ph_res != "DONE":

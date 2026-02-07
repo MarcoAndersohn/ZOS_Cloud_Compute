@@ -1,5 +1,5 @@
 
-     Program PHONON v.6.7MaX starts on  2Feb2026 at  1:10:48 
+     Program PHONON v.6.7MaX starts on  7Feb2026 at  2: 9:20 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,10 +9,9 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     2 processors
+     Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
@@ -28,29 +27,15 @@
      Please, verify this is what you really want
 
 
-     Parallelization info
+     G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min         436     217     67                 9768     3460     591
-     Max         437     218     68                 9769     3463     594
-     Sum         873     435    135                19537     6923    1185
+     Sum         873     437    135                19319     6837    1189
 
-     Reading collected, re-writing distributed wavefunctions
-
-
-     Dynamical matrices for ( 2, 2, 2)  uniform grid of q-points
-     (   6 q-points):
-       N         xq(1)         xq(2)         xq(3) 
-       1   0.000000000   0.000000000   0.000000000
-       2   0.277612764   0.195473775  -0.440336342
-       3   0.063131504  -0.678960100  -0.000000002
-       4   0.340744268  -0.483486325  -0.440336344
-       5  -0.618356566   0.288012929  -0.000000199
-       6  -0.555225062  -0.390947171  -0.000000202
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine d_matrix (2):
-     D_S (l=2) for this symmetry operation is not orthogonal
+     Error in routine ggens (2):
+     mismatch in number of G-vectors
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      stopping ...
@@ -62,62 +47,3 @@ NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
 You may or may not see output from other processes, depending on
 exactly when Open MPI kills them.
 --------------------------------------------------------------------------
-[Supraleiter-HPC-Knoten:01121] 1 more process has sent help message help-mpi-api.txt / mpi-abort
-[Supraleiter-HPC-Knoten:01121] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
-
-     Program PHONON v.6.7MaX starts on  6Feb2026 at 12: 6:26 
-
-     This program is part of the open-source Quantum ESPRESSO suite
-     for quantum simulation of materials; please cite
-         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
-         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
-          URL http://www.quantum-espresso.org", 
-     in publications or presentations arising from this work. More details at
-     http://www.quantum-espresso.org/quote
-
-     Parallel version (MPI), running on     2 processors
-
-     MPI processes distributed on     1 nodes
-     R & G space division:  proc/nbgrp/npool/nimage =       2
-     Waiting for input...
-     Reading input from standard input
-     Message from routine ph_restart_set_filename :
-     cannot open file for reading or writing
-     Run is not recoverable starting from scratch
-
-     Reading xml data from directory:
-
-     ./tmp/TiH2.save/
-     file H.UPF: wavefunction(s)  1S renormalized
-
-     IMPORTANT: XC functional enforced from input :
-     Exchange-correlation= PBE
-                           (   1   4   3   4   0   0   0)
-     Any further DFT definition will be discarded
-     Please, verify this is what you really want
-
-
-     Parallelization info
-     --------------------
-     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min         436     217     67                 9768     3460     591
-     Max         437     218     68                 9769     3463     594
-     Sum         873     435    135                19537     6923    1185
-
-
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine aainit (14):
-     mx dimension too small
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-     stopping ...
---------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
-with errorcode 14.
-
-NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
-You may or may not see output from other processes, depending on
-exactly when Open MPI kills them.
---------------------------------------------------------------------------
-[Supraleiter-HPC-Knoten:01062] 1 more process has sent help message help-mpi-api.txt / mpi-abort
-[Supraleiter-HPC-Knoten:01062] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages

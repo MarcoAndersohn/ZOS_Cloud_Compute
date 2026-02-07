@@ -346,6 +346,14 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         tmp_dir = os.path.join(cwd, "tmp") 
         checkpoint_dir = os.path.join(cwd, "tmp_SAFE_CHECKPOINT") 
 
+        # --- UPDATE: ZWINGE wf_collect=.true. HIER ---
+        # Das verhindert den davcio Fehler, auch wenn disk_io='low' ist.
+        if "wf_collect" in content:
+            content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
+        else:
+            content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
+        # ---------------------------------------------
+
         prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
         current_prefix = prefix_match.group(1) if prefix_match else "calc"
         xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")

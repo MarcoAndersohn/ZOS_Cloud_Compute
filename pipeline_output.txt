@@ -7156,3 +7156,17 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       🧹 Defekten Phononen-Cache (_ph0) gelöscht. SCF-Daten behalten.
       ⚙️ Starte PHONONEN (Cores: 1)...
       ❌ Phononen endgültig fehlgeschlagen.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   a105ffc..69ffaa9  main -> main
+⏩ Überspringe 03_Hf2ZnB3H16 (Status: SKIPPED (Max BFGS Steps))
+⏩ Überspringe 03_LaH32S15 (Ist ein Isolator)
+🔄 Retry Phonon für 03_Mg7ScH16 (Metall, aber Stabilität unbekannt)...
+
+💎 Job: 03_Mg7ScH16
+      📉 Setze RAM-Strategie: Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
+      💾 XML valide -> Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.
+      ☁️ Trigger Git Sync (wegen Checkpoint)...

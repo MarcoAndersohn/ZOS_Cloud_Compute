@@ -1,0 +1,493 @@
+
+     Program PHONON v.6.7MaX starts on  8Feb2026 at 11:50:28 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on     2 processors
+
+     MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       2
+     Waiting for input...
+     Reading input from standard input
+
+     Reading xml data from directory:
+
+     ./tmp/K4SrLi2AlH12.save/
+     file Al.UPF: wavefunction(s)  3S 3P renormalized
+     file H.UPF: wavefunction(s)  1S renormalized
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        3533    1776    489               144250    50998    7345
+     Max        3534    1777    490               144253    50999    7346
+     Sum        7067    3553    979               288503   101997   14691
+
+     Reading collected, re-writing distributed wavefunctions
+
+
+     Dynamical matrices for ( 1, 1, 1)  uniform grid of q-points
+     (   1 q-points):
+       N         xq(1)         xq(2)         xq(3) 
+       1   0.000000000   0.000000000   0.000000000
+
+     Calculation of q =    0.0000000   0.0000000   0.0000000
+
+     Phonons                                                                    
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =      20.2023  a.u.
+     unit-cell volume          =    2135.6637 (a.u.)^3
+     number of atoms/cell      =           20
+     number of atomic types    =            5
+     kinetic-energy cut-off    =      50.0000  Ry
+     charge density cut-off    =     400.0000  Ry
+     convergence threshold     =      1.0E-14
+     beta                      =       0.7000
+     number of iterations used =            4
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+
+
+     celldm(1)=   20.20234  celldm(2)=    0.00000  celldm(3)=    0.00000
+     celldm(4)=    0.00000  celldm(5)=    0.00000  celldm(6)=    0.00000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (  0.5499  0.0104  0.8547 )  
+               a(2) = (  0.2590  0.4853  0.8547 )  
+               a(3) = (  0.0169  0.0104  1.0162 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = (  1.8697 -0.9602 -0.0213 )  
+               b(2) = ( -0.0065  2.1018 -0.0213 )  
+               b(3) = ( -1.5671 -0.9602  1.0199 )  
+
+
+     Atoms inside the unit cell: 
+
+     Cartesian axes
+
+     site n.  atom      mass           positions (alat units)
+        1     K    1.0000   tau(    1) = (    0.10615    0.06504    0.35038  )
+        2     K    1.0000   tau(    2) = (    0.71966    0.44095    2.37533  )
+        3     K    1.0000   tau(    3) = (    0.22160    0.13578    0.73141  )
+        4     K    1.0000   tau(    4) = (    0.60422    0.37022    1.99430  )
+        5     Li   1.0000   tau(    5) = (    0.33964    0.20811    1.12103  )
+        6     Li   1.0000   tau(    6) = (    0.48617    0.29789    1.60467  )
+        7     Sr   1.0000   tau(    7) = (    0.00000   -0.00000   -0.00000  )
+        8     Al   1.0000   tau(    8) = (    0.41291    0.25300    1.36285  )
+        9     H    1.0000   tau(    9) = (    0.19136    0.11725    1.10654  )
+       10     H    1.0000   tau(   10) = (    0.31106    0.35210    1.02668  )
+       11     H    1.0000   tau(   11) = (    0.45495    0.11725    1.02667  )
+       12     H    1.0000   tau(   12) = (    0.37087    0.38875    1.69903  )
+       13     H    1.0000   tau(   13) = (    0.63446    0.38874    1.61917  )
+       14     H    1.0000   tau(   14) = (    0.51476    0.15390    1.69903  )
+       15     H    1.0000   tau(   15) = (    0.33258    0.20378    1.49885  )
+       16     H    1.0000   tau(   16) = (    0.43368    0.40213    1.43140  )
+       17     H    1.0000   tau(   17) = (    0.39214    0.10386    1.29430  )
+       18     H    1.0000   tau(   18) = (    0.49324    0.30222    1.22685  )
+       19     H    1.0000   tau(   19) = (    0.27061    0.30222    1.29430  )
+       20     H    1.0000   tau(   20) = (    0.55521    0.20378    1.43140  )
+
+     Computing dynamical matrix for 
+                    q = (   0.0000000   0.0000000   0.0000000 )
+
+      3 Sym.Ops. (with q -> -q+G )
+
+
+     G cutoff = 4135.2655  ( 144253 G-vectors)     FFT grid: (135,135,135)
+     G cutoff = 2067.6328  (  50999 G-vectors)  smooth grid: ( 96, 96, 96)
+
+     number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+
+     PseudoPot. # 1 for Al read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Al.UPF
+     MD5 check sum: da22aad9e98c60ce88de1cf925d56fcc
+     Pseudo is Projector augmented-wave + core cor, Zval =  3.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1135 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for H  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/H.UPF
+     MD5 check sum: 850d63dcbcc06c5de8b44e0ab9f952da
+     Pseudo is Projector augmented-wave, Zval =  1.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of  929 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for K  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/K.UPF
+     MD5 check sum: 0975f8d1feef6b2899f42b1061589f29
+     Pseudo is Norm-conserving + core correction, Zval =  1.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of 1165 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   1
+
+     PseudoPot. # 4 for Li read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Li.UPF
+     MD5 check sum: 057edeeab9105e5446fd9e29ea3f9c2f
+     Pseudo is Ultrasoft + core correction, Zval =  1.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  751 points,  2 beta functions with: 
+                l(1) =   1
+                l(2) =   1
+     Q(r) pseudized with  8 coefficients,  rinner =    1.000   1.000   1.000
+
+
+     PseudoPot. # 5 for Sr read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Sr.UPF
+     MD5 check sum: 71c4688e601547c0814ef38edf55aea6
+     Pseudo is Ultrasoft + core correction, Zval = 10.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  883 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  8 coefficients,  rinner =    1.200   1.200   1.200
+                                                       1.200   1.200
+
+
+     Atomic displacements:
+     There are   60 irreducible representations
+
+     Representation     1      1 modes -  To be done
+
+     Representation     2      1 modes -  To be done
+
+     Representation     3      1 modes -  To be done
+
+     Representation     4      1 modes -  To be done
+
+     Representation     5      1 modes -  To be done
+
+     Representation     6      1 modes -  To be done
+
+     Representation     7      1 modes -  To be done
+
+     Representation     8      1 modes -  To be done
+
+     Representation     9      1 modes -  To be done
+
+     Representation    10      1 modes -  To be done
+
+     Representation    11      1 modes -  To be done
+
+     Representation    12      1 modes -  To be done
+
+     Representation    13      1 modes -  To be done
+
+     Representation    14      1 modes -  To be done
+
+     Representation    15      1 modes -  To be done
+
+     Representation    16      1 modes -  To be done
+
+     Representation    17      1 modes -  To be done
+
+     Representation    18      1 modes -  To be done
+
+     Representation    19      1 modes -  To be done
+
+     Representation    20      1 modes -  To be done
+
+     Representation    21      1 modes -  To be done
+
+     Representation    22      1 modes -  To be done
+
+     Representation    23      1 modes -  To be done
+
+     Representation    24      1 modes -  To be done
+
+     Representation    25      1 modes -  To be done
+
+     Representation    26      1 modes -  To be done
+
+     Representation    27      1 modes -  To be done
+
+     Representation    28      1 modes -  To be done
+
+     Representation    29      1 modes -  To be done
+
+     Representation    30      1 modes -  To be done
+
+     Representation    31      1 modes -  To be done
+
+     Representation    32      1 modes -  To be done
+
+     Representation    33      1 modes -  To be done
+
+     Representation    34      1 modes -  To be done
+
+     Representation    35      1 modes -  To be done
+
+     Representation    36      1 modes -  To be done
+
+     Representation    37      1 modes -  To be done
+
+     Representation    38      1 modes -  To be done
+
+     Representation    39      1 modes -  To be done
+
+     Representation    40      1 modes -  To be done
+
+     Representation    41      1 modes -  To be done
+
+     Representation    42      1 modes -  To be done
+
+     Representation    43      1 modes -  To be done
+
+     Representation    44      1 modes -  To be done
+
+     Representation    45      1 modes -  To be done
+
+     Representation    46      1 modes -  To be done
+
+     Representation    47      1 modes -  To be done
+
+     Representation    48      1 modes -  To be done
+
+     Representation    49      1 modes -  To be done
+
+     Representation    50      1 modes -  To be done
+
+     Representation    51      1 modes -  To be done
+
+     Representation    52      1 modes -  To be done
+
+     Representation    53      1 modes -  To be done
+
+     Representation    54      1 modes -  To be done
+
+     Representation    55      1 modes -  To be done
+
+     Representation    56      1 modes -  To be done
+
+     Representation    57      1 modes -  To be done
+
+     Representation    58      1 modes -  To be done
+
+     Representation    59      1 modes -  To be done
+
+     Representation    60      1 modes -  To be done
+
+
+
+     Alpha used in Ewald sum =   2.8000
+     PHONON       :   5m51.64s CPU   7m25.91s WALL
+
+
+
+     Representation #   1 mode #   1
+
+     Self-consistent Calculation
+
+     Pert. #  1: Fermi energy shift (Ry) =     1.4177E-02    -1.2925E-25
+
+      iter #   1 total cpu time :   472.1 secs   av.it.:   3.4
+      thresh= 1.000E-02 alpha_mix =  0.700 |ddv_scf|^2 =  1.319E-09
+
+     Pert. #  1: Fermi energy shift (Ry) =    -2.2285E-02    -9.6935E-27
+
+      iter #   2 total cpu time :   520.2 secs   av.it.:  14.4
+      thresh= 3.632E-06 alpha_mix =  0.700 |ddv_scf|^2 =  7.751E-09
+
+     Pert. #  1: Fermi energy shift (Ry) =    -1.0450E-02    -2.5849E-26
+
+      iter #   3 total cpu time :   563.5 secs   av.it.:  12.2
+      thresh= 8.804E-06 alpha_mix =  0.700 |ddv_scf|^2 =  1.495E-10
+
+     Pert. #  1: Fermi energy shift (Ry) =    -5.5833E-03    -3.8774E-26
+
+      iter #   4 total cpu time :   610.6 secs   av.it.:  14.1
+      thresh= 1.223E-06 alpha_mix =  0.700 |ddv_scf|^2 =  2.890E-12
+
+     Pert. #  1: Fermi energy shift (Ry) =    -5.3222E-03    -3.2312E-26
+
+      iter #   5 total cpu time :   661.9 secs   av.it.:  15.0
+      thresh= 1.700E-07 alpha_mix =  0.700 |ddv_scf|^2 =  1.213E-12
+
+     Pert. #  1: Fermi energy shift (Ry) =    -5.3139E-03    -3.2312E-26
+
+      iter #   6 total cpu time :   711.6 secs   av.it.:  14.9
+      thresh= 1.101E-07 alpha_mix =  0.700 |ddv_scf|^2 =  2.293E-14
+
+     Pert. #  1: Fermi energy shift (Ry) =    -5.2391E-03    -3.2312E-26
+
+      iter #   7 total cpu time :   764.5 secs   av.it.:  15.0
+      thresh= 1.514E-08 alpha_mix =  0.700 |ddv_scf|^2 =  3.149E-15
+
+     End of self-consistent calculation
+
+     Convergence has been achieved 
+
+
+     Representation #   2 mode #   2
+
+     Self-consistent Calculation
+
+     Pert. #  1: Fermi energy shift (Ry) =    -2.3111E-03    -2.5849E-26
+
+      iter #   1 total cpu time :   797.4 secs   av.it.:   3.0
+      thresh= 1.000E-02 alpha_mix =  0.700 |ddv_scf|^2 =  1.697E-09
+
+     Pert. #  1: Fermi energy shift (Ry) =     1.1090E-02     2.5849E-26
+
+      iter #   2 total cpu time :   847.4 secs   av.it.:  14.5
+      thresh= 4.119E-06 alpha_mix =  0.700 |ddv_scf|^2 =  1.229E-08
+
+     Pert. #  1: Fermi energy shift (Ry) =     3.4785E-04     1.2925E-26
+
+      iter #   3 total cpu time :   892.8 secs   av.it.:  12.8
+      thresh= 1.109E-05 alpha_mix =  0.700 |ddv_scf|^2 =  1.300E-10
+
+     Pert. #  1: Fermi energy shift (Ry) =     1.2179E-03     1.2925E-26
+
+      iter #   4 total cpu time :   943.7 secs   av.it.:  14.9
+      thresh= 1.140E-06 alpha_mix =  0.700 |ddv_scf|^2 =  3.539E-11
+
+     Pert. #  1: Fermi energy shift (Ry) =     1.0923E-03     1.2925E-26
+
+      iter #   5 total cpu time :   994.6 secs   av.it.:  14.8
+      thresh= 5.949E-07 alpha_mix =  0.700 |ddv_scf|^2 =  1.200E-12
+
+     Pert. #  1: Fermi energy shift (Ry) =     1.0797E-03     1.2925E-26
+
+      iter #   6 total cpu time :  1045.3 secs   av.it.:  14.8
+      thresh= 1.096E-07 alpha_mix =  0.700 |ddv_scf|^2 =  1.430E-14
+
+     Pert. #  1: Fermi energy shift (Ry) =     1.0744E-03     1.2925E-26
+
+      iter #   7 total cpu time :  1094.4 secs   av.it.:  14.8
+      thresh= 1.196E-08 alpha_mix =  0.700 |ddv_scf|^2 =  3.656E-16
+
+     End of self-consistent calculation
+
+     Convergence has been achieved 
+
+
+     Representation #   3 mode #   3
+
+     Self-consistent Calculation
+
+     Pert. #  1: Fermi energy shift (Ry) =     1.7362E-02     5.6869E-25
+
+      iter #   1 total cpu time :  1127.2 secs   av.it.:   3.0
+      thresh= 1.000E-02 alpha_mix =  0.700 |ddv_scf|^2 =  2.555E-09
+
+     Pert. #  1: Fermi energy shift (Ry) =    -2.7964E-02     2.5849E-25
+
+      iter #   2 total cpu time :  1176.5 secs   av.it.:  14.1
+      thresh= 5.055E-06 alpha_mix =  0.700 |ddv_scf|^2 =  2.281E-08
+
+     Pert. #  1: Fermi energy shift (Ry) =    -1.1318E-02     2.5849E-25
+
+      iter #   3 total cpu time :  1219.5 secs   av.it.:  11.6
+      thresh= 1.510E-05 alpha_mix =  0.700 |ddv_scf|^2 =  6.515E-11
+
+     Pert. #  1: Fermi energy shift (Ry) =    -5.2346E-03     2.5849E-25
+
+      iter #   4 total cpu time :  1269.6 secs   av.it.:  14.8
+      thresh= 8.072E-07 alpha_mix =  0.700 |ddv_scf|^2 =  2.071E-12
+
+     Pert. #  1: Fermi energy shift (Ry) =    -4.9470E-03     2.5849E-25
+
+      iter #   5 total cpu time :  1321.5 secs   av.it.:  15.2
+      thresh= 1.439E-07 alpha_mix =  0.700 |ddv_scf|^2 =  1.161E-12
+
+     Pert. #  1: Fermi energy shift (Ry) =    -4.9351E-03     2.5849E-25
+
+      iter #   6 total cpu time :  1372.1 secs   av.it.:  14.9
+      thresh= 1.078E-07 alpha_mix =  0.700 |ddv_scf|^2 =  3.043E-14
+
+     Pert. #  1: Fermi energy shift (Ry) =    -4.8782E-03     2.5849E-25
+
+      iter #   7 total cpu time :  1423.0 secs   av.it.:  15.1
+      thresh= 1.744E-08 alpha_mix =  0.700 |ddv_scf|^2 =  5.270E-15
+
+     End of self-consistent calculation
+
+     Convergence has been achieved 
+
+
+     Representation #   4 mode #   4
+
+     Self-consistent Calculation
+
+     Pert. #  1: Fermi energy shift (Ry) =    -1.3235E-23    -7.1746E-43
+
+      iter #   1 total cpu time :  1451.0 secs   av.it.:   1.6
+      thresh= 1.000E-02 alpha_mix =  0.700 |ddv_scf|^2 =  2.000E-10
+
+     Pert. #  1: Fermi energy shift (Ry) =     0.0000E+00     0.0000E+00
+
+      iter #   2 total cpu time :  1499.5 secs   av.it.:  14.0
+      thresh= 1.414E-06 alpha_mix =  0.700 |ddv_scf|^2 =  1.336E-10
+
+     Pert. #  1: Fermi energy shift (Ry) =    -5.2940E-23     0.0000E+00
+
+      iter #   3 total cpu time :  1547.7 secs   av.it.:  14.0
+      thresh= 1.156E-06 alpha_mix =  0.700 |ddv_scf|^2 =  6.005E-10
+
+     Pert. #  1: Fermi energy shift (Ry) =    -1.6544E-24     1.1479E-41
+
+      iter #   4 total cpu time :  1592.9 secs   av.it.:  12.6
+      thresh= 2.450E-06 alpha_mix =  0.700 |ddv_scf|^2 =  2.411E-13
+
+     Pert. #  1: Fermi energy shift (Ry) =    -8.2718E-25    -7.1746E-43
+
+      iter #   5 total cpu time :  1645.7 secs   av.it.:  15.6
+      thresh= 4.910E-08 alpha_mix =  0.700 |ddv_scf|^2 =  3.853E-14
+
+     Pert. #  1: Fermi energy shift (Ry) =    -1.6544E-24    -7.1746E-43
+
+      iter #   6 total cpu time :  1696.3 secs   av.it.:  14.9
+      thresh= 1.963E-08 alpha_mix =  0.700 |ddv_scf|^2 =  6.121E-15
+
+     End of self-consistent calculation
+
+     Convergence has been achieved 
+
+
+     Representation #   5 mode #   5
+
+     Self-consistent Calculation
+
+     Pert. #  1: Fermi energy shift (Ry) =    -1.6544E-24    -3.5873E-43
+
+      iter #   1 total cpu time :  1727.4 secs   av.it.:   3.0
+      thresh= 1.000E-02 alpha_mix =  0.700 |ddv_scf|^2 =  4.773E-10
+
+     Pert. #  1: Fermi energy shift (Ry) =     3.3087E-24    -5.7397E-42
+
+      iter #   2 total cpu time :  1776.9 secs   av.it.:  14.8
+      thresh= 2.185E-06 alpha_mix =  0.700 |ddv_scf|^2 =  7.007E-11

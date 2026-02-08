@@ -1,5 +1,5 @@
 
-     Program PHONON v.6.7MaX starts on  7Feb2026 at  2: 9:20 
+     Program PHONON v.6.7MaX starts on  8Feb2026 at  9:57:19 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -18,24 +18,16 @@
      Reading xml data from directory:
 
      ./tmp/TiH2.save/
-     file H.UPF: wavefunction(s)  1S renormalized
-
-     IMPORTANT: XC functional enforced from input :
-     Exchange-correlation= PBE
-                           (   1   4   3   4   0   0   0)
-     Any further DFT definition will be discarded
-     Please, verify this is what you really want
-
-
-     G-vector sticks info
-     --------------------
-     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Sum         873     437    135                19319     6837    1189
-
+     Message from routine qes_read:outputType:
+     total_energy: wrong number of occurrences
+     Message from routine qes_read:outputType:
+     band_structure: wrong number of occurrences
+     Message from routine qexsd_readschema :
+     error reading output_obj of xsd data file
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine ggens (2):
-     mismatch in number of G-vectors
+     Error in routine read_xml_file (4):
+     fatal error reading xml file
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      stopping ...

@@ -121,25 +121,33 @@ def count_job_attempts(log_file, job_name):
     return max(1, count)
 
 # =============================================================================
-# 3. SMART LOGIC & VALIDATION & OOM DETEKTION
+# 3. SMART LOGIC & VALIDATION & CRASH ANALYSE
 # =============================================================================
 
 def analyze_crash_reason(output_file):
     if not os.path.exists(output_file): return "NONE"
     try:
         with open(output_file, 'rb') as f:
-            try: f.seek(-10000, 2) 
+            try: f.seek(-20000, 2) # Lese mehr Bytes für bessere Diagnose
             except OSError: f.seek(0)
             lines = f.read().decode('utf-8', errors='ignore')
         
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
 
-        # Symmetrie-Fehler erkennen
+        # --- NEU: Spezifische Fehlererkennung ---
+        
+        # 1. XML Korruption (Muss neu gerechnet werden)
+        if "fatal error reading xml" in lines or "reading output_obj of xsd" in lines or "wrong number of occurrences" in lines:
+            print("      🧨 XML-Struktur zerstört (Corruption).")
+            return "XML_ERROR"
+
+        # 2. Symmetrie Fehler (Braucht noinv=.true.)
         if "not orthogonal" in lines and "D_S" in lines:
             print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
 
+        # 3. OOM Erkennung
         ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
         if ram_match:
             if "Self-consistent Calculation" not in lines and "iteration #" not in lines:
@@ -149,12 +157,11 @@ def analyze_crash_reason(output_file):
             error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "fatal"]
             has_error_msg = any(key in lines for key in error_keywords)
             if not has_error_msg:
-                # Strategie C: Check ob Datei extrem klein ist (Sofort-Crash), dann ist es kein klassischer OOM
-                if os.path.getsize(output_file) < 5000: 
-                     return "HARD" # Wahrscheinlich Config-Fehler, kein RAM-Problem
+                # Datei endet einfach (Silent Death) -> OOM
                 return "LIKELY_OOM"
 
-        error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed", "fatal error reading xml"]
+        # Generischer Fehler
+        error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed"]
         for key in error_keywords:
             if key in lines: return "HARD"
             
@@ -174,54 +181,48 @@ def is_xml_valid(xml_path):
     except:
         return False
 
-# --- NEU: SPEZIFISCHE FEHLERERKENNUNG (GGENS / DAVCIO) ---
-def is_recoverable_error(ph_output_file):
-    """Prüft, ob der Fehler durch 'Mismatched Cores' (ggens) oder fehlende Files (davcio) verursacht wurde."""
+def is_recoverable_fragmentation_error(ph_output_file):
+    """
+    Prüft NUR NOCH auf Fehler, die durch 'Collect Waves' behoben werden können.
+    Also ggens (Vektoren passen nicht) oder davcio (Datei fehlt/zu klein).
+    """
     if not os.path.exists(ph_output_file): return False
     try:
         with open(ph_output_file, 'r', errors='ignore') as f:
             content = f.read()
-        # ggens (2) = mismatch in G-vectors (Core mismatch)
-        # davcio (20) = error reading file (File missing/corrupt)
-        if "mismatch in number of G-vectors" in content or "error reading file" in content:
+        # Nur diese Fehler sind durch SCF-Recovery heilbar:
+        if "mismatch in number of G-vectors" in content or ("error reading file" in content and "xml" not in content):
             return True
         return False
     except: return False
 
-# --- NEU: RETTUNGSMANÖVER (SC FÜR WF_COLLECT) ---
 def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
     """
-    Startet PWSCF mit nstep=0 und wf_collect=.true., um zerstückelte Daten
-    in eine saubere Datei zusammenzuführen.
+    Startet PWSCF mit nstep=0 und wf_collect=.true., um zerstückelte Daten zusammenzuführen.
     """
     print(f"      🚑 Starte RECOVERY-Modus (Collect Waves): Cores={cores_to_use}")
     
     with open(scf_input_file, 'r') as f: content = f.read()
     
-    # 1. Sicherstellen: restart_mode='restart'
     if "restart_mode" in content:
         content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", "restart_mode='restart'", content)
     else:
         content = content.replace("&CONTROL", "&CONTROL\n restart_mode='restart',")
         
-    # 2. Sicherstellen: wf_collect=.true.
     if "wf_collect" in content:
         content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
     else:
         content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
 
-    # 3. Sicherstellen: nstep=0 (Damit er nicht rechnet, sondern nur speichert)
     if "nstep" in content:
         content = re.sub(r"nstep\s*=\s*\d+", "nstep=0", content)
     else:
         content = content.replace("&CONTROL", "&CONTROL\n nstep=0,")
 
-    # 4. Input schreiben
     recover_in = scf_input_file + ".recover"
     recover_out = os.path.join(cwd, "scf_recover.out")
     with open(recover_in, 'w') as f: f.write(content)
     
-    # 5. Ausführen (auf original Cores!)
     with open(recover_in, 'r') as f_in, open(recover_out, 'w') as f_out:
         cmd = ["mpirun", "--oversubscribe", "-np", str(cores_to_use), PW_EXE]
         try:
@@ -234,23 +235,28 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
 
 def disable_symmetries_and_reduce_grid(input_file):
     """
-    1. Fügt search_sym=.false. in die Input-Datei ein.
-    2. Reduziert das q-Grid auf 1 1 1 um RAM zu sparen.
+    1. Fügt search_sym=.false. UND noinv=.true. ein.
+    2. Reduziert das q-Grid auf 1 1 1.
     """
     if not os.path.exists(input_file): return
     with open(input_file, 'r') as f: content = f.read()
     
-    # Symmetrie aus
-    if "search_sym" not in content:
-        content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
+    # Symmetrie aggressiv ausschalten (Fix für BaMg3H8)
+    if "&INPUTPH" in content:
+        # Falls search_sym noch nicht drin ist
+        if "search_sym" not in content:
+            content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
+        # WICHTIG: noinv=.true. deaktiviert Inversions-Checks (gegen 'D_S not orthogonal')
+        if "noinv" not in content:
+            content = content.replace("&INPUTPH", "&INPUTPH\n noinv=.true.,")
     
-    # Grid reduzieren (nq1=2 -> nq1=1)
+    # Grid reduzieren
     content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
     content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
     content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
 
     with open(input_file, 'w') as f: f.write(content)
-    print(f"      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert (RAM sparen).")
+    print(f"      🛡️ Symmetrien (inkl. Inversion) deaktiviert & Grid auf 1x1x1 reduziert.")
 
 # --- PERSISTENZ-LOGIK ---
 def detect_oom_level(input_file):
@@ -346,13 +352,11 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         tmp_dir = os.path.join(cwd, "tmp") 
         checkpoint_dir = os.path.join(cwd, "tmp_SAFE_CHECKPOINT") 
 
-        # --- UPDATE: ZWINGE wf_collect=.true. HIER ---
-        # Das verhindert den davcio Fehler, auch wenn disk_io='low' ist.
+        # WF_COLLECT ZWINGEN (gegen davcio Fehler bei späterer Phonon-Rechnung)
         if "wf_collect" in content:
             content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
         else:
             content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
-        # ---------------------------------------------
 
         prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
         current_prefix = prefix_match.group(1) if prefix_match else "calc"
@@ -594,7 +598,6 @@ def main():
                         print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt. Versuch Nr. {attempts} auf diesem Level.")
                         
                         # Strategie C: Ghost-File Rotation bei OOM-Verdacht
-                        # Wir benennen die alte Datei um, damit der nächste Check garantiert das NEUE Ergebnis prüft.
                         if os.path.exists(scf_out):
                             timestamp = datetime.now().strftime("%H%M%S")
                             new_name = f"{scf_out}.crash_{timestamp}"
@@ -718,19 +721,32 @@ def main():
                     # --- NOTFALL-ROUTINE BEI CRASH ---
                     if ph_res != "DONE":
                         print("      ⚠️ Crash/OOM!")
+                        crash_reason = analyze_crash_reason(ph_out)
                         
-                        # --- NEUE RETTUNG FÜR 'ggens' FEHLER (Core Mismatch) ---
-                        if is_recoverable_error(ph_out):
-                            print("      🤕 Diagnose: Datenfragmente passen nicht (ggens/davcio). Starte 'Collect-Recovery'...")
-                            # Wir nutzen DEFAULT_CORES (2), um die alten 2-Core-Schnipsel einzusammeln!
-                            if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
-                                print("      👍 Recovery erfolgreich. Bereit für Neustart.")
-                            else:
-                                print("      👎 Recovery fehlgeschlagen. Versuche trotzdem weiter...")
+                        # === FALL 1: XML KORRUPTION (TiH2, Rb3...) ===
+                        if crash_reason == "XML_ERROR":
+                            print("      🧨 FATAL: XML korrupt. Lösche .save und erzwinge SCF-Neustart im nächsten Durchlauf.")
+                            tmp_save_path = os.path.join(work_dir, "tmp")
+                            if os.path.exists(tmp_save_path): shutil.rmtree(tmp_save_path, ignore_errors=True)
+                            if os.path.exists(scf_out): os.remove(scf_out) # Löschen erzwingt Neuberechnung
+                            update_csv(name, "SCF_RESET (XML Error)")
+                            continue # Springt zum nächsten Kandidaten, dieser hier wird beim nächsten Pipeline-Start von vorne gerechnet.
 
-                        print("      🛡️ Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, 1 Core...")
+                        # === FALL 2: RECOVERY (Nur bei ggens/davcio) ===
+                        if is_recoverable_fragmentation_error(ph_out):
+                            print("      🤕 Diagnose: Fragmentierung erkannt. Starte 'Collect-Recovery'...")
+                            if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
+                                print("      👍 Recovery erfolgreich.")
+                            else:
+                                print("      👎 Recovery fehlgeschlagen.")
                         
-                        # 1. Input radikal vereinfachen (Symmetrie aus, Grid klein)
+                        # === FALL 3: SYMMETRIE FEHLER (BaMg3H8) ===
+                        if crash_reason == "SYMMETRY_ERROR":
+                             print("      🧩 Symmetrie-Problem! Deaktiviere auch Inversion (noinv=.true.).")
+
+                        print("      🛡️ Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, NoInv=ON, 1 Core...")
+                        
+                        # 1. Input radikal vereinfachen (Symmetrie aus + noinv, Grid klein)
                         disable_symmetries_and_reduce_grid(ph_in)
                         
                         # 2. CHIRURGISCHES LÖSCHEN: Nur Phononen-Cache (_ph0) entfernen
@@ -740,16 +756,14 @@ def main():
                         if os.path.exists(ph0_path):
                             try:
                                 shutil.rmtree(ph0_path, ignore_errors=True)
-                                print("      🧹 Defekten Phononen-Cache (_ph0) gelöscht. SCF-Daten behalten.")
+                                print("      🧹 Defekten Phononen-Cache (_ph0) gelöscht.")
                             except: pass
                         
-                        # 3. Alte ph.out löschen/umbenennen
                         if os.path.exists(ph_out):
                             try: os.remove(ph_out)
                             except: pass
 
-                        # 4. Neustart Phononen (nutzt existierende SCF-Daten im tmp Ordner)
-                        # WICHTIG: Jetzt auf 1 Core, aber mit konsolidierten Daten (falls Recovery lief)
+                        # 3. Neustart Phononen
                         ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
                     
                     if ph_res != "DONE":

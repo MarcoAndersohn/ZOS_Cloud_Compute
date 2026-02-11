@@ -1,5 +1,5 @@
 
-     Program PHONON v.6.7MaX starts on  7Feb2026 at 12: 6:58 
+     Program PHONON v.6.7MaX starts on 11Feb2026 at  2: 8:44 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -15,36 +15,9 @@
      Waiting for input...
      Reading input from standard input
 
-     Reading xml data from directory:
-
-     ./tmp/BaMg3H8.save/
-     Message from routine read_pp_mesh:
-     mismatch in mesh size, discarding the one in header
-     file H.UPF: wavefunction(s)  1S renormalized
-
-     IMPORTANT: XC functional enforced from input :
-     Exchange-correlation= PBE
-                           (   1   4   3   4   0   0   0)
-     Any further DFT definition will be discarded
-     Please, verify this is what you really want
-
-
-     G-vector sticks info
-     --------------------
-     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Sum        3043    1507    437               125439    44237    6931
-
-     Reading collected, re-writing distributed wavefunctions
-
-
-     Dynamical matrices for ( 1, 1, 1)  uniform grid of q-points
-     (   1 q-points):
-       N         xq(1)         xq(2)         xq(3) 
-       1   0.000000000   0.000000000   0.000000000
-
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine d_matrix (3):
-     D_S (l=2) for this symmetry operation is not orthogonal
+     Error in routine  read_namelists (1):
+      bad line in namelist &inputph: " noinv=.true.," (error could be in the previous line)
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      stopping ...

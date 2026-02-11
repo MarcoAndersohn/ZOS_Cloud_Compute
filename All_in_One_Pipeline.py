@@ -142,7 +142,7 @@ def analyze_crash_reason(output_file):
             print("      🧨 XML-Struktur zerstört (Corruption).")
             return "XML_ERROR"
 
-        # 2. Symmetrie Fehler (Braucht noinv=.true.)
+        # 2. Symmetrie Fehler (Braucht noinv=.true. nur im SCF, nicht in ph.x)
         if "not orthogonal" in lines and "D_S" in lines:
             print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
@@ -235,20 +235,17 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
 
 def disable_symmetries_and_reduce_grid(input_file):
     """
-    1. Fügt search_sym=.false. UND noinv=.true. ein.
+    1. Fügt search_sym=.false. ein (ohne noinv für ph.x).
     2. Reduziert das q-Grid auf 1 1 1.
     """
     if not os.path.exists(input_file): return
     with open(input_file, 'r') as f: content = f.read()
     
-    # Symmetrie aggressiv ausschalten (Fix für BaMg3H8)
+    # Symmetrie aggressiv ausschalten
     if "&INPUTPH" in content:
         # Falls search_sym noch nicht drin ist
         if "search_sym" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
-        # WICHTIG: noinv=.true. deaktiviert Inversions-Checks (gegen 'D_S not orthogonal')
-        if "noinv" not in content:
-            content = content.replace("&INPUTPH", "&INPUTPH\n noinv=.true.,")
     
     # Grid reduzieren
     content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
@@ -256,7 +253,7 @@ def disable_symmetries_and_reduce_grid(input_file):
     content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
 
     with open(input_file, 'w') as f: f.write(content)
-    print(f"      🛡️ Symmetrien (inkl. Inversion) deaktiviert & Grid auf 1x1x1 reduziert.")
+    print(f"      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.")
 
 # --- PERSISTENZ-LOGIK ---
 def detect_oom_level(input_file):
@@ -567,7 +564,6 @@ def main():
             # 4. Wenn Metall ABER Stabilität unbekannt -> RECHNEN (Nicht überspringen!)
             if "Metall" in last_status and (stability == "-" or stability == "Unbekannt"):
                 print(f"🔄 Retry Phonon für {name} (Metall, aber Stabilität unbekannt)...")
-                # Hier läuft er einfach weiter im Code und landet automatisch bei der Phononen-Logik
             # --- NEUE LOGIK ENDE ---
 
             crash_type = analyze_crash_reason(scf_out)
@@ -620,6 +616,8 @@ def main():
                     current_cores = int(DEFAULT_CORES)
                     if oom_level >= 4: current_cores = int(SAFE_CORES)
                     
+                    crash_counter = 0  # <--- NEUER ZÄHLER GEGEN ENDLOSSCHLEIFEN
+                    
                     while True:
                         apply_oom_settings(scf_in, oom_level)
                         
@@ -635,6 +633,7 @@ def main():
 
                         elif result == "OOM":
                             oom_level += 1
+                            crash_counter = 0 # Reset bei OOM
                             print(f"      ⚠️ OOM Fehler erkannt. Eskaliere zu Level {oom_level}...")
                             
                             if oom_level == 1: update_csv(name, "Retrying (OOM Lvl 1: CG)")
@@ -655,11 +654,18 @@ def main():
                                 update_csv(name, "SKIPPED (Non-Conv)")
                                 break
                             else:
-                                update_csv(name, "Retrying (Crash)")
+                                crash_counter += 1
+                                if crash_counter >= 3:
+                                    print(f"      ❌ Zu viele unlösbare Abstürze ({crash_counter}). Skippe Job.")
+                                    update_csv(name, "SKIPPED (Permanent Crash)")
+                                    git_sync(f"Skipped {name}: Permanent Crash")
+                                    break
+                                
+                                update_csv(name, f"Retrying (Crash {crash_counter}/3)")
                                 time.sleep(2)
                                 continue 
 
-                    if result == "MAX_STEPS" or result == "OOM": continue 
+                    if result == "MAX_STEPS" or result == "OOM" or crash_counter >= 3: continue 
                     if analyze_crash_reason(scf_out) != "DONE":
                         git_sync(f"Failed: {name}")
                         continue 
@@ -742,11 +748,11 @@ def main():
                         
                         # === FALL 3: SYMMETRIE FEHLER (BaMg3H8) ===
                         if crash_reason == "SYMMETRY_ERROR":
-                             print("      🧩 Symmetrie-Problem! Deaktiviere auch Inversion (noinv=.true.).")
+                             print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
 
-                        print("      🛡️ Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, NoInv=ON, 1 Core...")
+                        print("      🛡️ Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, 1 Core...")
                         
-                        # 1. Input radikal vereinfachen (Symmetrie aus + noinv, Grid klein)
+                        # 1. Input radikal vereinfachen (Symmetrie aus + Grid klein)
                         disable_symmetries_and_reduce_grid(ph_in)
                         
                         # 2. CHIRURGISCHES LÖSCHEN: Nur Phononen-Cache (_ph0) entfernen

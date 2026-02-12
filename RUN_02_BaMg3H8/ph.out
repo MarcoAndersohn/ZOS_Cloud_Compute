@@ -1,5 +1,5 @@
 
-     Program PHONON v.6.7MaX starts on 12Feb2026 at  2: 9: 8 
+     Program PHONON v.6.7MaX starts on 12Feb2026 at 10:39:22 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -15,9 +15,11 @@
      Waiting for input...
      Reading input from standard input
 
+mkdir fail: [2] No such file or directory
+
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine  read_namelists (1):
-      bad line in namelist &inputph: " noinv=.true.," (error could be in the previous line)
+     Error in routine check_tempdir (1):
+     temporary directory ./tmp/_ph0/ cannot be created or accessed
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      stopping ...

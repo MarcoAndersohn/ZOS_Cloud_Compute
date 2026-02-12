@@ -235,19 +235,24 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
 
 def disable_symmetries_and_reduce_grid(input_file):
     """
-    1. Fügt search_sym=.false. ein (ohne noinv für ph.x).
-    2. Reduziert das q-Grid auf 1 1 1.
+    1. Entfernt 'noinv' (verursacht Crash in ph.x).
+    2. Fügt search_sym=.false. ein.
+    3. Reduziert das q-Grid auf 1 1 1.
     """
     if not os.path.exists(input_file): return
     with open(input_file, 'r') as f: content = f.read()
     
-    # Symmetrie aggressiv ausschalten
+    # 1. SICHERHEIT: noinv entfernen, falls es versehentlich drin war
+    content = content.replace("noinv=.true.,", "")
+    content = content.replace("noinv=.true.", "")
+
+    # 2. Symmetrie korrekt für PHONON ausschalten
     if "&INPUTPH" in content:
         # Falls search_sym noch nicht drin ist
         if "search_sym" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
     
-    # Grid reduzieren
+    # 3. Grid reduzieren
     content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
     content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
     content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)

@@ -16,6 +16,8 @@
   occupations = 'smearing'
   smearing = 'methfessel-paxton'
   degauss = 0.02
+  nosym = .true.   ! <--- HIER REIN
+  noinv = .true.   ! <--- HIER REIN
 /
 &ELECTRONS
  electron_maxstep = 150,

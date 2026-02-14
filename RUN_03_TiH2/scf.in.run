@@ -1,5 +1,6 @@
 &CONTROL
- restart_mode='restart',
+ restart_mode='from_scratch',
+ wf_collect=.true.,
   calculation = 'vc-relax'
   prefix = 'TiH2'
   outdir = './tmp/'

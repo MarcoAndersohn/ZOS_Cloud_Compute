@@ -30159,3 +30159,47 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       ❤️ Git Heartbeat (Phonon)...
 To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    eb58da1..e876103  main -> main
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   e876103..d6da791  main -> main
+
+💎 Job: 06_CaLa8YB11H482
+      📉 Setze RAM-Strategie: Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
+      ⚠️ RAM NOT-AUS (Python Monitor)!
+      ⚠️ OOM Fehler erkannt. Eskaliere zu Level 1...
+      📉 Setze RAM-Strategie: Stufe 1 (cg, mix=4)
+   1️⃣  SCF (2 Cores, OOM-Lvl 1)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
+      ⚠️ RAM NOT-AUS (Python Monitor)!
+      ⚠️ OOM Fehler erkannt. Eskaliere zu Level 2...
+      📉 Setze RAM-Strategie: Stufe 2 (cg, mix=4, disk_io='low')
+   1️⃣  SCF (2 Cores, OOM-Lvl 2)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
+      ⚠️ RAM NOT-AUS (Python Monitor)!
+      ⚠️ OOM Fehler erkannt. Eskaliere zu Level 3...
+      📉 Setze RAM-Strategie: Stufe 3 (cg, mix=3, disk_io='low')
+   1️⃣  SCF (2 Cores, OOM-Lvl 3)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
+      ⚠️ RAM NOT-AUS (Python Monitor)!
+      ⚠️ OOM Fehler erkannt. Eskaliere zu Level 4...
+      📉 Setze RAM-Strategie: Stufe 4 (cg, mix=2, disk_io='low', 1 Core)
+   1️⃣  SCF (1 Cores, OOM-Lvl 4)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 1 Cores)...
+      ⚠️ RAM NOT-AUS (Python Monitor)!
+      ⚠️ OOM Fehler erkannt. Eskaliere zu Level 5...
+      ❌ System zu komplex für verfügbaren RAM. Skippe.
+
+💎 Job: 06_EuGaH4
+      📉 Setze RAM-Strategie: Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
+      💾 XML valide -> Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.
+      ☁️ Trigger Git Sync (wegen Checkpoint)...

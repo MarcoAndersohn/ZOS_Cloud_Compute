@@ -519,3 +519,553 @@
       thresh= 1.000E-02 alpha_mix =  0.700 |ddv_scf|^2 =  4.991E+03
      kpoint   1 ibnd  51 solve_linter: root not converged  5.055E-02
      kpoint   2 ibnd  51 solve_linter: root not converged  4.797E+01
+
+     Program PHONON v.6.7MaX starts on 16Feb2026 at  2:17:10 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on     2 processors
+
+     MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       2
+     Waiting for input...
+     Reading input from standard input
+
+     Reading xml data from directory:
+
+     ./tmp/LiMg4Ga3H20.save/
+     Message from routine read_pp_mesh:
+     mismatch in mesh size, discarding the one in header
+     file Ga.UPF: wavefunction(s)  4S renormalized
+     file H.UPF: wavefunction(s)  1S renormalized
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        2760    1377    385               175958    62233    9184
+     Max        2761    1378    386               175959    62234    9185
+     Sum        5521    2755    771               351917   124467   18369
+
+
+     negative rho (up, down):  1.417E+02 0.000E+00
+     read_file_new: Wavefunctions not in collected format?!?
+     read_file: Wavefunctions in collected format not available
+        8 /   8 q-points for this run, from  1 to  8:
+       N       xq(1)         xq(2)         xq(3) 
+       1   0.000000000   0.000000000   0.000000000
+       2   0.011164453  -0.000386214  -0.444985205
+       3  -0.013623348  -0.543139803   0.441469444
+       4  -0.002458894  -0.543526017  -0.003515760
+       5  -0.475841137  -0.002576478   0.011958669
+       6  -0.464676684  -0.002962691  -0.433026535
+       7  -0.489464485  -0.545716281   0.453428114
+       8  -0.478300031  -0.546102495   0.008442909
+
+
+     Calculation of q =    0.0000000   0.0000000   0.0000000
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+
+     Restart in Phonon calculation
+
+     Phonons                                                                    
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =      13.3834  a.u.
+     unit-cell volume          =    2605.3704 (a.u.)^3
+     number of atoms/cell      =           28
+     number of atomic types    =            4
+     kinetic-energy cut-off    =      50.0000  Ry
+     charge density cut-off    =     400.0000  Ry
+     convergence threshold     =      1.0E-14
+     beta                      =       0.7000
+     number of iterations used =            4
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+
+
+     celldm(1)=   13.38341  celldm(2)=    0.00000  celldm(3)=    0.00000
+     celldm(4)=    0.00000  celldm(5)=    0.00000  celldm(6)=    0.00000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (  1.0515 -0.0049  0.0264 )  
+               a(2) = ( -0.0050  0.9199 -0.0009 )  
+               a(3) = (  0.0233  0.9125  1.1234 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = (  0.9517  0.0052 -0.0239 )  
+               b(2) = (  0.0272  1.0863 -0.8829 )  
+               b(3) = ( -0.0223  0.0008  0.8900 )  
+
+
+     Atoms inside the unit cell: 
+
+     Cartesian axes
+
+     site n.  atom      mass           positions (alat units)
+        1     Mg   1.0000   tau(    1) = (    0.39454    1.14091    0.91174  )
+        2     Mg   1.0000   tau(    2) = (    0.67987    0.68438    0.30688  )
+        3     Mg   1.0000   tau(    3) = (    0.95650    1.13776    0.83951  )
+        4     Mg   1.0000   tau(    4) = (    0.14945    0.68957    0.30596  )
+        5     Ga   1.0000   tau(    5) = (    0.43668    1.59834    1.01188  )
+        6     Ga   1.0000   tau(    6) = (    0.65992    0.22952    0.13970  )
+        7     Ga   1.0000   tau(    7) = (    0.91881    0.68269    0.74352  )
+        8     Li   1.0000   tau(    8) = (    0.03047    1.14303    0.37056  )
+        9     H    1.0000   tau(    9) = (    0.06646    0.69796    0.61555  )
+       10     H    1.0000   tau(   10) = (    0.89610    1.13104    0.59184  )
+       11     H    1.0000   tau(   11) = (    0.62634    1.59460    1.13136  )
+       12     H    1.0000   tau(   12) = (    0.45426    0.24470    0.04108  )
+       13     H    1.0000   tau(   13) = (    0.44665    1.41495    0.86888  )
+       14     H    1.0000   tau(   14) = (    0.68813    0.40247    0.27607  )
+       15     H    1.0000   tau(   15) = (    0.89635    0.85922    0.88704  )
+       16     H    1.0000   tau(   16) = (    0.16098    0.94820    0.30081  )
+       17     H    1.0000   tau(   17) = (    0.90395    1.41856    0.87854  )
+       18     H    1.0000   tau(   18) = (    0.14233    0.43316    0.30641  )
+       19     H    1.0000   tau(   19) = (    0.45353    0.86862    0.87858  )
+       20     H    1.0000   tau(   20) = (    0.65949    0.96590    0.26251  )
+       21     H    1.0000   tau(   21) = (    0.15324    1.13697    0.87044  )
+       22     H    1.0000   tau(   22) = (    0.92765    0.69639    0.24601  )
+       23     H    1.0000   tau(   23) = (    0.57669    1.13870    0.63290  )
+       24     H    1.0000   tau(   24) = (    0.43063    0.68156    0.36754  )
+       25     H    1.0000   tau(   25) = (    0.47326    1.14315    0.60243  )
+       26     H    1.0000   tau(   26) = (    0.73915    0.67896    0.60612  )
+       27     H    1.0000   tau(   27) = (    0.83805    1.14034    1.09600  )
+       28     H    1.0000   tau(   28) = (    0.21701    0.68428   -0.00544  )
+
+     Computing dynamical matrix for 
+                    q = (   0.0000000   0.0000000   0.0000000 )
+
+      2 Sym.Ops. (with q -> -q+G )
+
+
+     G cutoff = 1814.8199  ( 175959 G-vectors)     FFT grid: ( 90, 80,125)
+     G cutoff =  907.4100  (  62233 G-vectors)  smooth grid: ( 64, 60, 90)
+
+     number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+
+     PseudoPot. # 1 for Ga read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Ga.UPF
+     MD5 check sum: 79e63b61437c88080bf469cc04ca4be8
+     Pseudo is Projector augmented-wave + core cor, Zval = 13.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1205 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for H  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/H.UPF
+     MD5 check sum: 850d63dcbcc06c5de8b44e0ab9f952da
+     Pseudo is Projector augmented-wave, Zval =  1.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of  929 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for Li read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Li.UPF
+     MD5 check sum: 057edeeab9105e5446fd9e29ea3f9c2f
+     Pseudo is Ultrasoft + core correction, Zval =  1.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  751 points,  2 beta functions with: 
+                l(1) =   1
+                l(2) =   1
+     Q(r) pseudized with  8 coefficients,  rinner =    1.000   1.000   1.000
+
+
+     PseudoPot. # 4 for Mg read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Mg.UPF
+     MD5 check sum: a77e51077e70c6c73445c6cac60d158f
+     Pseudo is Projector augmented-wave + core cor, Zval = 10.0
+     Generated using ATOMPAW code
+     Shape of augmentation charge: BESSEL
+     Using radial grid of 1171 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   0
+                l(4) =   0
+                l(5) =   1
+                l(6) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     Mode symmetry, C_1 (1)     point group:
+
+
+     Atomic displacements:
+     There are   84 irreducible representations
+
+     Representation     1      1 modes -  To be done
+
+     Representation     2      1 modes -  To be done
+
+     Representation     3      1 modes -  To be done
+
+     Representation     4      1 modes -  To be done
+
+     Representation     5      1 modes -  To be done
+
+     Representation     6      1 modes -  To be done
+
+     Representation     7      1 modes -  To be done
+
+     Representation     8      1 modes -  To be done
+
+     Representation     9      1 modes -  To be done
+
+     Representation    10      1 modes -  To be done
+
+     Representation    11      1 modes -  To be done
+
+     Representation    12      1 modes -  To be done
+
+     Representation    13      1 modes -  To be done
+
+     Representation    14      1 modes -  To be done
+
+     Representation    15      1 modes -  To be done
+
+     Representation    16      1 modes -  To be done
+
+     Representation    17      1 modes -  To be done
+
+     Representation    18      1 modes -  To be done
+
+     Representation    19      1 modes -  To be done
+
+     Representation    20      1 modes -  To be done
+
+     Representation    21      1 modes -  To be done
+
+     Representation    22      1 modes -  To be done
+
+     Representation    23      1 modes -  To be done
+
+     Representation    24      1 modes -  To be done
+
+     Representation    25      1 modes -  To be done
+
+     Representation    26      1 modes -  To be done
+
+     Representation    27      1 modes -  To be done
+
+     Representation    28      1 modes -  To be done
+
+     Representation    29      1 modes -  To be done
+
+     Representation    30      1 modes -  To be done
+
+     Representation    31      1 modes -  To be done
+
+     Representation    32      1 modes -  To be done
+
+     Representation    33      1 modes -  To be done
+
+     Representation    34      1 modes -  To be done
+
+     Representation    35      1 modes -  To be done
+
+     Representation    36      1 modes -  To be done
+
+     Representation    37      1 modes -  To be done
+
+     Representation    38      1 modes -  To be done
+
+     Representation    39      1 modes -  To be done
+
+     Representation    40      1 modes -  To be done
+
+     Representation    41      1 modes -  To be done
+
+     Representation    42      1 modes -  To be done
+
+     Representation    43      1 modes -  To be done
+
+     Representation    44      1 modes -  To be done
+
+     Representation    45      1 modes -  To be done
+
+     Representation    46      1 modes -  To be done
+
+     Representation    47      1 modes -  To be done
+
+     Representation    48      1 modes -  To be done
+
+     Representation    49      1 modes -  To be done
+
+     Representation    50      1 modes -  To be done
+
+     Representation    51      1 modes -  To be done
+
+     Representation    52      1 modes -  To be done
+
+     Representation    53      1 modes -  To be done
+
+     Representation    54      1 modes -  To be done
+
+     Representation    55      1 modes -  To be done
+
+     Representation    56      1 modes -  To be done
+
+     Representation    57      1 modes -  To be done
+
+     Representation    58      1 modes -  To be done
+
+     Representation    59      1 modes -  To be done
+
+     Representation    60      1 modes -  To be done
+
+     Representation    61      1 modes -  To be done
+
+     Representation    62      1 modes -  To be done
+
+     Representation    63      1 modes -  To be done
+
+     Representation    64      1 modes -  To be done
+
+     Representation    65      1 modes -  To be done
+
+     Representation    66      1 modes -  To be done
+
+     Representation    67      1 modes -  To be done
+
+     Representation    68      1 modes -  To be done
+
+     Representation    69      1 modes -  To be done
+
+     Representation    70      1 modes -  To be done
+
+     Representation    71      1 modes -  To be done
+
+     Representation    72      1 modes -  To be done
+
+     Representation    73      1 modes -  To be done
+
+     Representation    74      1 modes -  To be done
+
+     Representation    75      1 modes -  To be done
+
+     Representation    76      1 modes -  To be done
+
+     Representation    77      1 modes -  To be done
+
+     Representation    78      1 modes -  To be done
+
+     Representation    79      1 modes -  To be done
+
+     Representation    80      1 modes -  To be done
+
+     Representation    81      1 modes -  To be done
+
+     Representation    82      1 modes -  To be done
+
+     Representation    83      1 modes -  To be done
+
+     Representation    84      1 modes -  To be done
+
+
+     PHONON       :   7m 7.82s CPU  10m12.39s WALL
+
+
+
+     Representation #   1 mode #   1
+
+     Self-consistent Calculation
+     kpoint   1 ibnd  51 solve_linter: root not converged  5.030E+01
+     kpoint   2 ibnd  51 solve_linter: root not converged  4.680E+02
+     kpoint   3 ibnd  51 solve_linter: root not converged  5.144E+03
+     kpoint   4 ibnd  51 solve_linter: root not converged  3.895E+02
+     kpoint   5 ibnd  51 solve_linter: root not converged  1.667E-01
+     kpoint   6 ibnd  51 solve_linter: root not converged  3.070E+02

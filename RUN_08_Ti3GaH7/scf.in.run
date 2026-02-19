@@ -1,5 +1,6 @@
 &CONTROL
- restart_mode='restart',
+ restart_mode='from_scratch',
+ wf_collect=.true.,
   calculation = 'vc-relax'
   prefix = 'Ti3GaH7'
   outdir = './tmp/'
@@ -19,7 +20,9 @@
   degauss = 0.02
 /
 &ELECTRONS
- mixing_ndim = 12,
+ electron_maxstep = 150,
+ diagonalization='david',
+ mixing_ndim = 8,
   conv_thr = 1.0d-6
 /
 &IONS

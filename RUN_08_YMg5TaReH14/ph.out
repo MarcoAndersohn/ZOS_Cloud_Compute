@@ -1,0 +1,391 @@
+
+     Program PHONON v.6.7MaX starts on 19Feb2026 at 19:31:40 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on     2 processors
+
+     MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       2
+     Waiting for input...
+     Reading input from standard input
+
+     Reading xml data from directory:
+
+     ./tmp/YMg5TaReH14.save/
+     Message from routine read_pp_mesh:
+     mismatch in mesh size, discarding the one in header
+     file H.UPF: wavefunction(s)  1S renormalized
+     file Re.UPF: wavefunction(s)  5P 5D 4F renormalized
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        1245     629    187               110485    39089    6448
+     Max        1246     632    192               110490    39090    6449
+     Sum        2491    1261    379               220975    78179   12897
+
+
+     Check: negative core charge=   -0.000003
+
+     negative rho (up, down):  4.405E-02 0.000E+00
+     Reading collected, re-writing distributed wavefunctions
+
+
+     Dynamical matrices for ( 2, 2, 2)  uniform grid of q-points
+     (   8 q-points):
+       N         xq(1)         xq(2)         xq(3) 
+       1   0.000000000   0.000000000   0.000000000
+       2   0.000000011  -0.000000949  -0.226068072
+       3  -0.497626428  -0.287306295  -0.000000664
+       4  -0.497626418  -0.287307244  -0.226068737
+       5  -0.497624896   0.287303711   0.000000499
+       6  -0.497624885   0.287302761  -0.226067574
+       7  -0.995251324  -0.000002584  -0.000000166
+       8  -0.995251314  -0.000003534  -0.226068238
+
+     Calculation of q =    0.0000000   0.0000000   0.0000000
+
+     Phonons                                                                    
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =       9.4588  a.u.
+     unit-cell volume          =    1636.4510 (a.u.)^3
+     number of atoms/cell      =           22
+     number of atomic types    =            5
+     kinetic-energy cut-off    =      50.0000  Ry
+     charge density cut-off    =     400.0000  Ry
+     convergence threshold     =      1.0E-14
+     beta                      =       0.7000
+     number of iterations used =            4
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+
+
+     celldm(1)=    9.45880  celldm(2)=    0.00000  celldm(3)=    0.00000
+     celldm(4)=    0.00000  celldm(5)=    0.00000  celldm(6)=    0.00000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (  0.5024 -0.8702  0.0000 )  
+               a(2) = (  0.5024  0.8702 -0.0000 )  
+               a(3) = ( -0.0000 -0.0000  2.2117 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = (  0.9952 -0.5746 -0.0000 )  
+               b(2) = (  0.9953  0.5746  0.0000 )  
+               b(3) = ( -0.0000  0.0000  0.4521 )  
+
+
+     Atoms inside the unit cell: 
+
+     Cartesian axes
+
+     site n.  atom      mass           positions (alat units)
+        1     Mg   1.0000   tau(    1) = (    0.50239    0.29005    0.92803  )
+        2     Y    1.0000   tau(    2) = (    0.50239   -0.29006    1.26176  )
+        3     Mg   1.0000   tau(    3) = (    0.50238   -0.29006    2.08041  )
+        4     Mg   1.0000   tau(    4) = (    0.50238    0.29005    0.14043  )
+        5     Mg   1.0000   tau(    5) = (    0.50240   -0.87019    0.54079  )
+        6     Mg   1.0000   tau(    6) = (    0.50239   -0.87016    1.67733  )
+        7     Re   1.0000   tau(    7) = (    0.50239    0.87015    1.10214  )
+        8     Ta   1.0000   tau(    8) = (   -0.00001    0.00000    0.00276  )
+        9     H    1.0000   tau(    9) = (    0.50238    0.57493    1.97960  )
+       10     H    1.0000   tau(   10) = (    0.25566    0.14761    1.97960  )
+       11     H    1.0000   tau(   11) = (    0.74910    0.14761    1.97960  )
+       12     H    1.0000   tau(   12) = (    0.50238   -0.57483    0.23708  )
+       13     H    1.0000   tau(   13) = (    0.74899   -0.14765    0.23706  )
+       14     H    1.0000   tau(   14) = (    0.25577   -0.14766    0.23705  )
+       15     H    1.0000   tau(   15) = (    0.50239   -0.58785    0.89160  )
+       16     H    1.0000   tau(   16) = (    0.76028   -0.14116    0.89160  )
+       17     H    1.0000   tau(   17) = (    0.24450   -0.14116    0.89160  )
+       18     H    1.0000   tau(   18) = (    0.50239    0.58112    1.31027  )
+       19     H    1.0000   tau(   19) = (    0.25031    0.14450    1.31028  )
+       20     H    1.0000   tau(   20) = (    0.75448    0.14450    1.31029  )
+       21     H    1.0000   tau(   21) = (    0.50237    0.29008    0.56303  )
+       22     H    1.0000   tau(   22) = (    0.50238   -0.29008    1.67079  )
+
+     Computing dynamical matrix for 
+                    q = (   0.0000000   0.0000000   0.0000000 )
+
+      2 Sym.Ops. (with q -> -q+G )
+
+
+     G cutoff =  906.5095  ( 110490 G-vectors)     FFT grid: ( 64, 64,135)
+     G cutoff =  453.2548  (  39090 G-vectors)  smooth grid: ( 45, 45, 96)
+
+     number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+
+     PseudoPot. # 1 for H  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/H.UPF
+     MD5 check sum: 850d63dcbcc06c5de8b44e0ab9f952da
+     Pseudo is Projector augmented-wave, Zval =  1.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of  929 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for Mg read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Mg.UPF
+     MD5 check sum: a77e51077e70c6c73445c6cac60d158f
+     Pseudo is Projector augmented-wave + core cor, Zval = 10.0
+     Generated using ATOMPAW code
+     Shape of augmentation charge: BESSEL
+     Using radial grid of 1171 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   0
+                l(4) =   0
+                l(5) =   1
+                l(6) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for Re read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Re.UPF
+     MD5 check sum: 89f63c9a8fa23467ef1c371692ceb0a5
+     Pseudo is Projector augmented-wave + core cor, Zval = 29.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1275 points,  8 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+                l(7) =   3
+                l(8) =   3
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 4 for Ta read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Ta.UPF
+     MD5 check sum: 395be6f3d7fb4652d9fb26f9961305c8
+     Pseudo is Ultrasoft + core correction, Zval = 13.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  921 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  6 coefficients,  rinner =    1.000   1.000   1.000
+                                                       1.000   1.000
+
+     PseudoPot. # 5 for Y  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Y.UPF
+     MD5 check sum: e11e343c2e9fd2e6ee9cb5aa0e490caa
+     Pseudo is Ultrasoft + core correction, Zval = 11.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  885 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  6 coefficients,  rinner =    1.200   1.200   1.200
+                                                       1.200   1.200
+
+     Mode symmetry, C_1 (1)     point group:
+
+
+     Atomic displacements:
+     There are   66 irreducible representations
+
+     Representation     1      1 modes -  To be done
+
+     Representation     2      1 modes -  To be done
+
+     Representation     3      1 modes -  To be done
+
+     Representation     4      1 modes -  To be done
+
+     Representation     5      1 modes -  To be done
+
+     Representation     6      1 modes -  To be done
+
+     Representation     7      1 modes -  To be done
+
+     Representation     8      1 modes -  To be done
+
+     Representation     9      1 modes -  To be done
+
+     Representation    10      1 modes -  To be done
+
+     Representation    11      1 modes -  To be done
+
+     Representation    12      1 modes -  To be done
+
+     Representation    13      1 modes -  To be done
+
+     Representation    14      1 modes -  To be done
+
+     Representation    15      1 modes -  To be done
+
+     Representation    16      1 modes -  To be done
+
+     Representation    17      1 modes -  To be done
+
+     Representation    18      1 modes -  To be done
+
+     Representation    19      1 modes -  To be done
+
+     Representation    20      1 modes -  To be done
+
+     Representation    21      1 modes -  To be done
+
+     Representation    22      1 modes -  To be done
+
+     Representation    23      1 modes -  To be done
+
+     Representation    24      1 modes -  To be done
+
+     Representation    25      1 modes -  To be done
+
+     Representation    26      1 modes -  To be done
+
+     Representation    27      1 modes -  To be done
+
+     Representation    28      1 modes -  To be done
+
+     Representation    29      1 modes -  To be done
+
+     Representation    30      1 modes -  To be done
+
+     Representation    31      1 modes -  To be done
+
+     Representation    32      1 modes -  To be done
+
+     Representation    33      1 modes -  To be done
+
+     Representation    34      1 modes -  To be done
+
+     Representation    35      1 modes -  To be done
+
+     Representation    36      1 modes -  To be done
+
+     Representation    37      1 modes -  To be done
+
+     Representation    38      1 modes -  To be done
+
+     Representation    39      1 modes -  To be done
+
+     Representation    40      1 modes -  To be done
+
+     Representation    41      1 modes -  To be done
+
+     Representation    42      1 modes -  To be done
+
+     Representation    43      1 modes -  To be done
+
+     Representation    44      1 modes -  To be done
+
+     Representation    45      1 modes -  To be done
+
+     Representation    46      1 modes -  To be done
+
+     Representation    47      1 modes -  To be done
+
+     Representation    48      1 modes -  To be done
+
+     Representation    49      1 modes -  To be done
+
+     Representation    50      1 modes -  To be done
+
+     Representation    51      1 modes -  To be done
+
+     Representation    52      1 modes -  To be done
+
+     Representation    53      1 modes -  To be done
+
+     Representation    54      1 modes -  To be done
+
+     Representation    55      1 modes -  To be done
+
+     Representation    56      1 modes -  To be done
+
+     Representation    57      1 modes -  To be done
+
+     Representation    58      1 modes -  To be done
+
+     Representation    59      1 modes -  To be done
+
+     Representation    60      1 modes -  To be done
+
+     Representation    61      1 modes -  To be done
+
+     Representation    62      1 modes -  To be done
+
+     Representation    63      1 modes -  To be done
+
+     Representation    64      1 modes -  To be done
+
+     Representation    65      1 modes -  To be done
+
+     Representation    66      1 modes -  To be done
+
+
+
+     Alpha used in Ewald sum =   2.8000
+
+     negative rho (up, down):  4.405E-02 0.000E+00
+     PHONON       :  10m52.94s CPU  14m27.55s WALL
+
+
+
+     Representation #   1 mode #   1
+
+     Self-consistent Calculation
+
+     Pert. #  1: Fermi energy shift (Ry) =     7.7040E-06     0.0000E+00
+
+      iter #   1 total cpu time :   936.1 secs   av.it.:  11.2
+      thresh= 1.000E-02 alpha_mix =  0.700 |ddv_scf|^2 =  3.196E-07
+
+     Pert. #  1: Fermi energy shift (Ry) =     1.6374E-04     0.0000E+00
+
+      iter #   2 total cpu time :  1066.8 secs   av.it.:  34.5
+      thresh= 5.653E-05 alpha_mix =  0.700 |ddv_scf|^2 =  3.999E-08
+
+     Pert. #  1: Fermi energy shift (Ry) =    -1.2013E-03     0.0000E+00
+
+      iter #   3 total cpu time :  1204.1 secs   av.it.:  37.2
+      thresh= 2.000E-05 alpha_mix =  0.700 |ddv_scf|^2 =  4.805E-09
+
+     Pert. #  1: Fermi energy shift (Ry) =     1.1590E-02     0.0000E+00
+
+      iter #   4 total cpu time :  1346.8 secs   av.it.:  38.9
+      thresh= 6.932E-06 alpha_mix =  0.700 |ddv_scf|^2 =  3.520E-08
+
+     Pert. #  1: Fermi energy shift (Ry) =    -7.3838E-03     0.0000E+00
+
+      iter #   5 total cpu time :  1455.8 secs   av.it.:  26.9
+      thresh= 1.876E-05 alpha_mix =  0.700 |ddv_scf|^2 =  1.561E-08
+
+     Pert. #  1: Fermi energy shift (Ry) =    -4.7748E-04     0.0000E+00
+
+      iter #   6 total cpu time :  1575.2 secs   av.it.:  30.9
+      thresh= 1.249E-05 alpha_mix =  0.700 |ddv_scf|^2 =  1.082E-10
+
+     Pert. #  1: Fermi energy shift (Ry) =     9.6017E-04     0.0000E+00
+
+      iter #   7 total cpu time :  1713.9 secs   av.it.:  37.2
+      thresh= 1.040E-06 alpha_mix =  0.700 |ddv_scf|^2 =  3.309E-10

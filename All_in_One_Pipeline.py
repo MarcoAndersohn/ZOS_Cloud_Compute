@@ -146,8 +146,17 @@ def analyze_crash_reason(output_file):
         if "not orthogonal" in lines and "D_S" in lines:
             print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
+            
+        if "FFT grid incompatible with symmetry" in lines:
+            print("      🧩 FFT-Gitter Inkompatibilität erkannt (Symmetrie Konflikt).")
+            return "FFT_SYMMETRY_ERROR"
+            
+        # 3. Fragmentierung (davcio)
+        if "error reading file" in lines and "xml" not in lines:
+            print("      🤕 Fragmentierungsfehler erkannt (davcio).")
+            return "DAVCIO_ERROR"
 
-        # 3. OOM Erkennung
+        # 4. OOM Erkennung
         ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
         if ram_match:
             if "Self-consistent Calculation" not in lines and "iteration #" not in lines:
@@ -717,20 +726,26 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
-                # --- PHONONEN BERECHNUNG (CHIRURGISCHE VARIANTE) ---
+                # --- PHONONEN BERECHNUNG (MIT RETRY-SCHLEIFE) ---
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                     
-                    # Versuch 1: Standard (2 Cores)
                     ph_cores = int(DEFAULT_CORES)
                     if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = 1
 
-                    ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                    phonon_attempts = 0
+                    phonon_success = False
                     
-                    # --- NOTFALL-ROUTINE BEI CRASH ---
-                    if ph_res != "DONE":
+                    while phonon_attempts < 2:
+                        phonon_attempts += 1
+                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                        
+                        if ph_res == "DONE":
+                            phonon_success = True
+                            break
+                            
                         print("      ⚠️ Crash/OOM!")
                         crash_reason = analyze_crash_reason(ph_out)
                         
@@ -741,26 +756,35 @@ def main():
                             if os.path.exists(tmp_save_path): shutil.rmtree(tmp_save_path, ignore_errors=True)
                             if os.path.exists(scf_out): os.remove(scf_out) # Löschen erzwingt Neuberechnung
                             update_csv(name, "SCF_RESET (XML Error)")
-                            continue # Springt zum nächsten Kandidaten, dieser hier wird beim nächsten Pipeline-Start von vorne gerechnet.
+                            break 
 
-                        # === FALL 2: RECOVERY (Nur bei ggens/davcio) ===
-                        if is_recoverable_fragmentation_error(ph_out):
+                        # === FALL 2: SYMMETRIE KONFLIKT ===
+                        if crash_reason in ["SYMMETRY_ERROR", "FFT_SYMMETRY_ERROR"]:
+                            print("      🧩 Symmetrie-Problem erkannt. Lösche RUN Ordner und injiziere nosym=.true.")
+                            source_in = os.path.join(INPUTS_DIR, f"{name}.in")
+                            if os.path.exists(source_in):
+                                with open(source_in, 'r') as f: c = f.read()
+                                if "nosym" not in c:
+                                    c = c.replace("&SYSTEM", "&SYSTEM\n nosym=.true.,")
+                                    with open(source_in, 'w') as f: f.write(c)
+                            if os.path.exists(work_dir): shutil.rmtree(work_dir, ignore_errors=True)
+                            update_csv(name, "SCF_RESET (Sym Error)")
+                            break
+
+                        # === FALL 3: RECOVERY (Nur bei ggens/davcio) ===
+                        if crash_reason == "DAVCIO_ERROR" or is_recoverable_fragmentation_error(ph_out):
                             print("      🤕 Diagnose: Fragmentierung erkannt. Starte 'Collect-Recovery'...")
                             if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
-                                print("      👍 Recovery erfolgreich.")
+                                print("      👍 Recovery erfolgreich. Starte Phononen neu...")
+                                if os.path.exists(ph_out): os.remove(ph_out)
+                                continue
                             else:
                                 print("      👎 Recovery fehlgeschlagen.")
                         
-                        # === FALL 3: SYMMETRIE FEHLER (BaMg3H8) ===
-                        if crash_reason == "SYMMETRY_ERROR":
-                             print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
-
+                        # === FALL 4: NOTFALL-MODUS (Grid=1x1x1) ===
                         print("      🛡️ Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, 1 Core...")
-                        
-                        # 1. Input radikal vereinfachen (Symmetrie aus + Grid klein)
                         disable_symmetries_and_reduce_grid(ph_in)
                         
-                        # 2. CHIRURGISCHES LÖSCHEN: Nur Phononen-Cache (_ph0) entfernen
                         tmp_path = os.path.join(work_dir, "tmp")
                         ph0_path = os.path.join(tmp_path, "_ph0")
                         
@@ -774,10 +798,12 @@ def main():
                             try: os.remove(ph_out)
                             except: pass
 
-                        # 3. Neustart Phononen
                         ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
-                    
-                    if ph_res != "DONE":
+                        if ph_res == "DONE":
+                            phonon_success = True
+                        break 
+                        
+                    if not phonon_success:
                          print("      ❌ Phononen endgültig fehlgeschlagen.")
                          update_csv(name, "SKIPPED (Phonon Crash)") 
                          git_sync(f"Phonon Crash: {name}")

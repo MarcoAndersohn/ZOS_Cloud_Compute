@@ -287,7 +287,8 @@ def apply_oom_settings(input_file, level):
     if level >= 1: diag = 'cg'; mix = 4; msg = "Stufe 1 (cg, mix=4)"
     if level >= 2: disk = 'low'; msg = "Stufe 2 (cg, mix=4, disk_io='low')"
     if level >= 3: mix = 3; msg = "Stufe 3 (cg, mix=3, disk_io='low')"
-    if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
+    if level >= 4: mix = 3; msg = "Stufe 4 (cg, mix=3, disk_io='low', 1 Core)"
+    #if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
 
     print(f"      📉 Setze RAM-Strategie: {msg}")
 

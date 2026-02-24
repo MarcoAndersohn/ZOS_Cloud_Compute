@@ -1,0 +1,57 @@
+&CONTROL
+ restart_mode='from_scratch',
+ wf_collect=.true.,
+ disk_io='low',
+  calculation = 'vc-relax'
+  prefix = 'Li2HfMgH6'
+  outdir = './tmp/'
+  pseudo_dir='/home/marco/ZOS_Cloud_Compute/pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+  ibrav = 0
+  nat = 10
+  ntyp = 4
+  ecutwfc = 50.0
+  ecutrho = 400.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+ electron_maxstep = 150,
+ mixing_ndim = 2,
+ diagonalization='cg',
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  H  1.00  H.UPF
+  Hf  1.00  Hf.UPF
+  Li  1.00  Li.UPF
+  Mg  1.00  Mg.UPF
+ATOMIC_POSITIONS (angstrom)
+  Li  1.524008  1.046506  2.871196
+  Li  4.224614  2.900960  7.959076
+  Hf  5.509082  3.782979  10.378986
+  Mg  2.808701  1.928680  5.291530
+  H  1.307070  2.614592  4.091757
+  H  3.394190  1.540290  3.375497
+  H  1.758479  0.280895  4.702749
+  H  3.975965  0.517269  5.910880
+  H  3.824920  3.524953  4.894800
+  H  1.440761  2.303835  6.605371
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  4.256388  -0.139191  2.635102
+  1.398691  4.022423  2.635102
+  -0.202702  -0.139191  5.001952

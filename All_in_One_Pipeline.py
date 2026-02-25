@@ -541,7 +541,9 @@ def main():
             f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
-        if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
+        if os.path.exists(SIGNAL_FILE): 
+                    os.remove(SIGNAL_FILE)
+                    git_sync("🧹 rechnung_fertig.txt gelöscht (Neuer Start)")
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         
         input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))

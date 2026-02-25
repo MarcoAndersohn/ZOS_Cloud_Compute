@@ -51,7 +51,7 @@ DOS_EXE = shutil.which("dos.x") or "/usr/bin/dos.x"
 def send_notification(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC: {message}"}
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC, {message}"}
         requests.post(url, data=payload, timeout=10)
     except:
         pass
@@ -140,6 +140,10 @@ def analyze_crash_reason(output_file):
         
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
+
+        # --- Limit-Erkennung ---
+        if "The maximum number of steps has been reached" in lines:
+            return "RESTART_NEEDED"
 
         # --- Spezifische Fehlererkennung ---
         
@@ -461,17 +465,21 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
             print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
             return "OOM"
 
-        if process.returncode != 0:
-            reason = analyze_crash_reason(output_file)
-            if reason == "LIKELY_OOM":
-                print("      💀 Logfile endet abrupt (Silent Death) -> OOM.")
-                return "OOM"
-            return "CRASH"
-
-        final_reason = analyze_crash_reason(output_file)
-        if final_reason == "DONE": return "DONE"
-        elif final_reason == "LIKELY_OOM": return "OOM"
+        reason = analyze_crash_reason(output_file)
         
+        if reason == "DONE":
+            if process.returncode != 0:
+                print("      ⚠️ MPI-Fehlalarm ignoriert (JOB DONE gefunden).")
+            return "DONE"
+            
+        elif reason == "RESTART_NEEDED":
+            print("      🔄 Reguläres nstep-Limit erreicht. Neustart für weitere Optimierung nötig.")
+            return "RESTART_NEEDED"
+            
+        elif reason == "LIKELY_OOM":
+            print("      💀 Logfile endet abrupt (Silent Death) -> OOM.")
+            return "OOM"
+            
         return "CRASH"
 
 # --- ROBUSTE PHONON WRAPPER ---
@@ -520,12 +528,12 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
         return "OOM"
 
-    if process.returncode != 0:
-        return "CRASH"
-
     try:
         with open(output_file, 'r', errors='ignore') as f:
-            if "JOB DONE" in f.read(): return "DONE"
+            if "JOB DONE" in f.read():
+                if process.returncode != 0:
+                    print("      ⚠️ MPI-Fehlalarm ignoriert (JOB DONE gefunden).")
+                return "DONE"
     except:
         pass
     
@@ -542,8 +550,9 @@ def main():
         print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
         if os.path.exists(SIGNAL_FILE): 
-                    os.remove(SIGNAL_FILE)
-                    git_sync("🧹 rechnung_fertig.txt gelöscht (Neuer Start)")
+            os.remove(SIGNAL_FILE)
+            git_sync("🧹 rechnung_fertig.txt gelöscht (Neuer Start)")
+            
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         
         input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
@@ -638,6 +647,11 @@ def main():
                             update_csv(name, "SKIPPED (Max BFGS Steps)")
                             git_sync(f"Skipped {name}, >{MAX_BFGS_STEPS} BFGS Steps")
                             break
+                            
+                        elif result == "RESTART_NEEDED":
+                            update_csv(name, "Rechnet SCF (Fortsetzung)...")
+                            print("      🔄 Reguläres nstep-Limit erreicht. Setze Geometrie-Optimierung fort...")
+                            continue
 
                         elif result == "OOM":
                             oom_counter += 1
@@ -833,7 +847,7 @@ def main():
         # Datei erstellen
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status, Fertig\nTimestamp, {time.ctime()}")
         
-        # NEU, Datei ins Git pushen, damit sie überall sichtbar ist
+        # Datei ins Git pushen, damit sie überall sichtbar ist
         git_sync("🏁 Pipeline vollständig beendet (rechnung_fertig.txt erstellt)")
         
         if os.name != 'nt': os.system("sudo shutdown -h now")

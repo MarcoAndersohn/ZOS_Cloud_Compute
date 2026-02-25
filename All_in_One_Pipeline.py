@@ -824,10 +824,16 @@ def main():
                 print(f"🚨 Fehler bei Job {name}, {job_err}")
                 update_csv(name, f"ERROR (Python, {str(job_err)[:30]})")
                 continue 
-
+            
         send_notification("🎉 Alle Jobs erledigt.")
         set_logic_app_state("Disabled") 
+        
+        # Datei erstellen
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status, Fertig\nTimestamp, {time.ctime()}")
+        
+        # NEU, Datei ins Git pushen, damit sie überall sichtbar ist
+        git_sync("🏁 Pipeline vollständig beendet (rechnung_fertig.txt erstellt)")
+        
         if os.name != 'nt': os.system("sudo shutdown -h now")
 
     except Exception as e:

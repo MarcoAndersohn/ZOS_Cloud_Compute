@@ -774,7 +774,7 @@ def main():
                     phonon_attempts = 0
                     phonon_success = False
                     
-                    while phonon_attempts < 2:
+                    while phonon_attempts < 3:
                         phonon_attempts += 1
                         ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                         
@@ -814,29 +814,38 @@ def main():
                             else:
                                 print("      👎 Recovery fehlgeschlagen.")
                         
-                        print("      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, 1 Core...")
-                        disable_symmetries_and_reduce_grid(ph_in)
+                        # --- NEUE PHONON-RECOVERY LOGIK ---
+                        print(f"      🛡️ Phonon-Recovery, Versuch {phonon_attempts}/3")
                         
-                        tmp_path = os.path.join(work_dir, "tmp")
-                        ph0_path = os.path.join(tmp_path, "_ph0")
-                        
-                        if os.path.exists(ph0_path):
-                            try:
-                                shutil.rmtree(ph0_path, ignore_errors=True)
-                                print("      🧹 Defekten Phononen-Cache (_ph0) gelöscht.")
-                            except:
-                                pass
-                        
-                        if os.path.exists(ph_out):
-                            try:
-                                os.remove(ph_out)
-                            except:
-                                pass
-
-                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
-                        if ph_res == "DONE":
-                            phonon_success = True
-                        break 
+                        if phonon_attempts == 1:
+                            print("      📉 Lockere Konvergenzgrenze auf tr2_ph=1.0d-12")
+                            with open(ph_in, 'r') as f: c = f.read()
+                            c = re.sub(r"tr2_ph\s*=\s*[0-9\.dD\-]+", "tr2_ph=1.0d-12", c)
+                            with open(ph_in, 'w') as f: f.write(c)
+                            
+                            # Log-Datei löschen für einen sauberen Neustart ohne Altlasten
+                            if os.path.exists(ph_out): os.remove(ph_out) 
+                            continue
+                            
+                        elif phonon_attempts == 2:
+                            print("      🚨 Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, 1 Core, tr2_ph=1.0d-10")
+                            disable_symmetries_and_reduce_grid(ph_in)
+                            with open(ph_in, 'r') as f: c = f.read()
+                            c = re.sub(r"tr2_ph\s*=\s*[0-9\.dD\-]+", "tr2_ph=1.0d-10", c)
+                            with open(ph_in, 'w') as f: f.write(c)
+                            
+                            ph_cores = 1
+                            tmp_path = os.path.join(work_dir, "tmp")
+                            ph0_path = os.path.join(tmp_path, "_ph0")
+                            
+                            if os.path.exists(ph0_path):
+                                try: shutil.rmtree(ph0_path, ignore_errors=True)
+                                except: pass
+                            
+                            if os.path.exists(ph_out):
+                                try: os.remove(ph_out)
+                                except: pass
+                            continue
                         
                     if not phonon_success:
                          print("      ❌ Phononen endgültig fehlgeschlagen.")

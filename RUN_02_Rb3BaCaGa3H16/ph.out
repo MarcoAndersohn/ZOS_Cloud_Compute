@@ -1,5 +1,5 @@
 
-     Program PHONON v.6.7MaX starts on 22Feb2026 at 17:14:23 
+     Program PHONON v.6.7MaX starts on  1Mar2026 at 21:50:39 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -35,65 +35,6 @@
      Sum        4763    2391    679               402395   142769   21405
 
 
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine aainit (14):
-     mx dimension too small
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-     stopping ...
---------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
-with errorcode 14.
-
-NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
-You may or may not see output from other processes, depending on
-exactly when Open MPI kills them.
---------------------------------------------------------------------------
-
-     Program PHONON v.6.7MaX starts on  1Mar2026 at 16:18:40 
-
-     This program is part of the open-source Quantum ESPRESSO suite
-     for quantum simulation of materials; please cite
-         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
-         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
-          URL http://www.quantum-espresso.org", 
-     in publications or presentations arising from this work. More details at
-     http://www.quantum-espresso.org/quote
-
-     Parallel version (MPI), running on     2 processors
-
-     MPI processes distributed on     1 nodes
-     R & G space division:  proc/nbgrp/npool/nimage =       2
-     Waiting for input...
-     Reading input from standard input
-     Message from routine ph_restart_set_filename :
-     cannot open file for reading or writing
-     Message from routine ph_restart_set_filename :
-     cannot open file for reading or writing
-     Run is not recoverable starting from scratch
-
-     Reading xml data from directory:
-
-     ./tmp/Rb3BaCaGa3H16.save/
-     file Ga.UPF: wavefunction(s)  4S renormalized
-     file H.UPF: wavefunction(s)  1S renormalized
-     file Rb.UPF: wavefunction(s)  4S renormalized
-
-     IMPORTANT: XC functional enforced from input :
-     Exchange-correlation= PBE
-                           (   1   4   3   4   0   0   0)
-     Any further DFT definition will be discarded
-     Please, verify this is what you really want
-
-
-     Parallelization info
-     --------------------
-     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min        2381    1195    339               201196    71384   10702
-     Max        2382    1196    340               201199    71385   10703
-     Sum        4763    2391    679               402395   142769   21405
-
-
      negative rho (up, down):  1.375E+02 0.000E+00
      read_file_new: Wavefunctions not in collected format?!?
      read_file: Wavefunctions in collected format not available
@@ -115,7 +56,7 @@ exactly when Open MPI kills them.
      number of atomic types    =            5
      kinetic-energy cut-off    =      50.0000  Ry
      charge density cut-off    =     400.0000  Ry
-     convergence threshold     =      1.0E-14
+     convergence threshold     =      1.0E-10
      beta                      =       0.7000
      number of iterations used =            4
      Exchange-correlation= PBE
@@ -172,8 +113,8 @@ exactly when Open MPI kills them.
       2 Sym.Ops. (with q -> -q+G )
 
 
-     G cutoff =  910.8023  ( 201196 G-vectors)     FFT grid: ( 64, 96,128)
-     G cutoff =  455.4011  (  71384 G-vectors)  smooth grid: ( 45, 72, 96)
+     G cutoff =  910.8023  ( 402395 G-vectors)     FFT grid: ( 64, 96,128)
+     G cutoff =  455.4011  ( 142769 G-vectors)  smooth grid: ( 45, 72, 96)
 
      number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
 
@@ -401,131 +342,10 @@ exactly when Open MPI kills them.
 
 
 
-     Alpha used in Ewald sum =   2.8000
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine davcio (20):
+     error reading file "./tmp/Rb3BaCaGa3H16.wfc1"
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-     negative rho (up, down):  1.375E+02 0.000E+00
-     PHONON       :  25m53.07s CPU  32m 9.76s WALL
-
-
-
-     Representation #   1 mode #   1
-
-     Self-consistent Calculation
-     kpoint   1 ibnd**** solve_linter: root not converged  1.529E-01
-     kpoint   2 ibnd**** solve_linter: root not converged  1.509E-01
-     kpoint   3 ibnd**** solve_linter: root not converged  6.504E-02
-     kpoint   4 ibnd**** solve_linter: root not converged  5.775E-01
-     kpoint   5 ibnd**** solve_linter: root not converged  9.929E-02
-     kpoint   6 ibnd**** solve_linter: root not converged  1.183E+00
-     kpoint   7 ibnd**** solve_linter: root not converged  2.476E-01
-     kpoint   8 ibnd**** solve_linter: root not converged  4.926E-02
-
-     Pert. #  1: Fermi energy shift (Ry) =    -6.3605E-03    -3.4694E-18
-
-      iter #   1 total cpu time :  3740.3 secs   av.it.: 381.0
-      thresh= 1.000E-02 alpha_mix =  0.700 |ddv_scf|^2 =  2.076E-05
-     kpoint   1 ibnd  55 solve_linter: root not converged  7.048E-01
-     kpoint   2 ibnd  55 solve_linter: root not converged  7.956E-02
-     kpoint   3 ibnd  55 solve_linter: root not converged  6.307E-02
-     kpoint   4 ibnd  56 solve_linter: root not converged  9.636E-02
-     kpoint   5 ibnd  54 solve_linter: root not converged  2.300E-01
-     kpoint   6 ibnd  55 solve_linter: root not converged  5.774E-01
-     kpoint   7 ibnd  55 solve_linter: root not converged  3.237E-01
-     kpoint   8 ibnd  55 solve_linter: root not converged  2.800E-01
-
-     Pert. #  1: Fermi energy shift (Ry) =    -2.5866E-02    -6.9389E-18
-
-      iter #   2 total cpu time :  5624.7 secs   av.it.: 394.2
-      thresh= 4.556E-04 alpha_mix =  0.700 |ddv_scf|^2 =  5.790E-06
-     kpoint   1 ibnd  55 solve_linter: root not converged  4.778E-01
-     kpoint   2 ibnd  55 solve_linter: root not converged  5.100E-01
-     kpoint   3 ibnd  55 solve_linter: root not converged  5.426E-01
-     kpoint   4 ibnd  56 solve_linter: root not converged  7.404E-02
-     kpoint   5 ibnd  54 solve_linter: root not converged  3.602E-01
-     kpoint   6 ibnd  55 solve_linter: root not converged  1.524E+00
-     kpoint   7 ibnd  55 solve_linter: root not converged  1.904E-01
-     kpoint   8 ibnd  55 solve_linter: root not converged  3.767E-01
-
-     Pert. #  1: Fermi energy shift (Ry) =    -2.8277E-01    -3.4694E-18
-
-      iter #   3 total cpu time :  7453.9 secs   av.it.: 397.5
-      thresh= 2.406E-04 alpha_mix =  0.700 |ddv_scf|^2 =  7.974E-05
-     kpoint   1 ibnd  55 solve_linter: root not converged  3.501E+01
-     kpoint   2 ibnd  55 solve_linter: root not converged  1.109E-01
-     kpoint   3 ibnd  55 solve_linter: root not converged  1.675E-01
-     kpoint   4 ibnd  56 solve_linter: root not converged  6.201E-02
-     kpoint   5 ibnd  54 solve_linter: root not converged  1.482E+00
-     kpoint   6 ibnd  55 solve_linter: root not converged  9.202E+00
-     kpoint   7 ibnd  55 solve_linter: root not converged  3.255E-01
-     kpoint   8 ibnd  55 solve_linter: root not converged  2.040E-01
-
-     Pert. #  1: Fermi energy shift (Ry) =    -3.2489E-01     1.3878E-17
-
-      iter #   4 total cpu time :  9275.5 secs   av.it.: 393.5
-      thresh= 8.930E-04 alpha_mix =  0.700 |ddv_scf|^2 =  8.051E-05
-     kpoint   1 ibnd  55 solve_linter: root not converged  2.415E+00
-     kpoint   2 ibnd  55 solve_linter: root not converged  7.830E-01
-     kpoint   3 ibnd  55 solve_linter: root not converged  3.050E-01
-     kpoint   4 ibnd  56 solve_linter: root not converged  1.401E-01
-     kpoint   5 ibnd  54 solve_linter: root not converged  4.013E-01
-     kpoint   6 ibnd  55 solve_linter: root not converged  2.589E-01
-     kpoint   7 ibnd  55 solve_linter: root not converged  8.613E-01
-     kpoint   8 ibnd  55 solve_linter: root not converged  1.787E-01
-
-     Pert. #  1: Fermi energy shift (Ry) =     8.7591E-01    -1.7347E-18
-
-      iter #   5 total cpu time : 11105.5 secs   av.it.: 392.5
-      thresh= 8.973E-04 alpha_mix =  0.700 |ddv_scf|^2 =  6.437E-05
-     kpoint   1 ibnd  55 solve_linter: root not converged  4.593E+00
-     kpoint   2 ibnd  55 solve_linter: root not converged  1.282E+00
-     kpoint   3 ibnd  55 solve_linter: root not converged  2.303E-01
-     kpoint   4 ibnd  56 solve_linter: root not converged  1.267E+00
-     kpoint   5 ibnd  54 solve_linter: root not converged  3.560E-01
-     kpoint   6 ibnd  55 solve_linter: root not converged  1.950E-01
-     kpoint   7 ibnd  55 solve_linter: root not converged  1.013E+00
-     kpoint   8 ibnd  55 solve_linter: root not converged  7.199E-01
-
-     Pert. #  1: Fermi energy shift (Ry) =     6.3694E-01    -1.1102E-16
-
-      iter #   6 total cpu time : 12905.9 secs   av.it.: 393.4
-      thresh= 8.023E-04 alpha_mix =  0.700 |ddv_scf|^2 =  2.630E-05
-     kpoint   1 ibnd  55 solve_linter: root not converged  3.173E+01
-     kpoint   2 ibnd  55 solve_linter: root not converged  1.860E+00
-     kpoint   3 ibnd  55 solve_linter: root not converged  1.266E-01
-     kpoint   4 ibnd  56 solve_linter: root not converged  2.803E+00
-     kpoint   5 ibnd  54 solve_linter: root not converged  1.749E+00
-     kpoint   6 ibnd  55 solve_linter: root not converged  2.732E-01
-     kpoint   7 ibnd  55 solve_linter: root not converged  1.368E+00
-     kpoint   8 ibnd  55 solve_linter: root not converged  2.009E-01
-
-     Pert. #  1: Fermi energy shift (Ry) =     2.2116E-01    -5.5511E-17
-
-      iter #   7 total cpu time : 14806.2 secs   av.it.: 395.2
-      thresh= 5.128E-04 alpha_mix =  0.700 |ddv_scf|^2 =  4.944E-05
-     kpoint   1 ibnd  55 solve_linter: root not converged  7.371E+01
-     kpoint   2 ibnd  55 solve_linter: root not converged  4.595E-01
-     kpoint   3 ibnd  55 solve_linter: root not converged  7.260E+00
-     kpoint   4 ibnd  56 solve_linter: root not converged  3.982E+00
-     kpoint   5 ibnd  54 solve_linter: root not converged  5.342E-01
-     kpoint   6 ibnd  55 solve_linter: root not converged  2.290E-01
-     kpoint   7 ibnd  55 solve_linter: root not converged  7.802E-01
-     kpoint   8 ibnd  55 solve_linter: root not converged  1.513E+00
-
-     Pert. #  1: Fermi energy shift (Ry) =     1.8601E-01    -6.9389E-18
-
-      iter #   8 total cpu time : 16682.9 secs   av.it.: 396.1
-      thresh= 7.032E-04 alpha_mix =  0.700 |ddv_scf|^2 =  9.249E-05
-     kpoint   1 ibnd  55 solve_linter: root not converged  8.868E+00
-     kpoint   2 ibnd  55 solve_linter: root not converged  8.843E+01
-     kpoint   3 ibnd  55 solve_linter: root not converged  2.046E+00
-     kpoint   4 ibnd  56 solve_linter: root not converged  2.407E+00
-     kpoint   5 ibnd  54 solve_linter: root not converged  1.309E+00
-     kpoint   6 ibnd  55 solve_linter: root not converged  1.382E+00
-     kpoint   7 ibnd  55 solve_linter: root not converged  2.605E+00
-     kpoint   8 ibnd  55 solve_linter: root not converged  4.701E-01
-
-     Pert. #  1: Fermi energy shift (Ry) =    -2.6466E-01    -5.5511E-17
-
-      iter #   9 total cpu time : 18452.2 secs   av.it.: 394.5
-      thresh= 9.617E-04 alpha_mix =  0.700 |ddv_scf|^2 =  2.736E-04
-     kpoint   1 ibnd  55 solve_linter: root not converged  2.101E+01
+     stopping ...
+[Supraleiter-HPC-Knoten:01031] [[28721,0],0] ORTE_ERROR_LOG: Data unpack had inadequate space in file ../../../orte/util/show_help.c at line 513

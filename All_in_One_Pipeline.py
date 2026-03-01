@@ -9,6 +9,7 @@ import traceback
 import requests
 import csv
 import psutil
+import math
 from datetime import datetime
 
 # =============================================================================
@@ -44,6 +45,8 @@ TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 PW_EXE = shutil.which("pw.x") or "/usr/bin/pw.x"
 PH_EXE = shutil.which("ph.x") or "/usr/bin/ph.x"
 DOS_EXE = shutil.which("dos.x") or "/usr/bin/dos.x"
+Q2R_EXE = shutil.which("q2r.x") or "/usr/bin/q2r.x"
+MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
 
 # =============================================================================
 # 2. HELFER & GIT
@@ -74,12 +77,18 @@ def git_sync(message):
     except Exception as e:
         print(f"⚠️ Git Fehler, {e}")
 
-def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-"):
-    fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Timestamp']
+def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-", lam="-", wlog="-", tc="-"):
+    fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Lambda', 'Omega_log (K)', 'Tc (K)', 'Timestamp']
     rows = []
     if os.path.exists(CSV_FILE):
         with open(CSV_FILE, 'r') as f:
-            rows = list(csv.DictReader(f))
+            reader = csv.DictReader(f)
+            existing_fields = reader.fieldnames
+            if existing_fields:
+                for ef in existing_fields:
+                    if ef not in fieldnames: fieldnames.append(ef)
+            rows = list(reader)
+            
     found = False
     for row in rows:
         if row['Name'] == name:
@@ -89,10 +98,19 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             if is_metal != "-": row['Metall?'] = str(is_metal)
             if min_f != "-": row['Min Freq (THz)'] = str(min_f)
             if stab != "-": row['Stabilität'] = str(stab)
+            if lam != "-": row['Lambda'] = str(lam)
+            if wlog != "-": row['Omega_log (K)'] = str(wlog)
+            if tc != "-": row['Tc (K)'] = str(tc)
             found = True
             break
+            
     if not found:
-        rows.append({'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
+        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
+        if lam != "-": new_row['Lambda'] = str(lam)
+        if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
+        if tc != "-": new_row['Tc (K)'] = str(tc)
+        rows.append(new_row)
+        
     with open(CSV_FILE, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -124,6 +142,19 @@ def count_job_attempts(log_file, job_name):
         return 1
     return max(1, count)
 
+def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
+    try:
+        lam = float(lambda_ep)
+        wlog = float(omega_log_K)
+        if lam <= 0: return 0.0
+        vorfaktor = wlog / 1.20
+        zaehler = -1.04 * (1.0 + lam)
+        nenner = lam - mu_star * (1.0 + 0.62 * lam)
+        if nenner <= 0: return 0.0
+        return vorfaktor * math.exp(zaehler / nenner)
+    except:
+        return "-"
+
 # =============================================================================
 # 3. SMART LOGIC & VALIDATION & CRASH ANALYSE
 # =============================================================================
@@ -133,7 +164,7 @@ def analyze_crash_reason(output_file):
     try:
         with open(output_file, 'rb') as f:
             try:
-                f.seek(-20000, 2) # Lese mehr Bytes für bessere Diagnose
+                f.seek(-20000, 2)
             except OSError:
                 f.seek(0)
             lines = f.read().decode('utf-8', errors='ignore')
@@ -141,18 +172,13 @@ def analyze_crash_reason(output_file):
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
 
-        # --- Limit-Erkennung ---
         if "The maximum number of steps has been reached" in lines:
             return "RESTART_NEEDED"
 
-        # --- Spezifische Fehlererkennung ---
-        
-        # 1. XML Korruption
         if "fatal error reading xml" in lines or "reading output_obj of xsd" in lines or "wrong number of occurrences" in lines:
             print("      🧨 XML-Struktur zerstört (Corruption).")
             return "XML_ERROR"
 
-        # 2. Symmetrie Fehler
         if "not orthogonal" in lines and "D_S" in lines:
             print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
@@ -161,12 +187,10 @@ def analyze_crash_reason(output_file):
             print("      🧩 FFT-Gitter Inkompatibilität erkannt (Symmetrie Konflikt).")
             return "FFT_SYMMETRY_ERROR"
             
-        # 3. Fragmentierung
         if "error reading file" in lines and "xml" not in lines:
             print("      🤕 Fragmentierungsfehler erkannt (davcio).")
             return "DAVCIO_ERROR"
 
-        # 4. OOM Erkennung
         ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
         if ram_match:
             if "Self-consistent Calculation" not in lines and "iteration #" not in lines:
@@ -176,10 +200,8 @@ def analyze_crash_reason(output_file):
             error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "fatal"]
             has_error_msg = any(key in lines for key in error_keywords)
             if not has_error_msg:
-                # Datei endet einfach (Silent Death) -> OOM
                 return "LIKELY_OOM"
 
-        # Generischer Fehler
         error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed"]
         for key in error_keywords:
             if key in lines: return "HARD"
@@ -460,7 +482,6 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                 process.kill()
                 return "CRASH"
             
-        # --- AB HIER AUSGERÜCKT ---
         if process.returncode == -9:
             print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
             return "OOM"
@@ -523,7 +544,6 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
             process.kill()
             return "CRASH"
         
-    # --- AB HIER AUSGERÜCKT ---
     if process.returncode == -9:
         print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
         return "OOM"
@@ -567,6 +587,7 @@ def main():
             row_data = get_csv_full_info(name)
             last_status = row_data.get('Status', 'NEW')
             stability = row_data.get('Stabilität', '-')
+            tc_status = row_data.get('Tc (K)', '-')
 
             if "SKIPPED" in last_status:
                 print(f"⏩ Überspringe {name} (Status, {last_status})")
@@ -576,8 +597,8 @@ def main():
                 print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                 continue
 
-            if "Metall" in last_status and stability in ["STABIL", "INSTABIL"]:
-                print(f"⏩ Überspringe {name} (Bereits vollständig analysiert, {stability})")
+            if "Metall" in last_status and stability in ["STABIL", "INSTABIL"] and tc_status != "-":
+                print(f"⏩ Überspringe {name} (Bereits vollständig analysiert)")
                 continue
 
             if "Metall" in last_status and (stability == "-" or stability == "Unbekannt"):
@@ -833,8 +854,48 @@ def main():
                                   min_f = min([float(f) for f in freqs])
                                   stab = "STABIL" if min_f > -0.05 else "INSTABIL"
 
-                update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
-                git_sync(f"Fertig, {name} (Metall)")
+                if stab == "STABIL":
+                    update_csv(name, "Rechnet Q2R...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    
+                    q2r_in = os.path.join(work_dir, "q2r.in")
+                    q2r_out = os.path.join(work_dir, "q2r.out")
+                    if not os.path.exists(q2r_out) or "JOB DONE" not in open(q2r_out, errors='ignore').read():
+                        print("   4️⃣  Q2R Berechnung...")
+                        with open(q2r_in, "w") as f:
+                            f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc'\n/\n")
+                        with open(q2r_in, "r") as f_in, open(q2r_out, "w") as f_out:
+                            subprocess.run([Q2R_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                            
+                    update_csv(name, "Rechnet Matdyn...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    
+                    matdyn_in = os.path.join(work_dir, "matdyn.in")
+                    matdyn_out = os.path.join(work_dir, "matdyn.out")
+                    if not os.path.exists(matdyn_out) or "JOB DONE" not in open(matdyn_out, errors='ignore').read():
+                        print("   5️⃣  Matdyn Berechnung...")
+                        with open(matdyn_in, "w") as f:
+                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n dos=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
+                        with open(matdyn_in, "r") as f_in, open(matdyn_out, "w") as f_out:
+                            subprocess.run([MATDYN_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                            
+                    lam, wlog, tc = "-", "-", "-"
+                    if os.path.exists(matdyn_out):
+                        with open(matdyn_out, 'r', errors='ignore') as f:
+                            content = f.read()
+                            if "JOB DONE" in content:
+                                match_lam = re.search(r"lambda\s*=\s*([0-9\.]+)", content)
+                                match_wlog = re.search(r"omega_log\s*=\s*([0-9\.]+)", content)
+                                if match_lam and match_wlog:
+                                    lam = match_lam.group(1)
+                                    wlog = match_wlog.group(1)
+                                    tc_val = berechne_tc(wlog, lam)
+                                    if tc_val != "-":
+                                        tc = round(tc_val, 3)
+                                        
+                    update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab, lam=lam, wlog=wlog, tc=tc)
+                    git_sync(f"Fertig, {name} (Tc={tc}K)")
+                else:
+                    update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    git_sync(f"Fertig, {name} (Metall)")
 
             except Exception as job_err:
                 print(f"🚨 Fehler bei Job {name}, {job_err}")

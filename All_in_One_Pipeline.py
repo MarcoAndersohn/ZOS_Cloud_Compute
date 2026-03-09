@@ -296,17 +296,17 @@ def detect_oom_level(input_file):
     if "diagonalization='cg'" in content or 'diagonalization="cg"' in content: return 1
     return 0
 
-def apply_oom_settings(input_file, level):
+def apply_oom_settings(input_file, level, force_cg=False):
     with open(input_file, 'r') as f: content = f.read()
     diag = 'david'
-    mix = 8
+    mix = 6  # Projekt-Standard
     disk = None 
-    msg = "Standard (david, mix=8)"
+    msg = "Standard (david, mix=6)"
 
-    if level >= 1: 
+    if level >= 1 or force_cg: 
         diag = 'cg'
         mix = 4
-        msg = "Stufe 1 (cg, mix=4)"
+        msg = "Stufe 1 oder CG erzwungen (cg, mix=4)"
     if level >= 2: 
         disk = 'low'
         msg = "Stufe 2 (cg, mix=4, disk_io='low')"
@@ -314,10 +314,10 @@ def apply_oom_settings(input_file, level):
         mix = 3
         msg = "Stufe 3 (cg, mix=3, disk_io='low')"
     if level >= 4: 
-        mix = 3
-        msg = "Stufe 4 (cg, mix=3, disk_io='low', 1 Core)"
+        mix = 2
+        msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
 
-    print(f"      📉 Setze RAM-Strategie, {msg}")
+    print(f"      📉 Setze RAM/Konvergenz-Strategie, {msg}")
 
     if "diagonalization" in content:
         content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", f"diagonalization='{diag}'", content)
@@ -349,40 +349,49 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    # --- VERBESSERTES SLOSHING-MANAGEMENT ---
-    # Standard-Einstellung für Start
-    target_beta = 0.7
-    target_mix_ndim = 8
+    # --- VERBESSERTES METALL/SLOSHING-MANAGEMENT ---
+    if "nstep" in content:
+        content = re.sub(r"nstep\s*=\s*\d+", "nstep = 100", content)
+    else:
+        content = content.replace("&CONTROL", "&CONTROL\n nstep = 100,")
+
+    if "mixing_mode" not in content:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_mode = 'local-TF',")
+        
+    if "diago_david_ndim" not in content:
+         content = content.replace("&ELECTRONS", "&ELECTRONS\n diago_david_ndim = 2,")
+    else:
+         content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
+
+    # Sanfterer Startwert (0.4 statt 0.7) gegen Charge Sloshing
+    target_beta = 0.4
+    target_mix_ndim = 6
     
-    # Je länger die BFGS-Optimierung braucht, desto zäher die Elektronenmischung
-    if iteration_count >= 30: target_beta = 0.3
+    if iteration_count >= 30: target_beta = 0.2
     if iteration_count >= 60: 
         target_beta = 0.1
-        target_mix_ndim = 4
+        target_mix_ndim = 3
     if iteration_count >= 90: 
-        target_beta = 0.05   # Extrem harte Dämpfung gegen Charge Sloshing
-        target_mix_ndim = 4
+        target_beta = 0.05   
+        target_mix_ndim = 2
 
-    # Wende Beta an
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
     else:
         content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_beta = {target_beta},")
         
-    # Wende Mix-Dimension an (lokal, falls RAM-Stufe noch nicht hart gegriffen hat)
     if "mixing_ndim" in content:
-        # Nur überschreiben, wenn der Wert nicht schon durch OOM-Stufe kleiner ist
         mix_match = re.search(r"mixing_ndim\s*=\s*(\d+)", content)
         if mix_match and int(mix_match.group(1)) > target_mix_ndim:
              content = re.sub(r"mixing_ndim\s*=\s*\d+", f"mixing_ndim = {target_mix_ndim}", content)
+    else:
+        content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_ndim = {target_mix_ndim},")
 
-    # Elektronische Schritte hochsetzen, damit er durch die langsame Mischung kommt
     if "electron_maxstep" in content:
         content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 300", content)
     else:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 300,")
 
-    # METALL-SICHERHEIT: Falls es kracht, nutze Marzari-Vanderbilt (Methfessel-Paxton)
     if iteration_count >= 60:
         if "smearing" in content:
             content = re.sub(r"smearing\s*=\s*['\"][a-zA-Z\-]+['\"]", "smearing='m-v'", content)
@@ -408,7 +417,7 @@ def get_last_iteration(output_file):
     except: return 0
 
 # --- ROBUSTE PWSCF WRAPPER ---
-def run_monitored_pw(input_file, output_file, cwd, active_cores):
+def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False):
     fix_input_file(input_file, 0)
     last_git_sync = time.time()
     last_checkpoint_time = 0 
@@ -533,11 +542,27 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
 # --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
+    last_checkpoint_time = time.time()
+    tmp_dir = os.path.join(cwd, "tmp")
+    ph0_dir = os.path.join(tmp_dir, "_ph0")
+    checkpoint_dir = os.path.join(cwd, "tmp_SAFE_PHONON_CHECKPOINT")
 
     with open(input_file, 'r') as f: content = f.read()
-    if os.path.exists(output_file):
+
+    # Phonon Checkpoint Recovery Logik
+    if os.path.exists(output_file) and not os.path.exists(ph0_dir) and os.path.exists(checkpoint_dir):
+        print("      🛡️ _ph0 Ordner fehlt/defekt! Hole Phonon Safe-Checkpoint...")
+        try:
+            shutil.copytree(checkpoint_dir, ph0_dir)
+            print("      ✅ Phonon Checkpoint erfolgreich geladen!")
+        except Exception as e:
+            print(f"      ❌ Fehler beim Laden des Phonon Checkpoints, {e}")
+
+    if os.path.exists(output_file) and os.path.exists(ph0_dir):
         if "recover" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
+    else:
+        if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir, ignore_errors=True)
     
     run_input = input_file + ".run"
     with open(run_input, 'w') as f: f.write(content)
@@ -552,11 +577,24 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         try:
             while process.poll() is None:
                 time.sleep(5)
+                current_time = time.time()
                 
-                if time.time() - last_git_sync > 1800:
+                if current_time - last_git_sync > 1800:
                     print("      ❤️ Git Heartbeat (Phonon)...")
                     git_sync("Log Update (Phonon Running)")
-                    last_git_sync = time.time()
+                    last_git_sync = current_time
+
+                # Phonon-Checkpointing alle 20 Minuten
+                if current_time - last_checkpoint_time > 1200:
+                    if os.path.exists(ph0_dir):
+                        print("      💾 Erstelle Phonon-Checkpoint...")
+                        try:
+                            if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
+                            shutil.copytree(ph0_dir, checkpoint_dir)
+                            last_checkpoint_time = current_time
+                            print("      ✅ Phonon-Checkpoint gesichert.")
+                        except Exception as e:
+                            print(f"      ⚠️ Phonon-Checkpoint fail, {e}")
 
                 try:
                     mem_usage = psutil.virtual_memory().percent
@@ -684,10 +722,19 @@ def main():
                     oom_counter = 0  
                     
                     while True:
-                        apply_oom_settings(scf_in, oom_level)
+                        force_cg = False
+                        if os.path.exists(scf_out):
+                            try:
+                                with open(scf_out, 'r', errors='ignore') as f_out_check:
+                                    if "eigenvalues not converged" in f_out_check.read():
+                                        force_cg = True
+                                        print("      ⚠️ Konvergenz-Probleme erkannt, erzwinge CG-Diagonalisierung.")
+                            except: pass
+
+                        apply_oom_settings(scf_in, oom_level, force_cg)
                         
                         print(f"   1️⃣  SCF ({current_cores} Cores, OOM-Lvl {oom_level})")
-                        result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
+                        result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores, force_cg)
                         
                         if result == "DONE": break 
                         
@@ -793,7 +840,7 @@ def main():
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., elph=.true., nq1=2, nq2=2, nq3=2 /\n")
                     
                     ph_cores = int(DEFAULT_CORES)
                     if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = 1
@@ -841,7 +888,6 @@ def main():
                             else:
                                 print("      👎 Recovery fehlgeschlagen.")
                         
-                        # --- NEUE PHONON-RECOVERY LOGIK ---
                         print(f"      🛡️ Phonon-Recovery, Versuch {phonon_attempts}/3")
                         
                         if phonon_attempts == 1:
@@ -850,7 +896,6 @@ def main():
                             c = re.sub(r"tr2_ph\s*=\s*[0-9\.dD\-]+", "tr2_ph=1.0d-12", c)
                             with open(ph_in, 'w') as f: f.write(c)
                             
-                            # Log-Datei löschen für einen sauberen Neustart ohne Altlasten
                             if os.path.exists(ph_out): os.remove(ph_out) 
                             continue
                             
@@ -891,7 +936,7 @@ def main():
                                   stab = "STABIL" if min_f > -0.05 else "INSTABIL"
 
                 if stab == "STABIL":
-                    update_csv(name, "Rechnet Q2R...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    update_csv(name, "Rechnet El-Ph (Q2R)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                     
                     q2r_in = os.path.join(work_dir, "q2r.in")
                     q2r_out = os.path.join(work_dir, "q2r.out")
@@ -902,14 +947,14 @@ def main():
                         with open(q2r_in, "r") as f_in, open(q2r_out, "w") as f_out:
                             subprocess.run([Q2R_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
                             
-                    update_csv(name, "Rechnet Matdyn...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    update_csv(name, "Rechnet El-Ph (Matdyn)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                     
                     matdyn_in = os.path.join(work_dir, "matdyn.in")
                     matdyn_out = os.path.join(work_dir, "matdyn.out")
                     if not os.path.exists(matdyn_out) or "JOB DONE" not in open(matdyn_out, errors='ignore').read():
                         print("   5️⃣  Matdyn Berechnung...")
                         with open(matdyn_in, "w") as f:
-                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n dos=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
+                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
                         with open(matdyn_in, "r") as f_in, open(matdyn_out, "w") as f_out:
                             subprocess.run([MATDYN_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
                             
@@ -941,10 +986,7 @@ def main():
         send_notification("🎉 Alle Jobs erledigt.")
         set_logic_app_state("Disabled") 
         
-        # Datei erstellen
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status, Fertig\nTimestamp, {time.ctime()}")
-        
-        # Datei ins Git pushen, damit sie überall sichtbar ist
         git_sync("🏁 Pipeline vollständig beendet (rechnung_fertig.txt erstellt)")
         
         if os.name != 'nt': os.system("sudo shutdown -h now")

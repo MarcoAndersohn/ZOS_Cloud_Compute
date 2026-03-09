@@ -41,6 +41,7 @@ SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
+BACKUP_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output_backup.txt")
 
 PW_EXE = shutil.which("pw.x") or "/usr/bin/pw.x"
 PH_EXE = shutil.which("ph.x") or "/usr/bin/ph.x"
@@ -49,8 +50,16 @@ Q2R_EXE = shutil.which("q2r.x") or "/usr/bin/q2r.x"
 MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
 
 # =============================================================================
-# 2. HELFER & GIT
+# 2. HELFER & GIT & BACKUP
 # =============================================================================
+def backup_log_file():
+    """Sichert das Logfile im laufenden Betrieb, BEVOR ein Crash passieren kann."""
+    if os.path.exists(TXT_LOG_FILE):
+        try:
+            shutil.copy(TXT_LOG_FILE, BACKUP_LOG_FILE)
+        except:
+            pass
+
 def send_notification(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -299,7 +308,7 @@ def detect_oom_level(input_file):
 def apply_oom_settings(input_file, level, force_cg=False):
     with open(input_file, 'r') as f: content = f.read()
     diag = 'david'
-    mix = 6  # Projekt-Standard
+    mix = 6  
     disk = None 
     msg = "Standard (david, mix=6)"
 
@@ -363,7 +372,6 @@ def fix_input_file(input_file, iteration_count=0):
     else:
          content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
 
-    # Sanfterer Startwert (0.4 statt 0.7) gegen Charge Sloshing
     target_beta = 0.4
     target_mix_ndim = 6
     
@@ -469,6 +477,9 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
 
         file_mode = 'a' if mode == 'restart' else 'w'
         
+        # LOG BACKUP BEVOR ES LOSGEHT
+        backup_log_file()
+        
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
             cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE]
             print(f"      ⚙️ Starte PWSCF ({mode}, {active_cores} Cores)...")
@@ -488,6 +499,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
                                 print("      ✅ Checkpoint erstellt.")
                                 print("      ☁️ Trigger Git Sync (wegen Checkpoint)...")
                                 git_sync("Checkpoint & Log Update")
+                                backup_log_file() # Laufendes Backup sichern
                                 last_git_sync = time.time() 
                             except Exception as e:
                                 print(f"      ⚠️ Checkpoint fail, {e}")
@@ -495,6 +507,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
                         git_sync("Log Update (Heartbeat)")
+                        backup_log_file() # Laufendes Backup sichern
                         last_git_sync = time.time()
 
                     try:
@@ -569,6 +582,9 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
     
     file_mode = 'a' if "recover=.true." in content else 'w'
 
+    # LOG BACKUP BEVOR ES LOSGEHT
+    backup_log_file()
+
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
         cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
         print(f"      ⚙️ Starte PHONONEN (Cores, {active_cores})...")
@@ -582,6 +598,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                 if current_time - last_git_sync > 1800:
                     print("      ❤️ Git Heartbeat (Phonon)...")
                     git_sync("Log Update (Phonon Running)")
+                    backup_log_file() # Laufendes Backup sichern
                     last_git_sync = current_time
 
                 # Phonon-Checkpointing alle 20 Minuten
@@ -592,6 +609,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                             if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
                             shutil.copytree(ph0_dir, checkpoint_dir)
                             last_checkpoint_time = current_time
+                            backup_log_file() # Laufendes Backup sichern
                             print("      ✅ Phonon-Checkpoint gesichert.")
                         except Exception as e:
                             print(f"      ⚠️ Phonon-Checkpoint fail, {e}")
@@ -692,7 +710,11 @@ def main():
                     start_crash_reason = analyze_crash_reason(scf_out)
                     
                     if start_crash_reason == "LIKELY_OOM":
+                        # Bezieht die Crash-Historie aus dem aktuellen UND aus dem Backup-Log
                         attempts = count_job_attempts(TXT_LOG_FILE, name)
+                        if attempts == 1 and os.path.exists(BACKUP_LOG_FILE):
+                            attempts += count_job_attempts(BACKUP_LOG_FILE, name)
+
                         print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt. Versuch Nr. {attempts} auf diesem Level.")
                         
                         if os.path.exists(scf_out):
@@ -843,7 +865,10 @@ def main():
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., elph=.true., nq1=2, nq2=2, nq3=2 /\n")
                     
                     ph_cores = int(DEFAULT_CORES)
-                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = 1
+                    ph_attempts_hist = count_job_attempts(TXT_LOG_FILE, name)
+                    if os.path.exists(BACKUP_LOG_FILE) and ph_attempts_hist == 1:
+                         ph_attempts_hist += count_job_attempts(BACKUP_LOG_FILE, name)
+                    if ph_attempts_hist > 1: ph_cores = 1
 
                     phonon_attempts = 0
                     phonon_success = False

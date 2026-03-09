@@ -349,18 +349,45 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
+    # --- VERBESSERTES SLOSHING-MANAGEMENT ---
+    # Standard-Einstellung für Start
     target_beta = 0.7
-    if iteration_count >= 30: target_beta = 0.4
-    if iteration_count >= 60: target_beta = 0.25
-    if iteration_count >= 90: target_beta = 0.15
+    target_mix_ndim = 8
+    
+    # Je länger die BFGS-Optimierung braucht, desto zäher die Elektronenmischung
+    if iteration_count >= 30: target_beta = 0.3
+    if iteration_count >= 60: 
+        target_beta = 0.1
+        target_mix_ndim = 4
+    if iteration_count >= 90: 
+        target_beta = 0.05   # Extrem harte Dämpfung gegen Charge Sloshing
+        target_mix_ndim = 4
 
+    # Wende Beta an
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
-    
-    if "electron_maxstep" in content:
-        content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 150", content)
     else:
-        content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 150,")
+        content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_beta = {target_beta},")
+        
+    # Wende Mix-Dimension an (lokal, falls RAM-Stufe noch nicht hart gegriffen hat)
+    if "mixing_ndim" in content:
+        # Nur überschreiben, wenn der Wert nicht schon durch OOM-Stufe kleiner ist
+        mix_match = re.search(r"mixing_ndim\s*=\s*(\d+)", content)
+        if mix_match and int(mix_match.group(1)) > target_mix_ndim:
+             content = re.sub(r"mixing_ndim\s*=\s*\d+", f"mixing_ndim = {target_mix_ndim}", content)
+
+    # Elektronische Schritte hochsetzen, damit er durch die langsame Mischung kommt
+    if "electron_maxstep" in content:
+        content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 300", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 300,")
+
+    # METALL-SICHERHEIT: Falls es kracht, nutze Marzari-Vanderbilt (Methfessel-Paxton)
+    if iteration_count >= 60:
+        if "smearing" in content:
+            content = re.sub(r"smearing\s*=\s*['\"][a-zA-Z\-]+['\"]", "smearing='m-v'", content)
+        else:
+            content = content.replace("&SYSTEM", "&SYSTEM\n smearing='m-v',")
 
     with open(input_file, 'w') as f: f.write(content)
     return True

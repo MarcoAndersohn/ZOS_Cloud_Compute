@@ -15,15 +15,15 @@
   ecutwfc = 50.0
   ecutrho = 400.0
   occupations = 'smearing'
-  smearing = 'methfessel-paxton'
+  smearing='m-v'
   degauss = 0.02
 /
 &ELECTRONS
  electron_maxstep = 300,
- mixing_beta = 0.2,
+ mixing_beta = 0.1,
  diago_david_ndim = 2,
  mixing_mode = 'local-TF',
- mixing_ndim = 4,
+ mixing_ndim = 3,
  diagonalization='cg',
   conv_thr = 1.0d-6
 /

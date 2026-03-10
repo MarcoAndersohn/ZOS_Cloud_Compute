@@ -358,7 +358,6 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    # --- VERBESSERTES METALL/SLOSHING-MANAGEMENT ---
     if "nstep" in content:
         content = re.sub(r"nstep\s*=\s*\d+", "nstep = 100", content)
     else:
@@ -477,7 +476,6 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
 
         file_mode = 'a' if mode == 'restart' else 'w'
         
-        # LOG BACKUP BEVOR ES LOSGEHT
         backup_log_file()
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
@@ -499,7 +497,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
                                 print("      ✅ Checkpoint erstellt.")
                                 print("      ☁️ Trigger Git Sync (wegen Checkpoint)...")
                                 git_sync("Checkpoint & Log Update")
-                                backup_log_file() # Laufendes Backup sichern
+                                backup_log_file() 
                                 last_git_sync = time.time() 
                             except Exception as e:
                                 print(f"      ⚠️ Checkpoint fail, {e}")
@@ -507,7 +505,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
                         git_sync("Log Update (Heartbeat)")
-                        backup_log_file() # Laufendes Backup sichern
+                        backup_log_file()
                         last_git_sync = time.time()
 
                     try:
@@ -562,7 +560,6 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
     with open(input_file, 'r') as f: content = f.read()
 
-    # Phonon Checkpoint Recovery Logik
     if os.path.exists(output_file) and not os.path.exists(ph0_dir) and os.path.exists(checkpoint_dir):
         print("      🛡️ _ph0 Ordner fehlt/defekt! Hole Phonon Safe-Checkpoint...")
         try:
@@ -582,7 +579,6 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
     
     file_mode = 'a' if "recover=.true." in content else 'w'
 
-    # LOG BACKUP BEVOR ES LOSGEHT
     backup_log_file()
 
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
@@ -598,10 +594,9 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                 if current_time - last_git_sync > 1800:
                     print("      ❤️ Git Heartbeat (Phonon)...")
                     git_sync("Log Update (Phonon Running)")
-                    backup_log_file() # Laufendes Backup sichern
+                    backup_log_file() 
                     last_git_sync = current_time
 
-                # Phonon-Checkpointing alle 20 Minuten
                 if current_time - last_checkpoint_time > 1200:
                     if os.path.exists(ph0_dir):
                         print("      💾 Erstelle Phonon-Checkpoint...")
@@ -609,7 +604,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                             if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
                             shutil.copytree(ph0_dir, checkpoint_dir)
                             last_checkpoint_time = current_time
-                            backup_log_file() # Laufendes Backup sichern
+                            backup_log_file()
                             print("      ✅ Phonon-Checkpoint gesichert.")
                         except Exception as e:
                             print(f"      ⚠️ Phonon-Checkpoint fail, {e}")
@@ -668,23 +663,47 @@ def main():
             scf_out = os.path.join(work_dir, "scf.out")
             
             row_data = get_csv_full_info(name)
-            last_status = row_data.get('Status', 'NEW')
-            stability = row_data.get('Stabilität', '-')
-            tc_status = row_data.get('Tc (K)', '-')
+            
+            # Neu eingefügte und verbesserte Check-Logik
+            if not row_data:
+                last_status = "NEW"
+                stability = "-"
+                tc_status = "-"
+                lam_status = "-"
+            else:
+                last_status = row_data.get('Status', 'NEW')
+                # Strings sanitisieren, da leere CSV Spalten "" zurückgeben
+                stability = str(row_data.get('Stabilität', '-')).strip()
+                tc_status = str(row_data.get('Tc (K)', '-')).strip()
+                lam_status = str(row_data.get('Lambda', '-')).strip()
+                
+            if not stability: stability = "-"
+            if not tc_status: tc_status = "-"
+            if not lam_status: lam_status = "-"
 
-            if "SKIPPED" in last_status:
+            # Problemkinder überspringen
+            if "SKIPPED" in last_status or "ERROR" in last_status:
                 print(f"⏩ Überspringe {name} (Status, {last_status})")
                 continue
             
+            # Nicht-supraleitende Elemente ignorieren
             if "Isolator" in last_status:
                 print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                 continue
 
-            if "Metall" in last_status and stability in ["STABIL", "INSTABIL"] and tc_status != "-":
-                print(f"⏩ Überspringe {name} (Bereits vollständig analysiert)")
+            # Elemente kontrollieren, die schon analysiert wurden
+            if stability == "INSTABIL":
+                print(f"⏩ Überspringe {name} (Metall aber INSTABIL, keine El-Ph nötig)")
                 continue
-
-            if "Metall" in last_status and (stability == "-" or stability == "Unbekannt"):
+                
+            if stability == "STABIL":
+                if tc_status != "-" and lam_status != "-":
+                    print(f"⏩ Überspringe {name} (STABIL und bereits vollständig analysiert, Tc={tc_status}K)")
+                    continue
+                else:
+                    print(f"🔄 Setze Berechnung für {name} fort (STABIL, aber El-Ph Kopplung fehlt)...")
+                    
+            if "Metall" in last_status and stability == "-":
                 print(f"🔄 Retry Phonon für {name} (Metall, aber Stabilität unbekannt)...")
 
             crash_type = analyze_crash_reason(scf_out)
@@ -710,7 +729,6 @@ def main():
                     start_crash_reason = analyze_crash_reason(scf_out)
                     
                     if start_crash_reason == "LIKELY_OOM":
-                        # Bezieht die Crash-Historie aus dem aktuellen UND aus dem Backup-Log
                         attempts = count_job_attempts(TXT_LOG_FILE, name)
                         if attempts == 1 and os.path.exists(BACKUP_LOG_FILE):
                             attempts += count_job_attempts(BACKUP_LOG_FILE, name)

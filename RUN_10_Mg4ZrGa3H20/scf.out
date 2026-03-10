@@ -21125,3 +21125,195 @@ H             1.5603082564        4.6324546337        0.0258847688
 
      Computing stress (Cartesian axis) and pressure
 
+
+     negative rho (up, down):  6.201E-02 0.000E+00
+          total   stress  (Ry/bohr**3)                   (kbar)     P=       -1.17
+  -0.00001075   0.00001182  -0.00000458           -1.58        1.74       -0.67
+   0.00001182  -0.00000242   0.00000435            1.74       -0.36        0.64
+  -0.00000458   0.00000435  -0.00001062           -0.67        0.64       -1.56
+
+     Energy error            =      3.9E-04
+     Gradient error          =      4.4E-03
+     Cell gradient error     =      1.2E-05
+
+
+     number of scf cycles    =  52
+     number of bfgs steps    =  51
+
+     enthalpy old            =   -1521.0923580149 Ry
+     enthalpy new            =   -1521.0927455123 Ry
+
+     CASE: enthalpy_new < enthalpy_old
+
+     new trust radius        =       0.1244965931 bohr
+     new conv_thr            =       0.0000000387 Ry
+
+     new unit-cell volume =   2401.51245 a.u.^3 (   355.86743 Ang^3 )
+     density =      0.13065 g/cm^3
+
+CELL_PARAMETERS (angstrom)
+   7.250479451   0.306806337  -0.088666747
+   0.283958751   6.231395090   0.352389381
+   0.181843935   6.602234097   8.266875110
+
+ATOMIC_POSITIONS (angstrom)
+Mg            2.9866206000        7.8114925892        6.5059168978
+Mg            4.6859414495        5.2296895971        2.1627755578
+Mg            6.8030552997        8.2334302278        6.3445246598
+Mg            1.0643495411        5.1294791480        2.1216639134
+Ga            2.9650127383       10.7938333168        7.3452828123
+Zr            4.7559735079        2.1599522093        0.6580265034
+Ga            6.3929390952        5.1974336673        4.9706891327
+Ga            1.3075944745        8.1309460894        3.5769387434
+H             0.4667517625        5.0945433052        4.1959211872
+H             7.2277695636        8.5775760026        4.3831329386
+H             4.2447458752       10.5989217381        8.4700690924
+H             3.0679095755        1.3716977303        0.1616558775
+H             2.5150273802        9.7541204300        6.1932811411
+H             5.0530919663        3.3404881193        2.2130775663
+H             6.1312509770        6.4492071905        5.9336598920
+H             0.9727157551        7.0201877929        2.4894895607
+H             6.8488520375       10.2185514295        6.3483617811
+H             1.1616362006        3.1987249171        2.2997800232
+H             3.3589867619        5.8034438131        6.2141186076
+H             4.6087405508        7.1950566567        2.4696348543
+H             1.2421457411        7.3972725482        6.7119221651
+H             6.4970634605        5.6121003073        1.4719962606
+H             4.8505717493        8.4482139194        6.8553308217
+H             2.8536216779        5.1181371818        2.5308920607
+H             2.6464835614        7.8686449510        4.4351765774
+H             5.0577424975        5.0113167730        4.1351606979
+H             6.7007256697        8.5945282135        8.2155922739
+H             1.5606265148        4.6071044672        0.0142957411
+
+
+
+     Writing output data file ./tmp/Mg4ZrGa3H20.save/
+     NEW-OLD atomic charge density approx. for the potential
+
+     negative rho (up, down):  6.295E-02 0.000E+00
+     extrapolated charge  110.93491, renormalised to  111.00000
+
+     total cpu time spent up to now is    24508.9 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization
+     c_bands:  5 eigenvalues not converged
+     c_bands:  5 eigenvalues not converged
+     c_bands:  4 eigenvalues not converged
+     c_bands:  4 eigenvalues not converged
+     c_bands:  5 eigenvalues not converged
+     c_bands:  4 eigenvalues not converged
+     ethr =  1.00E-06,  avg # of iterations = 12.2
+
+     negative rho (up, down):  6.305E-02 0.000E+00
+
+     total cpu time spent up to now is    24681.5 secs
+
+     total energy              =   -1521.09728858 Ry
+     estimated scf accuracy    <       0.04058983 Ry
+
+     iteration #  2     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization
+     ethr =  3.66E-05,  avg # of iterations =  3.1
+
+     negative rho (up, down):  6.309E-02 0.000E+00
+
+     total cpu time spent up to now is    24724.4 secs
+
+     total energy              =   -1521.08637846 Ry
+     estimated scf accuracy    <       0.00876121 Ry
+
+     iteration #  3     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization
+     ethr =  7.89E-06,  avg # of iterations =  3.4
+
+     negative rho (up, down):  6.307E-02 0.000E+00
+
+     total cpu time spent up to now is    24774.0 secs
+
+     total energy              =   -1521.09185102 Ry
+     estimated scf accuracy    <       0.00240607 Ry
+
+     iteration #  4     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization
+     ethr =  2.17E-06,  avg # of iterations =  3.6
+
+     negative rho (up, down):  6.303E-02 0.000E+00
+
+     total cpu time spent up to now is    24828.4 secs
+
+     total energy              =   -1521.09277829 Ry
+     estimated scf accuracy    <       0.00089250 Ry
+
+     iteration #  5     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization
+     ethr =  8.04E-07,  avg # of iterations =  4.2
+
+     negative rho (up, down):  6.303E-02 0.000E+00
+
+     total cpu time spent up to now is    24891.1 secs
+
+     total energy              =   -1521.09293894 Ry
+     estimated scf accuracy    <       0.00011669 Ry
+
+     iteration #  6     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization
+     c_bands:  1 eigenvalues not converged
+     ethr =  1.05E-07,  avg # of iterations =  6.6
+
+     negative rho (up, down):  6.303E-02 0.000E+00
+
+     total cpu time spent up to now is    24991.4 secs
+
+     total energy              =   -1521.09327422 Ry
+     estimated scf accuracy    <       0.00005385 Ry
+
+     iteration #  7     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization
+     ethr =  4.85E-08,  avg # of iterations =  4.8
+
+     negative rho (up, down):  6.302E-02 0.000E+00
+
+     total cpu time spent up to now is    25062.5 secs
+
+     total energy              =   -1521.09331765 Ry
+     estimated scf accuracy    <       0.00004786 Ry
+
+     iteration #  8     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization
+     ethr =  4.31E-08,  avg # of iterations =  3.9
+
+     negative rho (up, down):  6.300E-02 0.000E+00
+
+     total cpu time spent up to now is    25119.7 secs
+
+     total energy              =   -1521.09333468 Ry
+     estimated scf accuracy    <       0.00004127 Ry
+
+     iteration #  9     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization
+     ethr =  3.72E-08,  avg # of iterations =  3.5
+
+     negative rho (up, down):  6.299E-02 0.000E+00
+
+     total cpu time spent up to now is    25173.5 secs
+
+     total energy              =   -1521.09334116 Ry
+     estimated scf accuracy    <       0.00000639 Ry
+
+     iteration # 10     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization
+     ethr =  5.76E-09,  avg # of iterations =  5.5
+
+     negative rho (up, down):  6.300E-02 0.000E+00
+
+     total cpu time spent up to now is    25257.9 secs
+
+     total energy              =   -1521.09335017 Ry
+     estimated scf accuracy    <       0.00000109 Ry
+
+     iteration # 11     ecut=    50.00 Ry     beta= 0.40
+     CG style diagonalization

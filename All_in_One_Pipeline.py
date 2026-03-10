@@ -724,7 +724,6 @@ def main():
                     start_crash_reason = analyze_crash_reason(scf_out)
                     
                     if start_crash_reason == "LIKELY_OOM":
-                        # HIER IST DIE KORREKTUR: Maximum statt Addition!
                         attempts = count_job_attempts(TXT_LOG_FILE, name)
                         if os.path.exists(BACKUP_LOG_FILE):
                             backup_attempts = count_job_attempts(BACKUP_LOG_FILE, name)
@@ -881,7 +880,6 @@ def main():
                     
                     ph_cores = int(DEFAULT_CORES)
                     
-                    # HIER AUCH DIE KORREKTUR für Phononen (Maximum statt Addition)
                     ph_attempts_hist = count_job_attempts(TXT_LOG_FILE, name)
                     if os.path.exists(BACKUP_LOG_FILE):
                          backup_ph_attempts = count_job_attempts(BACKUP_LOG_FILE, name)
@@ -984,10 +982,19 @@ def main():
                     
                     q2r_in = os.path.join(work_dir, "q2r.in")
                     q2r_out = os.path.join(work_dir, "q2r.out")
+                    
+                    # NEU: Automatischer Fix für alte Q2R-Dateien ohne la2F
+                    if os.path.exists(q2r_in):
+                        try:
+                            with open(q2r_in, 'r') as f_check:
+                                if "la2F" not in f_check.read():
+                                    if os.path.exists(q2r_out): os.remove(q2r_out)
+                        except: pass
+
                     if not os.path.exists(q2r_out) or "JOB DONE" not in open(q2r_out, errors='ignore').read():
                         print("   4️⃣  Q2R Berechnung...")
                         with open(q2r_in, "w") as f:
-                            f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc'\n/\n")
+                            f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
                         with open(q2r_in, "r") as f_in, open(q2r_out, "w") as f_out:
                             subprocess.run([Q2R_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
                             
@@ -995,10 +1002,20 @@ def main():
                     
                     matdyn_in = os.path.join(work_dir, "matdyn.in")
                     matdyn_out = os.path.join(work_dir, "matdyn.out")
+                    
+                    # NEU: Automatischer Fix für alte Matdyn-Dateien mit falschen Parametern
+                    if os.path.exists(matdyn_in):
+                        try:
+                            with open(matdyn_in, 'r') as f_check:
+                                content_check = f_check.read()
+                                if "elph=.true." in content_check or "la2F=.true." not in content_check:
+                                    if os.path.exists(matdyn_out): os.remove(matdyn_out)
+                        except: pass
+
                     if not os.path.exists(matdyn_out) or "JOB DONE" not in open(matdyn_out, errors='ignore').read():
                         print("   5️⃣  Matdyn Berechnung...")
                         with open(matdyn_in, "w") as f:
-                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
+                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n la2F=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
                         with open(matdyn_in, "r") as f_in, open(matdyn_out, "w") as f_out:
                             subprocess.run([MATDYN_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
                             

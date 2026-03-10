@@ -664,7 +664,6 @@ def main():
             
             row_data = get_csv_full_info(name)
             
-            # Neu eingefügte und verbesserte Check-Logik
             if not row_data:
                 last_status = "NEW"
                 stability = "-"
@@ -672,7 +671,6 @@ def main():
                 lam_status = "-"
             else:
                 last_status = row_data.get('Status', 'NEW')
-                # Strings sanitisieren, da leere CSV Spalten "" zurückgeben
                 stability = str(row_data.get('Stabilität', '-')).strip()
                 tc_status = str(row_data.get('Tc (K)', '-')).strip()
                 lam_status = str(row_data.get('Lambda', '-')).strip()
@@ -681,17 +679,14 @@ def main():
             if not tc_status: tc_status = "-"
             if not lam_status: lam_status = "-"
 
-            # Problemkinder überspringen
             if "SKIPPED" in last_status or "ERROR" in last_status:
                 print(f"⏩ Überspringe {name} (Status, {last_status})")
                 continue
             
-            # Nicht-supraleitende Elemente ignorieren
             if "Isolator" in last_status:
                 print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                 continue
 
-            # Elemente kontrollieren, die schon analysiert wurden
             if stability == "INSTABIL":
                 print(f"⏩ Überspringe {name} (Metall aber INSTABIL, keine El-Ph nötig)")
                 continue
@@ -729,11 +724,13 @@ def main():
                     start_crash_reason = analyze_crash_reason(scf_out)
                     
                     if start_crash_reason == "LIKELY_OOM":
+                        # HIER IST DIE KORREKTUR: Maximum statt Addition!
                         attempts = count_job_attempts(TXT_LOG_FILE, name)
-                        if attempts == 1 and os.path.exists(BACKUP_LOG_FILE):
-                            attempts += count_job_attempts(BACKUP_LOG_FILE, name)
+                        if os.path.exists(BACKUP_LOG_FILE):
+                            backup_attempts = count_job_attempts(BACKUP_LOG_FILE, name)
+                            attempts = max(attempts, backup_attempts)
 
-                        print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt. Versuch Nr. {attempts} auf diesem Level.")
+                        print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt. Höchster gefundener Versuch Nr. {attempts} auf diesem Level.")
                         
                         if os.path.exists(scf_out):
                             timestamp = datetime.now().strftime("%H%M%S")
@@ -883,9 +880,13 @@ def main():
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., elph=.true., nq1=2, nq2=2, nq3=2 /\n")
                     
                     ph_cores = int(DEFAULT_CORES)
+                    
+                    # HIER AUCH DIE KORREKTUR für Phononen (Maximum statt Addition)
                     ph_attempts_hist = count_job_attempts(TXT_LOG_FILE, name)
-                    if os.path.exists(BACKUP_LOG_FILE) and ph_attempts_hist == 1:
-                         ph_attempts_hist += count_job_attempts(BACKUP_LOG_FILE, name)
+                    if os.path.exists(BACKUP_LOG_FILE):
+                         backup_ph_attempts = count_job_attempts(BACKUP_LOG_FILE, name)
+                         ph_attempts_hist = max(ph_attempts_hist, backup_ph_attempts)
+                         
                     if ph_attempts_hist > 1: ph_cores = 1
 
                     phonon_attempts = 0

@@ -37977,3 +37977,19 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       📉 Setze RAM/Konvergenz-Strategie, Standard (david, mix=6)
    1️⃣  SCF (2 Cores, OOM-Lvl 0)
       🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
+      💾 XML valide -> Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.
+      ☁️ Trigger Git Sync (wegen Checkpoint)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   8e5c5c3..ded32f3  main -> main
+   ⚡ Metall (DOS=0.270). Berechne Phononen...
+      ⚙️ Starte PHONONEN (Cores, 2)...
+      ⚠️ Crash/OOM!
+      🛡️ Phonon-Recovery, Versuch 1/3
+      📉 Lockere Konvergenzgrenze auf tr2_ph=1.0d-12
+      ⚙️ Starte PHONONEN (Cores, 2)...
+      ⚠️ Crash/OOM!
+      🛡️ Phonon-Recovery, Versuch 2/3
+      🚨 Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, 1 Core, tr2_ph=1.0d-10
+      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.

@@ -31,7 +31,7 @@ DOS_THRESHOLD = 0.05
 DEFAULT_CORES = "2"
 SAFE_CORES = "1"
 MEMORY_LIMIT_PERCENT = 88.0
-MAX_BFGS_STEPS = 100 
+MAX_BFGS_STEPS = 300  # <--- HIER auf 300 erhöht!
 MAX_RETRIES_LEVEL = 3
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -679,9 +679,13 @@ def main():
             if not tc_status: tc_status = "-"
             if not lam_status: lam_status = "-"
 
+            # Überspringen von Problemkindern - außer das Max BFGS Limit schlägt zu
             if "SKIPPED" in last_status or "ERROR" in last_status:
-                print(f"⏩ Überspringe {name} (Status, {last_status})")
-                continue
+                if "Max BFGS Steps" in last_status:
+                    print(f"🔄 Reaktiviere {name} (Limit für BFGS Steps wurde auf {MAX_BFGS_STEPS} erhöht)")
+                else:
+                    print(f"⏩ Überspringe {name} (Status, {last_status})")
+                    continue
             
             if "Isolator" in last_status:
                 print(f"⏩ Überspringe {name} (Ist ein Isolator)")
@@ -873,11 +877,11 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
-                # PRÜFUNG: Wurde elph_dir wirklich erstellt?
-                elph_dir_path = os.path.join(work_dir, "elph_dir")
+                # PRÜFUNG: Wurden die El-Ph-Matrix-Dateien (a2Fq2r) in diesem Lauf generiert?
+                elph_files = glob.glob(os.path.join(work_dir, "elph_dir", "a2Fq2r.*")) + glob.glob(os.path.join(work_dir, "a2Fq2r.*"))
                 if os.path.exists(ph_out) and "JOB DONE" in open(ph_out, errors='ignore').read():
-                    if not os.path.exists(elph_dir_path):
-                        print("      ⚠️ Phonon 'JOB DONE' gefunden, aber 'elph_dir' fehlt. Erzwinge Neustart für El-Ph-Daten...")
+                    if not elph_files:
+                        print("      ⚠️ Phonon 'JOB DONE' gefunden, aber 'a2Fq2r'-Dateien (El-Ph-Matrix) fehlen. Erzwinge Neustart für El-Ph-Daten...")
                         try:
                             os.remove(ph_out)
                         except: pass
@@ -885,11 +889,17 @@ def main():
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', fildvscf='dvscf', ldisp=.true., elph=.true., nq1=2, nq2=2, nq3=2 /\n")
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', fildvscf='dvscf', ldisp=.true., electron_phonon='interpolated', elph=.true., nq1=2, nq2=2, nq3=2 /\n")
                     else:
                         with open(ph_in, 'r') as f: ph_content = f.read()
+                        changed = False
                         if "fildvscf" not in ph_content:
                             ph_content = ph_content.replace("&INPUTPH", "&INPUTPH\n fildvscf='dvscf',")
+                            changed = True
+                        if "electron_phonon" not in ph_content:
+                            ph_content = ph_content.replace("&INPUTPH", "&INPUTPH\n electron_phonon='interpolated',")
+                            changed = True
+                        if changed:
                             with open(ph_in, 'w') as f: f.write(ph_content)
 
                     ph_cores = int(DEFAULT_CORES)
@@ -997,19 +1007,14 @@ def main():
                     q2r_in = os.path.join(work_dir, "q2r.in")
                     q2r_out = os.path.join(work_dir, "q2r.out")
                     
-                    if os.path.exists(q2r_in):
-                        try:
-                            with open(q2r_in, 'r') as f_check:
-                                if "la2F" not in f_check.read():
-                                    if os.path.exists(q2r_out): os.remove(q2r_out)
-                        except: pass
-
-                    if not os.path.exists(q2r_out) or "JOB DONE" not in open(q2r_out, errors='ignore').read():
-                        print("   4️⃣  Q2R Berechnung...")
-                        with open(q2r_in, "w") as f:
-                            f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
-                        with open(q2r_in, "r") as f_in, open(q2r_out, "w") as f_out:
-                            subprocess.run([Q2R_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                    # Alte Dateien löschen, um Probleme durch Reste zu vermeiden
+                    if os.path.exists(q2r_out): os.remove(q2r_out)
+                    
+                    print("   4️⃣  Q2R Berechnung...")
+                    with open(q2r_in, "w") as f:
+                        f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
+                    with open(q2r_in, "r") as f_in, open(q2r_out, "w") as f_out:
+                        subprocess.run([Q2R_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
                             
                     if not os.path.exists(q2r_out) or "JOB DONE" not in open(q2r_out, errors='ignore').read():
                         print("      ❌ Q2R FEHLGESCHLAGEN!")
@@ -1025,20 +1030,14 @@ def main():
                     matdyn_in = os.path.join(work_dir, "matdyn.in")
                     matdyn_out = os.path.join(work_dir, "matdyn.out")
                     
-                    if os.path.exists(matdyn_in):
-                        try:
-                            with open(matdyn_in, 'r') as f_check:
-                                content_check = f_check.read()
-                                if "la2F=.true." in content_check or "elph=.true." not in content_check:
-                                    if os.path.exists(matdyn_out): os.remove(matdyn_out)
-                        except: pass
-
-                    if not os.path.exists(matdyn_out) or "JOB DONE" not in open(matdyn_out, errors='ignore').read():
-                        print("   5️⃣  Matdyn Berechnung...")
-                        with open(matdyn_in, "w") as f:
-                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
-                        with open(matdyn_in, "r") as f_in, open(matdyn_out, "w") as f_out:
-                            subprocess.run([MATDYN_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                    if os.path.exists(matdyn_out): os.remove(matdyn_out)
+                    
+                    print("   5️⃣  Matdyn Berechnung...")
+                    with open(matdyn_in, "w") as f:
+                        # elph=.true. ist bei matdyn.x Pflicht für El-Ph-Kopplung
+                        f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
+                    with open(matdyn_in, "r") as f_in, open(matdyn_out, "w") as f_out:
+                        subprocess.run([MATDYN_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
                             
                     if not os.path.exists(matdyn_out) or "JOB DONE" not in open(matdyn_out, errors='ignore').read():
                         print("      ❌ MATDYN FEHLGESCHLAGEN!")

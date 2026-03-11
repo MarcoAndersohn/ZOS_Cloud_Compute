@@ -1,5 +1,7 @@
 &CONTROL
- restart_mode='restart',
+ restart_mode='from_scratch',
+ wf_collect=.true.,
+ nstep = 100,
   calculation = 'vc-relax'
   prefix = 'K7SrMg4AlB15H64'
   outdir = './tmp/'
@@ -19,7 +21,10 @@
   degauss = 0.02
 /
 &ELECTRONS
- electron_maxstep = 150,
+ mixing_beta = 0.4,
+ diago_david_ndim = 2,
+ mixing_mode = 'local-TF',
+ electron_maxstep = 300,
  mixing_ndim = 4,
  diagonalization='cg',
   conv_thr = 1.0d-6

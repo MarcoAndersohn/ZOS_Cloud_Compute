@@ -873,11 +873,25 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
+                # PRÜFUNG: Wurde elph_dir wirklich erstellt?
+                elph_dir_path = os.path.join(work_dir, "elph_dir")
+                if os.path.exists(ph_out) and "JOB DONE" in open(ph_out, errors='ignore').read():
+                    if not os.path.exists(elph_dir_path):
+                        print("      ⚠️ Phonon 'JOB DONE' gefunden, aber 'elph_dir' fehlt. Erzwinge Neustart für El-Ph-Daten...")
+                        try:
+                            os.remove(ph_out)
+                        except: pass
+
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., elph=.true., nq1=2, nq2=2, nq3=2 /\n")
-                    
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', fildvscf='dvscf', ldisp=.true., elph=.true., nq1=2, nq2=2, nq3=2 /\n")
+                    else:
+                        with open(ph_in, 'r') as f: ph_content = f.read()
+                        if "fildvscf" not in ph_content:
+                            ph_content = ph_content.replace("&INPUTPH", "&INPUTPH\n fildvscf='dvscf',")
+                            with open(ph_in, 'w') as f: f.write(ph_content)
+
                     ph_cores = int(DEFAULT_CORES)
                     
                     ph_attempts_hist = count_job_attempts(TXT_LOG_FILE, name)
@@ -983,7 +997,6 @@ def main():
                     q2r_in = os.path.join(work_dir, "q2r.in")
                     q2r_out = os.path.join(work_dir, "q2r.out")
                     
-                    # NEU: Automatischer Fix für alte Q2R-Dateien ohne la2F
                     if os.path.exists(q2r_in):
                         try:
                             with open(q2r_in, 'r') as f_check:
@@ -998,26 +1011,43 @@ def main():
                         with open(q2r_in, "r") as f_in, open(q2r_out, "w") as f_out:
                             subprocess.run([Q2R_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
                             
+                    if not os.path.exists(q2r_out) or "JOB DONE" not in open(q2r_out, errors='ignore').read():
+                        print("      ❌ Q2R FEHLGESCHLAGEN!")
+                        if os.path.exists(q2r_out):
+                            err_snip = open(q2r_out, errors='ignore').read().strip().split('\n')[-20:]
+                            print(f"      Crash-Info:\n      " + "\n      ".join(err_snip))
+                        update_csv(name, "ERROR (Q2R Crash)")
+                        git_sync(f"Q2R Crash, {name}")
+                        continue
+
                     update_csv(name, "Rechnet El-Ph (Matdyn)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                     
                     matdyn_in = os.path.join(work_dir, "matdyn.in")
                     matdyn_out = os.path.join(work_dir, "matdyn.out")
                     
-                    # NEU: Automatischer Fix für alte Matdyn-Dateien mit falschen Parametern
                     if os.path.exists(matdyn_in):
                         try:
                             with open(matdyn_in, 'r') as f_check:
                                 content_check = f_check.read()
-                                if "elph=.true." in content_check or "la2F=.true." not in content_check:
+                                if "la2F=.true." in content_check or "elph=.true." not in content_check:
                                     if os.path.exists(matdyn_out): os.remove(matdyn_out)
                         except: pass
 
                     if not os.path.exists(matdyn_out) or "JOB DONE" not in open(matdyn_out, errors='ignore').read():
                         print("   5️⃣  Matdyn Berechnung...")
                         with open(matdyn_in, "w") as f:
-                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n la2F=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
+                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
                         with open(matdyn_in, "r") as f_in, open(matdyn_out, "w") as f_out:
                             subprocess.run([MATDYN_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                            
+                    if not os.path.exists(matdyn_out) or "JOB DONE" not in open(matdyn_out, errors='ignore').read():
+                        print("      ❌ MATDYN FEHLGESCHLAGEN!")
+                        if os.path.exists(matdyn_out):
+                            err_snip = open(matdyn_out, errors='ignore').read().strip().split('\n')[-20:]
+                            print(f"      Crash-Info:\n      " + "\n      ".join(err_snip))
+                        update_csv(name, "ERROR (Matdyn Crash)")
+                        git_sync(f"Matdyn Crash, {name}")
+                        continue
                             
                     lam, wlog, tc = "-", "-", "-"
                     if os.path.exists(matdyn_out):

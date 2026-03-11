@@ -31,7 +31,7 @@ DOS_THRESHOLD = 0.05
 DEFAULT_CORES = "2"
 SAFE_CORES = "1"
 MEMORY_LIMIT_PERCENT = 88.0
-MAX_BFGS_STEPS = 300  # <--- HIER auf 300 erhöht!
+MAX_BFGS_STEPS = 200 
 MAX_RETRIES_LEVEL = 3
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -679,10 +679,17 @@ def main():
             if not tc_status: tc_status = "-"
             if not lam_status: lam_status = "-"
 
-            # Überspringen von Problemkindern - außer das Max BFGS Limit schlägt zu
+            # --- NEUE LOGIK FÜR SKIPPED (Max BFGS) & ERROR ---
             if "SKIPPED" in last_status or "ERROR" in last_status:
-                if "Max BFGS Steps" in last_status:
-                    print(f"🔄 Reaktiviere {name} (Limit für BFGS Steps wurde auf {MAX_BFGS_STEPS} erhöht)")
+                if "Max BFGS" in last_status:
+                    cur_iter = get_last_iteration(scf_out)
+                    if cur_iter < MAX_BFGS_STEPS:
+                        print(f"🔄 Reaktiviere {name} (Bisher {cur_iter} Steps, Limit ist jetzt {MAX_BFGS_STEPS})")
+                    else:
+                        print(f"⏩ Überspringe {name} (Bereits Limit von {cur_iter} Steps erreicht)")
+                        continue
+                elif "ERROR" in last_status:
+                    print(f"🔄 Reaktiviere {name} nach ERROR (neuer Versuch mit gefixtem Code)...")
                 else:
                     print(f"⏩ Überspringe {name} (Status, {last_status})")
                     continue
@@ -877,7 +884,7 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
-                # PRÜFUNG: Wurden die El-Ph-Matrix-Dateien (a2Fq2r) in diesem Lauf generiert?
+                # PRÜFUNG: Wurden die El-Ph-Matrix-Dateien in diesem Lauf wirklich generiert?
                 elph_files = glob.glob(os.path.join(work_dir, "elph_dir", "a2Fq2r.*")) + glob.glob(os.path.join(work_dir, "a2Fq2r.*"))
                 if os.path.exists(ph_out) and "JOB DONE" in open(ph_out, errors='ignore').read():
                     if not elph_files:
@@ -1002,19 +1009,23 @@ def main():
                                   stab = "STABIL" if min_f > -0.05 else "INSTABIL"
 
                 if stab == "STABIL":
-                    update_csv(name, "Rechnet El-Ph (Q2R)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
-                    
                     q2r_in = os.path.join(work_dir, "q2r.in")
                     q2r_out = os.path.join(work_dir, "q2r.out")
+                    matdyn_in = os.path.join(work_dir, "matdyn.in")
+                    matdyn_out = os.path.join(work_dir, "matdyn.out")
+
+                    if lam_status == "-" or tc_status == "-":
+                        if os.path.exists(q2r_out): os.remove(q2r_out)
+                        if os.path.exists(matdyn_out): os.remove(matdyn_out)
+
+                    update_csv(name, "Rechnet El-Ph (Q2R)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                     
-                    # Alte Dateien löschen, um Probleme durch Reste zu vermeiden
-                    if os.path.exists(q2r_out): os.remove(q2r_out)
-                    
-                    print("   4️⃣  Q2R Berechnung...")
-                    with open(q2r_in, "w") as f:
-                        f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
-                    with open(q2r_in, "r") as f_in, open(q2r_out, "w") as f_out:
-                        subprocess.run([Q2R_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                    if not os.path.exists(q2r_out) or "JOB DONE" not in open(q2r_out, errors='ignore').read():
+                        print("   4️⃣  Q2R Berechnung...")
+                        with open(q2r_in, "w") as f:
+                            f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
+                        with open(q2r_in, "r") as f_in, open(q2r_out, "w") as f_out:
+                            subprocess.run([Q2R_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
                             
                     if not os.path.exists(q2r_out) or "JOB DONE" not in open(q2r_out, errors='ignore').read():
                         print("      ❌ Q2R FEHLGESCHLAGEN!")
@@ -1027,17 +1038,12 @@ def main():
 
                     update_csv(name, "Rechnet El-Ph (Matdyn)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                     
-                    matdyn_in = os.path.join(work_dir, "matdyn.in")
-                    matdyn_out = os.path.join(work_dir, "matdyn.out")
-                    
-                    if os.path.exists(matdyn_out): os.remove(matdyn_out)
-                    
-                    print("   5️⃣  Matdyn Berechnung...")
-                    with open(matdyn_in, "w") as f:
-                        # elph=.true. ist bei matdyn.x Pflicht für El-Ph-Kopplung
-                        f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
-                    with open(matdyn_in, "r") as f_in, open(matdyn_out, "w") as f_out:
-                        subprocess.run([MATDYN_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+                    if not os.path.exists(matdyn_out) or "JOB DONE" not in open(matdyn_out, errors='ignore').read():
+                        print("   5️⃣  Matdyn Berechnung...")
+                        with open(matdyn_in, "w") as f:
+                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
+                        with open(matdyn_in, "r") as f_in, open(matdyn_out, "w") as f_out:
+                            subprocess.run([MATDYN_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
                             
                     if not os.path.exists(matdyn_out) or "JOB DONE" not in open(matdyn_out, errors='ignore').read():
                         print("      ❌ MATDYN FEHLGESCHLAGEN!")

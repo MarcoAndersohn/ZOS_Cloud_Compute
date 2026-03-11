@@ -1,6 +1,7 @@
 &CONTROL
  restart_mode='restart',
  wf_collect=.true.,
+ disk_io='low',
  nstep = 100,
   calculation = 'vc-relax'
   prefix = 'Mg4ZrGa3H20'
@@ -17,7 +18,7 @@
   ecutwfc = 50.0
   ecutrho = 400.0
   occupations = 'smearing'
-  smearing = 'methfessel-paxton'
+  smearing='m-v'
   degauss = 0.02
 /
 &ELECTRONS
@@ -25,7 +26,7 @@
  mixing_beta = 0.4,
  diago_david_ndim = 2,
  mixing_mode = 'local-TF',
- mixing_ndim = 4,
+ mixing_ndim = 2,
  diagonalization='cg',
   conv_thr = 1.0d-6
 /

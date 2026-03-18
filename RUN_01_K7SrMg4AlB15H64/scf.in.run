@@ -1,5 +1,5 @@
 &CONTROL
- restart_mode='from_scratch',
+ restart_mode='restart',
  wf_collect=.true.,
  nstep = 100,
   calculation = 'vc-relax'
@@ -25,8 +25,8 @@
  mixing_beta = 0.4,
  diago_david_ndim = 2,
  mixing_mode = 'local-TF',
- mixing_ndim = 6,
- diagonalization='david',
+ mixing_ndim = 4,
+ diagonalization='cg',
   conv_thr = 1.0d-6
 /
 &IONS

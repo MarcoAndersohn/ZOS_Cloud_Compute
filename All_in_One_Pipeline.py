@@ -18,14 +18,14 @@ from datetime import datetime
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
-def truncate_log(log_path, max_size_mb=1.5):
+def truncate_log(log_path, max_size_mb=1.0):
     """Schneidet das Logfile ab, wenn es zu groß wird. Behält die neuesten Einträge."""
     if not os.path.exists(log_path): return
     max_bytes = int(max_size_mb * 1024 * 1024)
     if os.path.getsize(log_path) > max_bytes:
         try:
             with open(log_path, 'rb') as f:
-                f.seek(-max_bytes, 2)  # Gehe zum Ende minus max_bytes
+                f.seek(-max_bytes, 2)
                 content = f.read()
             with open(log_path, 'wb') as f:
                 f.write(content)
@@ -69,7 +69,7 @@ MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
 # =============================================================================
 def backup_log_file():
     """Sichert das Logfile im laufenden Betrieb, BEVOR ein Crash passieren kann."""
-    truncate_log(TXT_LOG_FILE, max_size_mb=1.5)
+    truncate_log(TXT_LOG_FILE, max_size_mb=1.0)
     if os.path.exists(TXT_LOG_FILE):
         try:
             shutil.copy(TXT_LOG_FILE, BACKUP_LOG_FILE)
@@ -235,20 +235,17 @@ def analyze_crash_reason(output_file):
             print("      🤕 Fragmentierungsfehler erkannt (davcio).")
             return "DAVCIO_ERROR"
 
+        error_keywords = ["Error", "error", "Mpi_Abort", "MPI_ABORT", "segmentation fault", "stopping", "fatal", "diagonalization failed"]
+        if any(key in lines for key in error_keywords):
+            return "HARD"
+
         ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
         if ram_match:
             if "Self-consistent Calculation" not in lines and "iteration #" not in lines:
                 return "LIKELY_OOM"
 
         if "iteration #" in lines or "diagonalization" in lines:
-            error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "fatal"]
-            has_error_msg = any(key in lines for key in error_keywords)
-            if not has_error_msg:
-                return "LIKELY_OOM"
-
-        error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed"]
-        for key in error_keywords:
-            if key in lines: return "HARD"
+            return "LIKELY_OOM"
             
         return "SOFT"
     except: return "HARD"
@@ -397,9 +394,6 @@ def fix_input_file(input_file, iteration_count=0):
         content = re.sub(r"nstep\s*=\s*\d+", "nstep = 100", content)
     else:
         content = content.replace("&CONTROL", "&CONTROL\n nstep = 100,")
-
-    if "mixing_mode" not in content:
-        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_mode = 'local-TF',")
         
     if "diago_david_ndim" not in content:
          content = content.replace("&ELECTRONS", "&ELECTRONS\n diago_david_ndim = 2,")
@@ -678,7 +672,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 def main():
     try:
         set_logic_app_state("Enabled")
-        truncate_log(TXT_LOG_FILE, max_size_mb=1.5)
+        truncate_log(TXT_LOG_FILE, max_size_mb=1.0)
         with open(TXT_LOG_FILE, "a") as f:
             f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
@@ -727,6 +721,7 @@ def main():
                 continue
 
             if stability == "STABIL" and tc_status != "-" and lam_status != "-":
+                update_csv(name, last_status)
                 print(f"⏩ Überspringe {name} (STABIL und bereits vollständig analysiert, Tc={tc_status}K)")
                 continue
 

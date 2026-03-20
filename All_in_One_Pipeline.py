@@ -331,8 +331,7 @@ def disable_symmetries_and_reduce_grid(input_file):
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
     with open(input_file, 'r', errors='ignore') as f: content = f.read()
-    if "mixing_ndim = 2" in content or "mixing_ndim=2" in content: return 4
-    if "mixing_ndim = 3" in content or "mixing_ndim=3" in content: return 3
+    if "mixing_ndim = 4" in content or "mixing_ndim=4" in content: return 1
     if "disk_io='low'" in content or 'disk_io="low"' in content: return 2
     if "diagonalization='cg'" in content or 'diagonalization="cg"' in content: return 1
     return 0
@@ -344,6 +343,7 @@ def apply_oom_settings(input_file, level, force_cg=False):
     disk = None 
     msg = "Standard (david, mix=6)"
 
+    # WICHTIG: mixing_ndim darf NIE kleiner als 4 werden, sonst gibt es den aainit Crash!
     if level >= 1 or force_cg: 
         diag = 'cg'
         mix = 4
@@ -352,11 +352,11 @@ def apply_oom_settings(input_file, level, force_cg=False):
         disk = 'low'
         msg = "Stufe 2 (cg, mix=4, disk_io='low')"
     if level >= 3: 
-        mix = 3
-        msg = "Stufe 3 (cg, mix=3, disk_io='low')"
+        mix = 4
+        msg = "Stufe 3 (cg, mix=4, disk_io='low')"
     if level >= 4: 
-        mix = 2
-        msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
+        mix = 4
+        msg = "Stufe 4 (cg, mix=4, disk_io='low', 1 Core)"
 
     print(f"      📉 Setze RAM/Konvergenz-Strategie, {msg}")
 
@@ -394,11 +394,12 @@ def fix_input_file(input_file, iteration_count=0):
         content = re.sub(r"nstep\s*=\s*\d+", "nstep = 100", content)
     else:
         content = content.replace("&CONTROL", "&CONTROL\n nstep = 100,")
-        
-    if "diago_david_ndim" not in content:
-         content = content.replace("&ELECTRONS", "&ELECTRONS\n diago_david_ndim = 2,")
+
+    # Ersetze eventuelle local-TF Parameter rigoros durch plain, um den Crash zu vermeiden
+    if "mixing_mode" in content:
+        content = re.sub(r"mixing_mode\s*=\s*['\"][a-zA-Z\-]+['\"]", "mixing_mode='plain'", content)
     else:
-         content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_mode='plain',")
 
     target_beta = 0.4
     target_mix_ndim = 6
@@ -406,10 +407,10 @@ def fix_input_file(input_file, iteration_count=0):
     if iteration_count >= 30: target_beta = 0.2
     if iteration_count >= 60: 
         target_beta = 0.1
-        target_mix_ndim = 3
+        target_mix_ndim = 4 # Auch hier minimal 4
     if iteration_count >= 90: 
         target_beta = 0.05   
-        target_mix_ndim = 2
+        target_mix_ndim = 4 # Auch hier minimal 4
 
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
@@ -712,16 +713,18 @@ def main():
             # --- 1. SOFORTIGES CLEANUP & SKIP FÜR FINALE ZUSTÄNDE ---
             if "Isolator" in last_status:
                 cleanup_heavy_files(work_dir, name)
+                update_csv(name, last_status)  # Zwingt die Datei zu einem Datum-Update!
                 print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                 continue
 
             if stability == "INSTABIL":
                 cleanup_heavy_files(work_dir, name)
+                update_csv(name, last_status)  # Zwingt die Datei zu einem Datum-Update!
                 print(f"⏩ Überspringe {name} (Metall aber INSTABIL, keine El-Ph nötig)")
                 continue
 
             if stability == "STABIL" and tc_status != "-" and lam_status != "-":
-                update_csv(name, last_status)
+                update_csv(name, last_status)  # Zwingt die Datei zu einem Datum-Update!
                 print(f"⏩ Überspringe {name} (STABIL und bereits vollständig analysiert, Tc={tc_status}K)")
                 continue
 
@@ -732,6 +735,7 @@ def main():
                     if cur_iter < MAX_BFGS_STEPS:
                         print(f"🔄 Reaktiviere {name} (Bisher {cur_iter} Steps, Limit ist jetzt {MAX_BFGS_STEPS})")
                     else:
+                        update_csv(name, last_status)
                         print(f"⏩ Überspringe {name} (Bereits Limit von {cur_iter} Steps erreicht)")
                         continue
                 elif "Permanent Crash" in last_status:
@@ -742,6 +746,7 @@ def main():
                 elif "ERROR" in last_status:
                     print(f"🔄 Reaktiviere {name} nach ERROR (neuer Versuch mit gefixtem Code)...")
                 else:
+                    update_csv(name, last_status)
                     print(f"⏩ Überspringe {name} (Status, {last_status})")
                     continue
                     
@@ -849,7 +854,7 @@ def main():
                             
                             if oom_level == 1: update_csv(name, "Retrying (OOM Lvl 1, CG)")
                             elif oom_level == 2: update_csv(name, "Retrying (OOM Lvl 2, DiskIO)")
-                            elif oom_level == 3: update_csv(name, "Retrying (OOM Lvl 3, Mix3)")
+                            elif oom_level == 3: update_csv(name, "Retrying (OOM Lvl 3, Mix4)")
                             elif oom_level == 4:
                                 update_csv(name, "Retrying (OOM Lvl 4, 1Core)")
                                 current_cores = int(SAFE_CORES)
@@ -866,6 +871,7 @@ def main():
                                 break
                             else:
                                 crash_counter += 1
+                                print(f"      ⚠️ Harter Crash erkannt (Grund: {reason}). Versuch {crash_counter}/3...")
                                 if crash_counter >= 3:
                                     print(f"      ❌ Zu viele unlösbare Abstürze ({crash_counter}). Skippe Job.")
                                     update_csv(name, "SKIPPED (Permanent Crash)")
@@ -1120,7 +1126,7 @@ def main():
                 update_csv(name, f"ERROR (Python, {str(job_err)[:30]})")
                 continue 
             
-        send_notification("🎉 Alle Jobs erledigt.")
+        send_notification("🎉 Warteschlange komplett abgearbeitet (Jobs durchlaufen).")
         set_logic_app_state("Disabled") 
         
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status, Fertig\nTimestamp, {time.ctime()}")

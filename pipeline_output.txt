@@ -1,17 +1,4 @@
-ne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
+ 2 Cores)...
       📉 Setze RAM-Strategie: Standard (david, mix=8)
    1️⃣  SCF (2 Cores, OOM-Lvl 0)
       🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
@@ -30009,6 +29996,20 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       ⚠️ Konvergenz-Probleme erkannt, erzwinge CG-Diagonalisierung.
       📉 Setze RAM/Konvergenz-Strategie, Stufe 1 oder CG erzwungen (cg, mix=4)
    1️⃣  SCF (2 Cores, OOM-Lvl 1)
+      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.
+✂️ Logfile pipeline_output.txt auf 1.5 MB gekürzt.
+      ⚙️ Starte PWSCF (restart, 2 Cores)...
+      💾 XML valide -> Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.
+      ☁️ Trigger Git Sync (wegen Checkpoint)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   d619dd27..fd39d901  main -> main
+✂️ Logfile pipeline_output.txt auf 1.5 MB gekürzt.
+      💀 Logfile endet abrupt (Silent Death) -> OOM.
+      ⚠️ OOM Limit erreicht. Eskaliere zu Level 2...
+      ⚠️ Konvergenz-Probleme erkannt, erzwinge CG-Diagonalisierung.
+      📉 Setze RAM/Konvergenz-Strategie, Stufe 2 (cg, mix=4, disk_io='low')
+   1️⃣  SCF (2 Cores, OOM-Lvl 2)
       ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.
 ✂️ Logfile pipeline_output.txt auf 1.5 MB gekürzt.
       ⚙️ Starte PWSCF (restart, 2 Cores)...

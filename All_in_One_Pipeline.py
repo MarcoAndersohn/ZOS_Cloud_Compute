@@ -474,10 +474,12 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
         xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")
         
         mode = 'from_scratch'
-        if os.path.exists(output_file) and is_xml_valid(xml_path):
+        # HIER GEFIXT: Nicht mehr prüfen, ob output_file existiert! 
+        # Nur noch prüfen, ob eine XML oder ein Checkpoint-Ordner existiert.
+        if is_xml_valid(xml_path):
             mode = 'restart'
             print("      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.")
-        elif os.path.exists(output_file) and os.path.exists(checkpoint_dir):
+        elif os.path.exists(checkpoint_dir):
             print("      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...")
             try:
                 if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir)
@@ -590,7 +592,8 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
     with open(input_file, 'r') as f: content = f.read()
 
-    if os.path.exists(output_file) and not os.path.exists(ph0_dir) and os.path.exists(checkpoint_dir):
+    # HIER GEFIXT: Nicht prüfen, ob output_file existiert, sondern ob ph0_dir fehlt und checkpoint existiert
+    if not os.path.exists(ph0_dir) and os.path.exists(checkpoint_dir):
         print("      🛡️ _ph0 Ordner fehlt/defekt! Hole Phonon Safe-Checkpoint...")
         try:
             shutil.copytree(checkpoint_dir, ph0_dir)
@@ -598,7 +601,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         except Exception as e:
             print(f"      ❌ Fehler beim Laden des Phonon Checkpoints, {e}")
 
-    if os.path.exists(output_file) and os.path.exists(ph0_dir):
+    if os.path.exists(ph0_dir):
         if "recover" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
     else:

@@ -327,11 +327,16 @@ def disable_symmetries_and_reduce_grid(input_file):
     with open(input_file, 'w') as f: f.write(content)
     print(f"      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.")
 
-# --- PERSISTENZ-LOGIK ---
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
     with open(input_file, 'r', errors='ignore') as f: content = f.read()
-    if "mixing_ndim = 4" in content or "mixing_ndim=4" in content: return 1
+    
+    # 1. Neue und absolut sichere Methode (liest den gestempelten Kommentar)
+    match = re.search(r"!\s*SMART_OOM_LEVEL\s*=\s*(\d+)", content)
+    if match: 
+        return int(match.group(1))
+        
+    # 2. Fallback für ältere Dateien, die den Stempel noch nicht haben
     if "disk_io='low'" in content or 'disk_io="low"' in content: return 2
     if "diagonalization='cg'" in content or 'diagonalization="cg"' in content: return 1
     return 0
@@ -378,6 +383,12 @@ def apply_oom_settings(input_file, level, force_cg=False):
     else:
         if "disk_io='low'" in content or 'disk_io="low"' in content:
              content = re.sub(r"disk_io\s*=\s*['\"]low['\"],?", "", content)
+
+    # HIER NEU: Level ausfallsicher in die Datei stempeln
+    if "! SMART_OOM_LEVEL" in content:
+        content = re.sub(r"!\s*SMART_OOM_LEVEL\s*=\s*\d+", f"! SMART_OOM_LEVEL={level}", content)
+    else:
+        content += f"\n! SMART_OOM_LEVEL={level}\n"
 
     with open(input_file, 'w') as f: f.write(content)
     return True

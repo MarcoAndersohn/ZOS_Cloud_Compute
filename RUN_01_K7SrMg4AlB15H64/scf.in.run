@@ -1,7 +1,7 @@
 &CONTROL
- restart_mode='from_scratch',
+ restart_mode='restart',
  wf_collect=.true.,
- disk_io='low',
+ 
  nstep = 100,
   calculation = 'vc-relax'
   prefix = 'K7SrMg4AlB15H64'

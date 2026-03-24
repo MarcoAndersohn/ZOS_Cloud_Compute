@@ -1,18 +1,4 @@
-Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+eicherstand gefunden -> Starte von vorne (From Scratch).
       ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
       📉 Setze RAM-Strategie: Standard (david, mix=8)
    1️⃣  SCF (2 Cores, OOM-Lvl 0)
@@ -21479,3 +21465,18 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       ❌ Zu viele unlösbare Abstürze (3). Skippe Job.
 To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    8ff10c48..f38bc885  main -> main
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   f38bc885..a5faa977  main -> main
+⏩ Überspringe 06_EuGaH4 (Metall aber INSTABIL, keine El-Ph nötig)
+🔄 Reaktiviere 06_LiMg4Ga3H20 nach Phonon Crash (neuer Versuch)...
+
+💎 Job, 06_LiMg4Ga3H20
+      📉 Setze RAM/Konvergenz-Strategie, Standard (david, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...
+      ✅ Checkpoint erfolgreich geladen!
+✂️ Logfile pipeline_output.txt auf 1.0 MB gekürzt.
+      ⚙️ Starte PWSCF (restart, 2 Cores)...
+      💾 XML valide -> Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.
+      ☁️ Trigger Git Sync (wegen Checkpoint)...

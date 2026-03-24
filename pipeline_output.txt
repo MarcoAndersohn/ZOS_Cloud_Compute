@@ -1,23 +1,4 @@
-trategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
+res)...
       📉 Setze RAM-Strategie: Standard (david, mix=8)
    1️⃣  SCF (2 Cores, OOM-Lvl 0)
       🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
@@ -21502,3 +21483,26 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       ❌ Zu viele unlösbare Abstürze (3). Skippe Job.
 To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    4699f6ed..c8091dac  main -> main
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   c8091dac..3ac95b1d  main -> main
+🔄 Reaktiviere 10_TaTiH6Ru nach Phonon Crash (neuer Versuch)...
+
+💎 Job, 10_TaTiH6Ru
+   ✅ SCF fertig für 10_TaTiH6Ru.
+   ⚡ Metall (DOS=0.270). Berechne Phononen...
+✂️ Logfile pipeline_output.txt auf 1.0 MB gekürzt.
+      ⚙️ Starte PHONONEN (Cores, 2)...
+      ⚠️ Crash/OOM!
+      🛡️ Phonon-Recovery, Versuch 1/3
+      📉 Lockere Konvergenzgrenze auf tr2_ph=1.0d-12
+✂️ Logfile pipeline_output.txt auf 1.0 MB gekürzt.
+      ⚙️ Starte PHONONEN (Cores, 2)...
+      ⚠️ Crash/OOM!
+      🛡️ Phonon-Recovery, Versuch 2/3
+      🚨 Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, 1 Core, tr2_ph=1.0d-10
+      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.
+✂️ Logfile pipeline_output.txt auf 1.0 MB gekürzt.
+      ⚙️ Starte PHONONEN (Cores, 1)...
+      ⚠️ Crash/OOM!
+      🛡️ Phonon-Recovery, Versuch 3/3
+      ❌ Phononen endgültig fehlgeschlagen.

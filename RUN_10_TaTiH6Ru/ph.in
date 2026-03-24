@@ -1,4 +1,6 @@
 Phonons
 &INPUTPH
+ electron_phonon='interpolated',
+ fildvscf='dvscf',
  search_sym=.false.,
  tr2_ph=1.0d-10, prefix='TaTiH6Ru', outdir='./tmp', fildyn='10_TaTiH6Ru.dyn', ldisp=.true., elph=.true., nq1=1, nq2=1, nq3=1 /

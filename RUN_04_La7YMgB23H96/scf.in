@@ -1,4 +1,5 @@
 &CONTROL
+ nstep = 100,
  disk_io='low',
   calculation = 'vc-relax'
   prefix = 'La7YMgB23H96'
@@ -19,8 +20,10 @@
   degauss = 0.02
 /
 &ELECTRONS
- electron_maxstep = 150,
- mixing_ndim = 2,
+ mixing_beta = 0.4,
+ mixing_mode='plain',
+ electron_maxstep = 300,
+ mixing_ndim = 4,
  diagonalization='cg',
   conv_thr = 1.0d-6
 /
@@ -172,3 +175,5 @@ CELL_PARAMETERS (angstrom)
   11.671546  -0.019168  0.046140
   -0.019168  11.416433  0.011637
   0.046140  0.011637  11.408660
+
+! SMART_OOM_LEVEL=2

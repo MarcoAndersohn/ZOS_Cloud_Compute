@@ -1,14 +1,4 @@
-eicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
-   1️⃣  SCF (2 Cores, OOM-Lvl 0)
-      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
-      📉 Setze RAM-Strategie: Standard (david, mix=8)
+mix=8)
    1️⃣  SCF (2 Cores, OOM-Lvl 0)
       🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
       ⚙️ Starte PWSCF (from_scratch, 2 Cores)...
@@ -21475,4 +21465,16 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    1️⃣  SCF (2 Cores, OOM-Lvl 0)
       🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...
       ✅ Checkpoint erfolgreich geladen!
+✂️ Logfile pipeline_output.txt auf 1.0 MB gekürzt.
+      ⚙️ Starte PWSCF (restart, 2 Cores)...
+      💾 XML valide -> Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.
+      ☁️ Trigger Git Sync (wegen Checkpoint)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   a5faa977..fe6ee40e  main -> main
+✂️ Logfile pipeline_output.txt auf 1.0 MB gekürzt.
+      ⚠️ Harter Crash erkannt (Grund: HARD). Versuch 1/3...
+      📉 Setze RAM/Konvergenz-Strategie, Standard (david, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.
 ✂️ Logfile pipeline_output.txt auf 1.0 MB gekürzt.

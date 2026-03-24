@@ -46,7 +46,7 @@ DOS_THRESHOLD = 0.05
 DEFAULT_CORES = "2"
 SAFE_CORES = "1"
 MEMORY_LIMIT_PERCENT = 88.0
-MAX_BFGS_STEPS = 200
+MAX_BFGS_STEPS = 200 
 MAX_RETRIES_LEVEL = 3
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -675,10 +675,6 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 # 4. HAUPTPROGRAMM
 # =============================================================================
 def run_scf_block(name, work_dir, scf_in, scf_out):
-    """
-    Führt den kompletten SCF-Loop durch.
-    Gibt zurück: "DONE", "MAX_STEPS", "OOM_LIMIT", "NON_CONV", "PERM_CRASH"
-    """
     file_level = detect_oom_level(scf_in)
     start_crash_reason = analyze_crash_reason(scf_out)
 
@@ -777,6 +773,14 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             else:
                 crash_counter += 1
                 print(f"      ⚠️ Harter Crash erkannt (Grund: {reason}). Versuch {crash_counter}/3...")
+                if os.path.exists(scf_out):
+                    try:
+                        err_lines = open(scf_out, errors='ignore').read().strip().split('\n')[-15:]
+                        print("      --- QE ERROR LOG ---")
+                        print("      " + "\n      ".join(err_lines))
+                        print("      --------------------")
+                    except: pass
+
                 if crash_counter >= 3:
                     print(f"      ❌ Zu viele unlösbare Abstürze ({crash_counter}). Skippe Job.")
                     update_csv(name, "SKIPPED (Permanent Crash)")
@@ -787,15 +791,7 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
                 time.sleep(2)
                 continue
 
-
 def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, dos_val):
-    """
-    Führt den kompletten Phonon-Loop durch.
-    Gibt zurück: "DONE", "CRASH", "SCF_RESET"
-    """
-    # -----------------------------------------------------------------------
-    # BUG FIX 3: Phonon-Input mit El-Ph Flags nachrüsten, falls nötig
-    # -----------------------------------------------------------------------
     with open(scf_in, 'r') as f:
         match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
         prefix = match.group(1) if match else "calc"
@@ -835,6 +831,14 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
 
         print("      ⚠️ Crash/OOM!")
         crash_reason = analyze_crash_reason(ph_out)
+        
+        if os.path.exists(ph_out):
+            try:
+                err_lines = open(ph_out, errors='ignore').read().strip().split('\n')[-15:]
+                print("      --- QE ERROR LOG ---")
+                print("      " + "\n      ".join(err_lines))
+                print("      --------------------")
+            except: pass
 
         if crash_reason == "XML_ERROR":
             print("      🧨 FATAL, XML korrupt. Lösche .save und erzwinge SCF-Neustart im nächsten Durchlauf.")
@@ -941,7 +945,6 @@ def main():
             if not tc_status: tc_status = "-"
             if not lam_status: lam_status = "-"
 
-            # --- 1. SOFORTIGES CLEANUP & SKIP FÜR FINALE ZUSTÄNDE ---
             if "Isolator" in last_status:
                 cleanup_heavy_files(work_dir, name)
                 update_csv(name, last_status)
@@ -959,13 +962,6 @@ def main():
                 print(f"⏩ Überspringe {name} (STABIL und bereits vollständig analysiert, Tc={tc_status}K)")
                 continue
 
-            # --- 2. STATUS-ROUTING: Entscheide, was mit diesem Job zu tun ist ---
-            # =====================================================================
-            # BUG FIX 1+2+3: Der alte if/elif/else-Block wird durch eine klare,
-            # vollständige Zustandsmaschine ersetzt, die ALLE SKIPPED-Zustände
-            # korrekt behandelt, statt sie in den else-Zweig fallen zu lassen.
-            # =====================================================================
-
             if "SKIPPED" in last_status or "ERROR" in last_status or "SCF_RESET" in last_status:
 
                 if "Max BFGS" in last_status:
@@ -978,38 +974,23 @@ def main():
                         continue
 
                 elif "Permanent Crash" in last_status:
-                    # Reset des gesamten RUN-Ordners für einen sauberen Neustart
                     print(f"🔄 Reaktiviere {name} nach Permanent Crash (Ordner wird resetet)...")
                     if os.path.exists(work_dir):
                         shutil.rmtree(work_dir, ignore_errors=True)
                         git_sync(f"Cleaned corrupted RUN dir for {name}")
 
                 elif "OOM Limit" in last_status:
-                    # -------------------------------------------------------
-                    # BUG FIX 2: OOM Limit Jobs werden jetzt reaktiviert,
-                    # statt still übersprungen zu werden.
-                    # Der OOM-Level wird aus der Input-Datei gelesen und der
-                    # Job von dort weiter versucht (mit mehr Geduld).
-                    # -------------------------------------------------------
                     print(f"🔄 Reaktiviere {name} nach OOM Limit (neuer Versuch mit aktuellen OOM-Einstellungen)...")
 
                 elif "Phonon Crash" in last_status:
-                    # -------------------------------------------------------
-                    # BUG FIX 3: Phonon Crash Jobs werden jetzt reaktiviert.
-                    # Falls SCF bereits fertig ist, wird direkt beim Phonon-
-                    # Schritt weitergemacht (kein unnötiger SCF-Neustart).
-                    # -------------------------------------------------------
                     print(f"🔄 Reaktiviere {name} nach Phonon Crash (neuer Versuch)...")
 
                 elif "Non-Conv" in last_status:
-                    # Non-Convergence ist ein harter physikalischer Befund,
-                    # kein technischer Fehler -> dauerhaft überspringen.
                     update_csv(name, last_status)
                     print(f"⏩ Überspringe {name} (Dauerhaft: Non-Convergence)")
                     continue
 
                 elif "SCF_RESET" in last_status:
-                    # SCF muss neu gestartet werden (XML-Korruption o.ä.)
                     print(f"🔄 Reaktiviere {name} nach SCF_RESET...")
                     if os.path.exists(work_dir):
                         tmp_path = os.path.join(work_dir, "tmp")
@@ -1025,11 +1006,11 @@ def main():
                                     os.remove(f_del)
                                 except: 
                                     pass
-                                else:
-                                    # Unbekannter SKIPPED-Status -> sicherheitshalber überspringen
-                                    update_csv(name, last_status)
-                                    print(f"⏩ Überspringe {name} (Unbekannter Status: {last_status})")
-                                    continue
+
+                else:
+                    update_csv(name, last_status)
+                    print(f"⏩ Überspringe {name} (Unbekannter Status: {last_status})")
+                    continue
 
             if stability == "STABIL":
                 print(f"🔄 Setze Berechnung für {name} fort (STABIL, aber El-Ph Kopplung fehlt)...")
@@ -1037,7 +1018,6 @@ def main():
             if "Metall" in last_status and stability == "-":
                 print(f"🔄 Retry Phonon für {name} (Metall, aber Stabilität unbekannt)...")
 
-            # --- 3. JOB AUSFÜHREN ---
             try:
                 if not os.path.exists(work_dir): os.makedirs(work_dir)
                 print(f"\n💎 Job, {name}")
@@ -1050,16 +1030,12 @@ def main():
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-                # ---------------------------------------------------------------
-                # SCF-PHASE
-                # ---------------------------------------------------------------
                 scf_already_done = (
                     os.path.exists(scf_out) and
                     "JOB DONE" in open(scf_out, errors='ignore').read()
                 )
 
                 if not scf_already_done:
-                    # Phonon-Crash-Jobs die SCF schon hatten, brauchen keinen SCF-Neustart
                     if "Phonon Crash" in last_status and os.path.exists(scf_out):
                         crash_type = analyze_crash_reason(scf_out)
                         if crash_type == "DONE":
@@ -1068,17 +1044,12 @@ def main():
 
                 if not scf_already_done:
                     update_csv(name, "Rechnet SCF...")
-                    # BUG FIX 1: SCF läuft jetzt in einer eigenen Funktion.
-                    # Das verhindert den NameError auf 'result' nach dem Reset.
                     scf_result = run_scf_block(name, work_dir, scf_in, scf_out)
 
                     if scf_result != "DONE":
-                        # Alle Nicht-DONE-Fälle wurden bereits in der Funktion
-                        # in die CSV geschrieben -> einfach zum nächsten Job.
                         git_sync(f"Failed SCF, {name} ({scf_result})")
                         continue
 
-                # Sicherheitsprüfung: SCF wirklich fertig?
                 if analyze_crash_reason(scf_out) != "DONE":
                     git_sync(f"Failed, {name}")
                     continue
@@ -1095,9 +1066,6 @@ def main():
                         match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
                         if match: e_fermi = float(match.group(1))
 
-                # ---------------------------------------------------------------
-                # DOS-PHASE
-                # ---------------------------------------------------------------
                 update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
                 if not os.path.exists(dos_out):
                     with open(dos_in, "w") as f:
@@ -1128,9 +1096,6 @@ def main():
                     git_sync(f"Fertig, {name} (Isolator)")
                     continue
 
-                # ---------------------------------------------------------------
-                # PHONON-PHASE
-                # ---------------------------------------------------------------
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
 
@@ -1156,9 +1121,6 @@ def main():
                     if ph_result != "DONE":
                         continue
 
-                # ---------------------------------------------------------------
-                # STABILITÄTSPRÜFUNG
-                # ---------------------------------------------------------------
                 min_f, stab = "-", "Unbekannt"
                 if os.path.exists(ph_out):
                     with open(ph_out, 'r') as f:
@@ -1175,9 +1137,6 @@ def main():
                     git_sync(f"Fertig, {name} (Metall, INSTABIL)")
                     continue
 
-                # ---------------------------------------------------------------
-                # EL-PH KOPPLUNG: Q2R + MATDYN
-                # ---------------------------------------------------------------
                 if stab == "STABIL":
                     q2r_in     = os.path.join(work_dir, "q2r.in")
                     q2r_out    = os.path.join(work_dir, "q2r.out")
@@ -1267,7 +1226,6 @@ def main():
         set_logic_app_state("Disabled")
         if os.name != 'nt': os.system("sudo shutdown -h now")
         sys.exit()
-
 
 if __name__ == "__main__":
     main()

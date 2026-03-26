@@ -35,7 +35,7 @@ def truncate_log(log_path, max_size_mb=1.0):
 # =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
-TELEGRAM_TOKEN  = "8202414068:AAHnnLMa7nfo0E3gCDLUVnUmIomoyveDPBA"
+TELEGRAM_TOKEN   = "8202414068:AAHnnLMa7nfo0E3gCDLUVnUmIomoyveDPBA"
 TELEGRAM_CHAT_ID = "711461437"
 
 LOGIC_APP_NAME  = "AutoRestart-Supraleiter"
@@ -47,7 +47,7 @@ SAFE_CORES           = "1"
 MEMORY_LIMIT_PERCENT = 88.0
 MAX_BFGS_STEPS       = 200
 MAX_RETRIES_LEVEL    = 3
-ERROR_LOG_LINES      = 30   # Erhöht von 15 auf 30
+ERROR_LOG_LINES      = 30
 
 WORK_DIR    = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR  = os.path.join(WORK_DIR, "Inputs")
@@ -140,9 +140,9 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-",
             'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f),
             'Stabilität': str(stab),
             'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
-        if lam  != "-": new_row['Lambda']       = str(lam)
-        if wlog != "-": new_row['Omega_log (K)']= str(wlog)
-        if tc   != "-": new_row['Tc (K)']       = str(tc)
+        if lam  != "-": new_row['Lambda']        = str(lam)
+        if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
+        if tc   != "-": new_row['Tc (K)']        = str(tc)
         rows.append(new_row)
 
     with open(CSV_FILE, 'w', newline='') as f:
@@ -219,6 +219,9 @@ def analyze_crash_reason(output_file):
     Gibt zurück:
       DONE | NON_CONVERGED | RESTART_NEEDED | XML_ERROR | SYMMETRY_ERROR |
       FFT_SYMMETRY_ERROR | DAVCIO_ERROR | AAINIT_ERROR | LIKELY_OOM | HARD | SOFT | NONE
+
+    FIX: aainit wird VOR dem generischen HARD-Check geprüft, damit es
+         nie fälschlicherweise als HARD klassifiziert wird.
     """
     if not os.path.exists(output_file): return "NONE"
     try:
@@ -227,9 +230,9 @@ def analyze_crash_reason(output_file):
             except OSError: f.seek(0)
             lines = f.read().decode('utf-8', errors='ignore')
 
-        if "JOB DONE"                            in lines: return "DONE"
-        if "convergence NOT achieved"             in lines: return "NON_CONVERGED"
-        if "The maximum number of steps has been reached" in lines: return "RESTART_NEEDED"
+        if "JOB DONE"                                     in lines: return "DONE"
+        if "convergence NOT achieved"                      in lines: return "NON_CONVERGED"
+        if "The maximum number of steps has been reached"  in lines: return "RESTART_NEEDED"
 
         if ("fatal error reading xml" in lines or
                 "reading output_obj of xsd" in lines or
@@ -249,8 +252,11 @@ def analyze_crash_reason(output_file):
             print("      🤕 Fragmentierungsfehler (davcio).")
             return "DAVCIO_ERROR"
 
-        # NEU: aainit-Fehler explizit erkennen — kein echter HARD-Crash,
-        # sondern MPI-Kommunikationsproblem oder RAM-Überschreitung.
+        # ---------------------------------------------------------------
+        # FIX: aainit MUSS vor dem generischen HARD-Check stehen, da
+        # "stopping" und "Error" ebenfalls im aainit-Output enthalten sind
+        # und sonst den HARD-Zweig triggern würden.
+        # ---------------------------------------------------------------
         if "aainit" in lines and "mx dimension too small" in lines:
             print("      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).")
             return "AAINIT_ERROR"
@@ -330,31 +336,31 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
 
 def disable_symmetries_and_reduce_grid(input_file):
     """
-    Setzt noinv, search_sym, Grid auf 1x1x1.
-    BUGFIX: Stellt sicher, dass fildvscf und electron_phonon nicht verloren gehen.
+    Setzt search_sym=.false., Grid auf 1x1x1.
+    FIX: Verwendet jetzt write_ph_input_safe() um eine saubere ph.in
+         von Grund auf neu zu schreiben, anstatt per Regex zu patchen
+         (was fildvscf und electron_phonon zerstören kann).
     """
     if not os.path.exists(input_file): return
     with open(input_file, 'r') as f: content = f.read()
 
-    content = content.replace("noinv=.true.,", "").replace("noinv=.true.", "")
+    # Prefix und tr2 aus der bestehenden Datei extrahieren
+    prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
+    prefix       = prefix_match.group(1) if prefix_match else "calc"
+    fildyn_match = re.search(r"fildyn\s*=\s*['\"]([^'\"]+)['\"]", content)
+    fildyn       = fildyn_match.group(1) if fildyn_match else f"{prefix}.dyn"
 
-    if "&INPUTPH" in content:
-        if "search_sym" not in content:
-            content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
-
-    content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
-    content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
-    content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
-
-    # BUGFIX: fildvscf und electron_phonon re-injizieren, falls sie fehlen
-    if "fildvscf" not in content:
-        content = content.replace("&INPUTPH", "&INPUTPH\n fildvscf='dvscf',")
-    if "electron_phonon" not in content:
-        content = content.replace(
-            "&INPUTPH", "&INPUTPH\n electron_phonon='interpolated',")
-
-    with open(input_file, 'w') as f: f.write(content)
-    print("      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.")
+    # Sichere Neu-Generierung: alle kritischen Felder explizit setzen
+    new_content = (
+        f"Phonons\n&INPUTPH\n"
+        f" tr2_ph=1.0d-10, prefix='{prefix}', outdir='./tmp',\n"
+        f" fildyn='{fildyn}', fildvscf='dvscf',\n"
+        f" ldisp=.true., electron_phonon='interpolated', elph=.true.,\n"
+        f" search_sym=.false.,\n"
+        f" nq1=1, nq2=1, nq3=1 /\n"
+    )
+    with open(input_file, 'w') as f: f.write(new_content)
+    print("      🛡️ ph.in neu generiert: Symmetrien deaktiviert & Grid auf 1x1x1.")
 
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
@@ -478,7 +484,7 @@ def get_last_iteration(output_file):
 # =============================================================================
 def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False):
     fix_input_file(input_file, 0)
-    last_git_sync       = time.time()
+    last_git_sync        = time.time()
     last_checkpoint_time = 0
 
     while True:
@@ -597,13 +603,17 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
         if reason == "LIKELY_OOM":
             print("      💀 Abruptes Ende (Silent OOM).")
             return "OOM"
+        # FIX: aainit direkt aus run_monitored_pw zurückgeben,
+        # damit run_scf_block es korrekt behandeln kann.
+        if reason == "AAINIT_ERROR":
+            return "CRASH"   # crash_reason wird in run_scf_block nochmals gelesen
         return "CRASH"
 
 # =============================================================================
 # 5. PHONON WRAPPER
 # =============================================================================
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
-    last_git_sync       = time.time()
+    last_git_sync        = time.time()
     last_checkpoint_time = time.time()
     tmp_dir        = os.path.join(cwd, "tmp")
     ph0_dir        = os.path.join(tmp_dir, "_ph0")
@@ -694,13 +704,15 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
     Führt den kompletten SCF-Loop durch.
     Rückgabe: DONE | MAX_STEPS | OOM_LIMIT | NON_CONV | PERM_CRASH
 
-    NEUE STRATEGIE:
-    - AAINIT_ERROR wird sofort auf 1 Core eskaliert (MPI-Kommunikationsbug).
-    - Nach 3 HARD-Crashes wird ein letzter 1-Core-Versuch gestartet,
-      bevor der Job endgültig aufgegeben wird.
+    FIX 1: aainit-Erkennung greift jetzt zuverlässig, weil analyze_crash_reason
+            AAINIT_ERROR vor HARD zurückgibt (Reihenfolge in analyze_crash_reason
+            korrigiert).
+    FIX 2: aainit → sofort auf 1 Core wechseln, da der Fehler durch zu viele
+            MPI-Prozesse relativ zu den G-Vektoren entsteht, nicht durch RAM-Mangel.
+    FIX 3: Nach 3 HARD-Crashes letzter 1-Core-Rettungsversuch (one_core_tried).
     """
-    file_level           = detect_oom_level(scf_in)
-    start_crash_reason   = analyze_crash_reason(scf_out)
+    file_level         = detect_oom_level(scf_in)
+    start_crash_reason = analyze_crash_reason(scf_out)
 
     if start_crash_reason == "LIKELY_OOM":
         attempts = count_job_attempts(TXT_LOG_FILE, name)
@@ -731,8 +743,8 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
 
     crash_counter  = 0
     oom_counter    = 0
-    aainit_counter = 0   # NEU: zählt aufeinanderfolgende aainit-Fehler
-    one_core_tried = False  # NEU: letzten 1-Core-Rettungsversuch nur einmal
+    aainit_counter = 0
+    one_core_tried = False
 
     while True:
         force_cg = False
@@ -795,18 +807,21 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
                 return "NON_CONV"
 
             # ---------------------------------------------------------------
-            # NEU: aainit-Fehler — sofort auf 1 Core wechseln
+            # FIX: aainit → sofort auf 1 Core (MPI-Prozesse zu G-Vektor-Verhältnis)
+            # Dieses Problem ist KEIN RAM-Problem, sondern ein MPI-Partitionierungs-
+            # problem: mit 1 Core entfällt die G-Vektor-Aufteilung komplett.
             # ---------------------------------------------------------------
             if reason == "AAINIT_ERROR":
                 aainit_counter += 1
                 if current_cores > 1:
-                    print(f"      🔩 aainit-Fehler #{aainit_counter} -> wechsle auf 1 Core.")
+                    print(f"      🔩 aainit-Fehler #{aainit_counter} -> sofort auf 1 Core.")
                     current_cores = 1
-                    update_csv(name, f"Retrying (aainit -> 1 Core)")
+                    crash_counter = 0   # FIX: crash_counter zurücksetzen!
+                    update_csv(name, "Retrying (aainit -> 1 Core)")
                     continue
                 else:
-                    # Bereits auf 1 Core und immer noch aainit -> wirklich OOM
-                    print(f"      🔩 aainit auf 1 Core -> echter RAM-Mangel. Eskaliere OOM-Level.")
+                    # Auf 1 Core immer noch aainit → echter Speichermangel im QE-Build
+                    print(f"      🔩 aainit auf 1 Core -> QE-Build-Problem oder RAM. Eskaliere.")
                     oom_level += 1
                     aainit_counter = 0
                     if oom_level > 4:
@@ -824,7 +839,6 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             print(f"      ⚠️ Crash ({reason}). Versuch {crash_counter}/3...")
 
             if crash_counter >= 3 and not one_core_tried and current_cores > 1:
-                # NEU: Letzter Rettungsanker: einmal auf 1 Core probieren
                 one_core_tried = True
                 current_cores  = 1
                 crash_counter  = 0
@@ -851,26 +865,35 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
     Führt den kompletten Phonon-Loop durch.
     Rückgabe: DONE | CRASH | SCF_RESET
 
-    NEUE STRATEGIE:
-    - aainit-Fehler → sofort auf 1 Core (kein Grid-Reset nötig).
-    - fildvscf/electron_phonon-Bug im Notfall-Modus gefixt.
-    - Input-Fehler (bad line in namelist) → Input-Datei neu generieren.
+    FIX 1: write_ph_input() schreibt jetzt IMMER fildvscf und electron_phonon.
+    FIX 2: disable_symmetries_and_reduce_grid() generiert ph.in komplett neu
+            (kein Regex-Patchen mehr → kein Datenverlust).
+    FIX 3: "bad line in namelist" wird erkannt und löst kompletten ph.in-Reset aus.
+    FIX 4: aainit → sofort auf 1 Core, phonon_attempts wird NICHT hochgezählt.
     """
     with open(scf_in, 'r') as f:
         match  = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
         prefix = match.group(1) if match else "calc"
 
-    def write_ph_input(fname, tr2="1.0d-14", nq="2,2,2", extra=""):
+    def write_ph_input(fname, tr2="1.0d-14", nq="2,2,2", extra="",
+                       search_sym=True):
+        """
+        Schreibt eine vollständige, gültige ph.in.
+        FIX: fildvscf und electron_phonon sind IMMER enthalten.
+             search_sym=False deaktiviert die Symmetriesuche.
+        """
         nq1, nq2, nq3 = nq.split(",")
+        sym_line = "" if search_sym else "\n search_sym=.false.,"
         with open(fname, "w") as f:
             f.write(
                 f"Phonons\n&INPUTPH\n"
                 f" tr2_ph={tr2}, prefix='{prefix}', outdir='./tmp',\n"
                 f" fildyn='{name}.dyn', fildvscf='dvscf',\n"
-                f" ldisp=.true., electron_phonon='interpolated', elph=.true.,\n"
-                f" nq1={nq1}, nq2={nq2}, nq3={nq3}{extra} /\n")
+                f" ldisp=.true., electron_phonon='interpolated', elph=.true.,{sym_line}\n"
+                f" nq1={nq1}, nq2={nq2}, nq3={nq3}{extra} /\n"
+            )
 
-    # Input-Datei anlegen / patchen
+    # Input-Datei anlegen / sicherstellen, dass alle Pflichtfelder da sind
     if not os.path.exists(ph_in):
         write_ph_input(ph_in)
     else:
@@ -887,14 +910,16 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
             changed = True
         if changed:
             with open(ph_in, 'w') as f: f.write(ph_content)
+            print("      🔧 ph.in: fehlende Pflichtfelder ergänzt.")
 
     ph_cores = int(DEFAULT_CORES)
-    hist     = count_job_attempts(TXT_LOG_FILE, name)
+    hist = count_job_attempts(TXT_LOG_FILE, name)
     if os.path.exists(BACKUP_LOG_FILE):
         hist = max(hist, count_job_attempts(BACKUP_LOG_FILE, name))
     if hist > 1: ph_cores = 1
 
-    phonon_attempts = 0
+    phonon_attempts  = 0
+    aainit_1core_done = False   # FIX: aainit-1Core-Wechsel nur einmal
 
     while phonon_attempts < 3:
         phonon_attempts += 1
@@ -907,36 +932,44 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
         print_error_log(ph_out, "PHONON ERROR LOG")
 
         # -------------------------------------------------------------------
-        # Input-Parsing-Fehler (bad line in namelist) → Input neu generieren
+        # FIX: "bad line in namelist" → ph.in komplett neu schreiben
+        # (tritt auf wenn disable_symmetries_and_reduce_grid() die Namelist
+        # korrumpiert hat oder ein Regex-Patch fehlschlug)
         # -------------------------------------------------------------------
         if crash_reason == "HARD":
             if os.path.exists(ph_out):
                 try:
-                    ph_content = open(ph_out, errors='ignore').read()
-                    if "bad line in namelist" in ph_content:
-                        print("      📝 Namelist-Fehler erkannt -> generiere ph.in neu.")
-                        tr2_match = re.search(
-                            r"tr2_ph\s*=\s*([0-9\.dD\-]+)", ph_content)
-                        tr2 = tr2_match.group(1) if tr2_match else "1.0d-14"
-                        write_ph_input(ph_in, tr2=tr2)
+                    ph_content_check = open(ph_out, errors='ignore').read()
+                    if "bad line in namelist" in ph_content_check:
+                        print("      📝 Namelist-Fehler -> schreibe ph.in komplett neu.")
+                        # Alten Grid-Stand beibehalten falls möglich
+                        nq_match = re.search(
+                            r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)",
+                            ph_content_check, re.DOTALL)
+                        nq = "2,2,2"
+                        if nq_match:
+                            n1, n2, n3 = nq_match.groups()
+                            nq = f"{n1},{n2},{n3}"
+                        write_ph_input(ph_in, tr2="1.0d-14", nq=nq)
                         if os.path.exists(ph_out): os.remove(ph_out)
                         phonon_attempts -= 1  # diesen Versuch nicht zählen
                         continue
                 except: pass
 
         # -------------------------------------------------------------------
-        # aainit-Fehler → sofort auf 1 Core, kein Grid-Reset nötig
+        # FIX: aainit → sofort auf 1 Core wechseln (nur einmal versuchen)
         # -------------------------------------------------------------------
         if crash_reason == "AAINIT_ERROR":
-            if ph_cores > 1:
+            if ph_cores > 1 and not aainit_1core_done:
                 print("      🔩 aainit-Fehler -> wechsle auf 1 Core.")
                 ph_cores = 1
+                aainit_1core_done = True
                 if os.path.exists(ph_out): os.remove(ph_out)
                 phonon_attempts -= 1  # diesen Versuch nicht zählen
                 continue
             else:
-                # 1 Core und immer noch aainit = echter RAM-Mangel
-                print("      🔩 aainit auf 1 Core -> echter RAM-Mangel. Skippe.")
+                # Auf 1 Core immer noch aainit = echter RAM/Build-Mangel
+                print("      🔩 aainit auch auf 1 Core -> skippee.")
                 update_csv(name, "SKIPPED (Phonon OOM)")
                 git_sync(f"Phonon OOM: {name}")
                 return "CRASH"
@@ -953,7 +986,7 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
             return "SCF_RESET"
 
         # -------------------------------------------------------------------
-        # Symmetrie-Fehler → nosym + SCF-Reset
+        # Symmetrie-Fehler → nosym injizieren + SCF-Reset
         # -------------------------------------------------------------------
         if crash_reason in ["SYMMETRY_ERROR", "FFT_SYMMETRY_ERROR"]:
             print("      🧩 Symmetrie-Problem -> nosym injizieren + SCF-Reset.")
@@ -990,12 +1023,11 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
             continue
 
         # Versuch 2: Notfall-Modus (Grid 1x1x1, 1 Core)
+        # FIX: Benutzt disable_symmetries_and_reduce_grid() welches nun
+        #      ph.in komplett neu schreibt → keine Namelist-Korruption mehr.
         elif phonon_attempts == 2:
             print("      🚨 NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, 1 Core, tr2_ph=1.0d-10")
-            disable_symmetries_and_reduce_grid(ph_in)   # BUGFIX bereits in Funktion
-            with open(ph_in, 'r') as f: c = f.read()
-            c = re.sub(r"tr2_ph\s*=\s*[0-9\.dD\-]+", "tr2_ph=1.0d-10", c)
-            with open(ph_in, 'w') as f: f.write(c)
+            disable_symmetries_and_reduce_grid(ph_in)
             ph_cores = 1
 
             ph0 = os.path.join(work_dir, "tmp", "_ph0")
@@ -1040,7 +1072,7 @@ def main():
             scf_out  = os.path.join(work_dir, "scf.out")
 
             row_data    = get_csv_full_info(name)
-            last_status = row_data.get('Status', 'NEW')       if row_data else 'NEW'
+            last_status = row_data.get('Status', 'NEW')        if row_data else 'NEW'
             stability   = str(row_data.get('Stabilität','-')).strip() if row_data else '-'
             tc_status   = str(row_data.get('Tc (K)','-')).strip()      if row_data else '-'
             lam_status  = str(row_data.get('Lambda','-')).strip()      if row_data else '-'

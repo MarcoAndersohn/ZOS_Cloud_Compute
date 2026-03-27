@@ -1050,6 +1050,13 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
 def main():
     try:
         set_logic_app_state("Enabled")
+        
+        # --- NEU: Sicherstellen, dass pipeline_output.txt existiert ---
+        if not os.path.exists(TXT_LOG_FILE):
+            with open(TXT_LOG_FILE, 'w', encoding='utf-8') as f:
+                f.write(f"--- Initialisiere pipeline_output.txt am {datetime.now().strftime('%Y-%m-%d %H:%M')} ---\n")
+        # --------------------------------------------------------------
+
         truncate_log(TXT_LOG_FILE, max_size_mb=1.0)
         ts = datetime.now().strftime('%Y-%m-%d %H:%M')
         with open(TXT_LOG_FILE, "a") as f:

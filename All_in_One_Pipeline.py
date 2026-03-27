@@ -1052,9 +1052,11 @@ def main():
         set_logic_app_state("Enabled")
         
         # --- NEU: Sicherstellen, dass pipeline_output.txt existiert ---
+        # Nach der Datei-Initialisierung, VOR dem ersten truncate_log:
         if not os.path.exists(TXT_LOG_FILE):
             with open(TXT_LOG_FILE, 'w', encoding='utf-8') as f:
-                f.write(f"--- Initialisiere pipeline_output.txt am {datetime.now().strftime('%Y-%m-%d %H:%M')} ---\n")
+                f.write(f"--- Init {datetime.now().strftime('%Y-%m-%d %H:%M')} ---\n")
+            git_sync("📄 pipeline_output.txt initialisiert")   # ← sofort pushen
         # --------------------------------------------------------------
 
         truncate_log(TXT_LOG_FILE, max_size_mb=1.0)

@@ -92,7 +92,14 @@ def set_logic_app_state(state="Enabled"):
 def git_sync(message):
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
+    lock_file = os.path.join(WORK_DIR, ".git", "index.lock")
     try:
+        # Stale lock entfernen (sicher wenn kein Git-Prozess aktiv)
+        if os.path.exists(lock_file):
+            lock_age = time.time() - os.path.getmtime(lock_file)
+            if lock_age > 60:   # älter als 60s → garantiert stale
+                os.remove(lock_file)
+                print("⚠️ Stale index.lock entfernt.")
         subprocess.run(["git", "add", "."], cwd=WORK_DIR, env=env, timeout=30)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR,
                        capture_output=True, env=env, timeout=30)

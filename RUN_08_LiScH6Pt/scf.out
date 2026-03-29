@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on 24Mar2026 at 14:56: 8 
+     Program PWSCF v.6.7MaX starts on 27Mar2026 at  2:32:58 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,10 +9,9 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     2 processors
+     Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
@@ -27,11 +26,9 @@
      a serial algorithm will be used
 
 
-     Parallelization info
+     G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min        1053     534    156                32309    11497    1763
-     Max        1054     535    157                32314    11498    1764
      Sum        2107    1069    313                64623    22995    3527
 
 
@@ -47,7 +44,7 @@
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.4000
-     number of iterations used =            6  plain     mixing
+     number of iterations used =            4  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -162,11 +159,16 @@
 
      Smooth grid:    22995 G-vectors     FFT dimensions: (  40,  40,  40)
 
-     Estimated max dynamical RAM per process >     139.10 MB
+     Estimated max dynamical RAM per process >     261.37 MB
 
-     Estimated total dynamical RAM >     278.19 MB
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine aainit (14):
+     mx dimension too small
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     stopping ...
 --------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
 with errorcode 14.
 
 NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.

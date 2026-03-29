@@ -1,6 +1,7 @@
 &CONTROL
  restart_mode='from_scratch',
  wf_collect=.true.,
+ disk_io='low',
  nstep = 100,
   calculation = 'vc-relax'
   prefix = 'KBaLaGd2B7H32'
@@ -21,8 +22,8 @@
   degauss = 0.02
 /
 &ELECTRONS
- electron_maxstep = 300,
  mixing_beta = 0.4,
+ electron_maxstep = 300,
  mixing_mode='plain',
  mixing_ndim = 4,
  diagonalization='cg',
@@ -94,4 +95,4 @@ CELL_PARAMETERS (angstrom)
   -0.351574  8.537030  0.181116
   0.230474  0.174179  7.758736
 
-! SMART_OOM_LEVEL=1
+! SMART_OOM_LEVEL=4

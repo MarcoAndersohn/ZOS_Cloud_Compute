@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on 24Mar2026 at 14:51:42 
+     Program PWSCF v.6.7MaX starts on 27Mar2026 at  2:32:26 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,10 +9,9 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     2 processors
+     Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
@@ -29,11 +28,9 @@
      Message from routine setup:
      using ibrav=0 with symmetry is DISCOURAGED, use correct ibrav instead
 
-     Parallelization info
+     G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min        1203     600    189                27961     9870    1749
-     Max        1204     601    190                27964     9871    1750
      Sum        2407    1201    379                55925    19741    3499
 
 
@@ -49,7 +46,7 @@
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.4000
-     number of iterations used =            6  plain     mixing
+     number of iterations used =            4  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -151,9 +148,7 @@
 
      Smooth grid:    19741 G-vectors     FFT dimensions: (  45,  45,  30)
 
-     Estimated max dynamical RAM per process >     115.95 MB
-
-     Estimated total dynamical RAM >     231.90 MB
+     Estimated max dynamical RAM per process >     218.83 MB
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      Error in routine aainit (14):
@@ -161,9 +156,8 @@
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      stopping ...
-[Supraleiter-HPC-Knoten:02183] [[31921,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 501
 --------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
 with errorcode 14.
 
 NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.

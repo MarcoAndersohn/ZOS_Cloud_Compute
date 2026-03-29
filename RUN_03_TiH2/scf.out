@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on 24Mar2026 at 14:41:48 
+     Program PWSCF v.6.7MaX starts on 27Mar2026 at  2:30: 7 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,10 +9,9 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     2 processors
+     Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
@@ -26,11 +25,9 @@
      a serial algorithm will be used
 
 
-     Parallelization info
+     G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min         477     237     75                 9788     3426     604
-     Max         478     238     76                 9791     3429     607
      Sum         955     475    151                19579     6855    1211
 
 
@@ -46,7 +43,7 @@
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.4000
-     number of iterations used =            6  plain     mixing
+     number of iterations used =            4  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -126,17 +123,7 @@
 
      Smooth grid:     6855 G-vectors     FFT dimensions: (  27,  27,  27)
 
-     Estimated max dynamical RAM per process >      43.16 MB
-
-     Estimated total dynamical RAM >      86.32 MB
---------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
-with errorcode 14.
-
-NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
-You may or may not see output from other processes, depending on
-exactly when Open MPI kills them.
---------------------------------------------------------------------------
+     Estimated max dynamical RAM per process >      78.71 MB
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      Error in routine aainit (14):
@@ -144,5 +131,11 @@ exactly when Open MPI kills them.
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      stopping ...
-[Supraleiter-HPC-Knoten:01453] 1 more process has sent help message help-mpi-api.txt / mpi-abort
-[Supraleiter-HPC-Knoten:01453] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 14.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------

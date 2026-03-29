@@ -1,6 +1,7 @@
 &CONTROL
  restart_mode='from_scratch',
  wf_collect=.true.,
+ disk_io='low',
  nstep = 100,
   calculation = 'vc-relax'
   prefix = 'TiH2'
@@ -22,11 +23,11 @@
   degauss = 0.02
 /
 &ELECTRONS
- electron_maxstep = 300,
  mixing_beta = 0.4,
+ electron_maxstep = 300,
  mixing_mode='plain',
- mixing_ndim = 6,
- diagonalization='david',
+ mixing_ndim = 4,
+ diagonalization='cg',
   conv_thr = 1.0d-6
 /
 &IONS
@@ -50,4 +51,4 @@ CELL_PARAMETERS (angstrom)
   0.900371  2.546634  1.559488
   0.000001  0.000000  3.118977
 
-! SMART_OOM_LEVEL=0
+! SMART_OOM_LEVEL=4

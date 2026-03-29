@@ -1,5 +1,5 @@
 
-     Program PHONON v.6.7MaX starts on 24Mar2026 at 14:58:48 
+     Program PHONON v.6.7MaX starts on 27Mar2026 at  2:47:47 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,15 +9,16 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     1 processors
+     Parallel version (MPI), running on     2 processors
 
      MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      Error in routine  read_namelists (1):
-      bad line in namelist &inputph: " tr2_ph=1.0d-10, prefix='TaTiH6Ru', outdir='./tmp', fildyn='10_TaTiH6Ru.dyn', ldisp=.true., elph=.true., nq1=1, nq2=1, nq3=1 /" (error could be in the previous line)
+      bad line in namelist &inputph: " ldisp=.true., electron_phonon='interpolated', elph=.true.," (error could be in the previous line)
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      stopping ...
@@ -29,3 +30,5 @@ NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
 You may or may not see output from other processes, depending on
 exactly when Open MPI kills them.
 --------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:03572] 1 more process has sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:03572] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages

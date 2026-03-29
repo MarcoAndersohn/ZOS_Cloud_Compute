@@ -1,5 +1,5 @@
 
-     Program PHONON v.6.7MaX starts on 24Mar2026 at 14:35:59 
+     Program PHONON v.6.7MaX starts on 29Mar2026 at  2:28:47 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -34,18 +34,51 @@
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
      Sum        3043    1503    437               125331    44207    6919
 
+     Reading collected, re-writing distributed wavefunctions
 
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine aainit (14):
-     mx dimension too small
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Saving dvscf to file. Distribute only q points, not irreducible represetations.
+        1 /   1 q-points for this run, from  1 to  1:
+       N       xq(1)         xq(2)         xq(3) 
+       1   0.000000000   0.000000000   0.000000000
 
-     stopping ...
+
+     Calculation of q =    0.0000000   0.0000000   0.0000000
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, tag PARTIAL_EL_PHON not found
+At line 965 of file xmltools.f90
+Fortran runtime error: Sequential READ or WRITE not allowed after EOF marker, possibly use REWIND or BACKSPACE
+
+Error termination. Backtrace:
+#0  0x75fd51c23960 in ???
+#1  0x75fd51c244d9 in ???
+#2  0x75fd51c2510f in ???
+#3  0x75fd51e7b96d in ???
+#4  0x57271f455a2a in ???
+#5  0x57271f456413 in ???
+#6  0x57271f457946 in ???
+#7  0x57271efd2dd5 in ???
+#8  0x57271efdf0ab in ???
+#9  0x57271efb6b55 in ???
+#10  0x57271ef83a6e in ???
+#11  0x57271ef7d191 in ???
+#12  0x57271ef7cffe in ???
+#13  0x75fd51829d8f in ???
+#14  0x75fd51829e3f in ???
+#15  0x57271ef7d02d in ???
+#16  0xffffffffffffffff in ???
 --------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
-with errorcode 14.
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
 
-NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
-You may or may not see output from other processes, depending on
-exactly when Open MPI kills them.
+  Process name: [[28730,1],0]
+  Exit code:    2
 --------------------------------------------------------------------------

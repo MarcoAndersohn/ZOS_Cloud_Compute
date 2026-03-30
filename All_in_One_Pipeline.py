@@ -10,6 +10,7 @@ import requests
 import csv
 import psutil
 import math
+import signal
 from datetime import datetime
 
 # =============================================================================
@@ -522,7 +523,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
                 else:
                     print("      ❌ Checkpoint defekt. Starte von vorne.")
             except Exception as e:
-                print(f"      ❌ Checkpoint-Fehler: {e}")
+                print(f"      ❌ Checkpoint-Fehler, {e}")
         else:
             print("      🆕 Kein Speicherstand -> From Scratch.")
 
@@ -546,8 +547,11 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
             cmd     = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE]
             print(f"      ⚙️ PWSCF ({mode}, {active_cores} Cores)...")
+            
+            # WICHTIG Anpassung start_new_session=True kreiert eine eigene Prozessgruppe
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out,
-                                       stderr=subprocess.STDOUT, cwd=cwd)
+                                       stderr=subprocess.STDOUT, cwd=cwd,
+                                       start_new_session=True)
             try:
                 while process.poll() is None:
                     time.sleep(5)
@@ -565,7 +569,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
                                 backup_log_file()
                                 last_git_sync = time.time()
                             except Exception as e:
-                                print(f"      ⚠️ Checkpoint fail: {e}")
+                                print(f"      ⚠️ Checkpoint fail, {e}")
 
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
@@ -576,20 +580,23 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
                     try:
                         if psutil.virtual_memory().percent > MEMORY_LIMIT_PERCENT:
                             print("      ⚠️ RAM NOT-AUS!")
-                            process.kill()
+                            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
                             return "OOM"
                     except: pass
 
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter >= MAX_BFGS_STEPS:
                         print(f"      🛑 BFGS-Limit ({cur_iter}/{MAX_BFGS_STEPS}).")
-                        process.kill()
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
                         return "MAX_STEPS"
 
                     if cur_iter > 30: fix_input_file(input_file, cur_iter)
 
             except:
-                process.kill()
+                try: 
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                except: 
+                    pass
                 return "CRASH"
 
         if process.returncode == -9:
@@ -607,10 +614,8 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
         if reason == "LIKELY_OOM":
             print("      💀 Abruptes Ende (Silent OOM).")
             return "OOM"
-        # FIX: aainit direkt aus run_monitored_pw zurückgeben,
-        # damit run_scf_block es korrekt behandeln kann.
         if reason == "AAINIT_ERROR":
-            return "CRASH"   # crash_reason wird in run_scf_block nochmals gelesen
+            return "CRASH"
         return "CRASH"
 
 # =============================================================================
@@ -631,7 +636,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
             shutil.copytree(checkpoint_dir, ph0_dir)
             print("      ✅ Phonon-Checkpoint geladen!")
         except Exception as e:
-            print(f"      ❌ Phonon-Checkpoint-Fehler: {e}")
+            print(f"      ❌ Phonon-Checkpoint-Fehler, {e}")
 
     if os.path.exists(ph0_dir):
         if "recover" not in content:
@@ -648,9 +653,12 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
         cmd     = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
-        print(f"      ⚙️ PHONONEN (Cores: {active_cores})...")
+        print(f"      ⚙️ PHONONEN (Cores, {active_cores})...")
+        
+        # WICHTIG Anpassung start_new_session=True kreiert eigene Prozessgruppe
         process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out,
-                                   stderr=subprocess.STDOUT, cwd=cwd)
+                                   stderr=subprocess.STDOUT, cwd=cwd,
+                                   start_new_session=True)
         try:
             while process.poll() is None:
                 time.sleep(5)
@@ -673,17 +681,20 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                             backup_log_file()
                             print("      ✅ Phonon-Checkpoint gesichert.")
                         except Exception as e:
-                            print(f"      ⚠️ Phonon-Checkpoint fail: {e}")
+                            print(f"      ⚠️ Phonon-Checkpoint fail, {e}")
 
                 try:
                     if psutil.virtual_memory().percent > MEMORY_LIMIT_PERCENT:
                         print("      ⚠️ RAM NOT-AUS!")
-                        process.kill()
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
                         return "OOM"
                 except: pass
 
         except:
-            process.kill()
+            try: 
+                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+            except: 
+                pass
             return "CRASH"
 
     if process.returncode == -9:

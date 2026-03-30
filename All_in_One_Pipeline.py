@@ -1393,7 +1393,12 @@ def main():
         with open(SIGNAL_FILE, "w") as f:
             f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")
         git_sync("🏁 Pipeline vollständig beendet")
-        if os.name != 'nt': os.system("sudo shutdown -h now")
+        if os.name != 'nt':
+            if is_ssh_session_active():
+                print("🛑 Shutdown blockiert (Aktive SSH-Sitzung erkannt!)")
+                git_sync("🛑 Shutdown blockiert (SSH aktiv)")
+            else:
+                os.system("sudo shutdown -h now")
 
     except Exception as e:
         full_error = (f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()}):\n"
@@ -1401,8 +1406,20 @@ def main():
         with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
         send_notification(f"🚨 KRITISCHER FEHLER: {e} -> Shutdown.")
         set_logic_app_state("Disabled")
-        if os.name != 'nt': os.system("sudo shutdown -h now")
+        if os.name != 'nt':
+            if is_ssh_session_active():
+                print("🛑 Shutdown blockiert (Aktive SSH-Sitzung erkannt!)")
+                git_sync("🛑 Shutdown blockiert (SSH aktiv)")
+            else:
+                os.system("sudo shutdown -h now")
         sys.exit()
+
+def is_ssh_session_active():
+    try:
+        output = subprocess.check_output(["who"]).decode("utf-8")
+        return "pts/" in output or "tty" in output
+    except Exception:
+        return False
 
 if __name__ == "__main__":
     main()

@@ -653,3 +653,119 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       --------------------
       🔩 aainit auf 1 Core -> QE-Build-Problem oder RAM. Eskaliere.
       ❌ Hardware-Limit. Skippe.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   6b6b6e90..03c1d539  main -> main
+🔄 Reaktiviere 08_Ti3GaH7 nach OOM...
+🔄 Fortsetzen 08_Ti3GaH7 (STABIL, El-Ph fehlt)...
+
+💎 Job: 08_Ti3GaH7
+   ✅ SCF fertig: 08_Ti3GaH7
+   ⚡ Metall (DOS=7.190). Berechne Phononen...
+      ⚙️ PHONONEN (Cores: 2)...
+      ⚠️ Phonon Crash/OOM!
+      --- PHONON ERROR LOG ---
+           Run is not recoverable starting from scratch
+      
+           Reading xml data from directory:
+      
+           ./tmp/Ti3GaH7.save/
+           file Ga.UPF: wavefunction(s)  4S renormalized
+           file H.UPF: wavefunction(s)  1S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min        1131     564    170                40686    14360    2348
+           Max        1132     565    171                40687    14361    2351
+           Sum        2263    1129    341                81373    28721    4699
+      
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🛡️ Phonon-Recovery, Versuch 1/3
+      📉 tr2_ph=1.0d-12
+      ⚙️ PHONONEN (Cores: 2)...
+      ⚠️ Phonon Crash/OOM!
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- PHONON ERROR LOG ---
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min        1131     564    170                40686    14360    2348
+           Max        1132     565    171                40687    14361    2351
+           Sum        2263    1129    341                81373    28721    4699
+      
+      [Supraleiter-HPC-Knoten:01492] [[29154,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 507
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🔩 aainit-Fehler -> wechsle auf 1 Core.
+      ⚙️ PHONONEN (Cores: 1)...
+      ⚠️ Phonon Crash/OOM!
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- PHONON ERROR LOG ---
+           file Ga.UPF: wavefunction(s)  4S renormalized
+           file H.UPF: wavefunction(s)  1S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           G-vector sticks info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Sum        2263    1129    341                81373    28721    4699
+      
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🔩 aainit auch auf 1 Core -> skippee.

@@ -1,7 +1,12 @@
 Phonons
 &INPUTPH
  recover=.true.,
- electron_phonon='interpolated',
+ tr2_ph=1.0d-12,
+ prefix='Ti3GaH7',
+ outdir='./tmp',
+ fildyn='08_Ti3GaH7.dyn',
  fildvscf='dvscf',
- search_sym=.false.,
- tr2_ph=1.0d-10, prefix='Ti3GaH7', outdir='./tmp', fildyn='08_Ti3GaH7.dyn', ldisp=.true., nq1=1, nq2=1, nq3=1 /
+ ldisp=.true.,
+ electron_phonon='interpolated',
+ nq1=2, nq2=2, nq3=2
+/

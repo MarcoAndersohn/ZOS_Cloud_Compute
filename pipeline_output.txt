@@ -769,3 +769,86 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       --------------------------------------------------------------------------
       --------------------
       🔩 aainit auch auf 1 Core -> skippee.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   03c1d539..569f569d  main -> main
+⏩ Skip 08_YMg5TaReH14 (INSTABIL)
+⏩ Skip 09_Li2MgZrH6 (Isolator)
+⏩ Skip 09_MgTiBH44 (INSTABIL)
+🔄 Reaktiviere 09_Sr3ZrAlH54 nach OOM...
+🔄 Fortsetzen 09_Sr3ZrAlH54 (STABIL, El-Ph fehlt)...
+
+💎 Job: 09_Sr3ZrAlH54
+   ✅ SCF fertig: 09_Sr3ZrAlH54
+   ⚡ Metall (DOS=0.910). Berechne Phononen...
+      ⚙️ PHONONEN (Cores: 2)...
+      ⚠️ Phonon Crash/OOM!
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- PHONON ERROR LOG ---
+           Run is not recoverable starting from scratch
+      
+           Reading xml data from directory:
+      
+           ./tmp/Sr3ZrAlH54.save/
+           file Al.UPF: wavefunction(s)  3S 3P renormalized
+           file H.UPF: wavefunction(s)  1S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min        1308     655    189               127166    44960    6926
+           Max        1309     656    190               127169    44965    6929
+           Sum        2617    1311    379               254335    89925   13855
+      
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      [Supraleiter-HPC-Knoten:01542] [[29232,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 507
+      --------------------
+      🔩 aainit-Fehler -> wechsle auf 1 Core.
+      ⚙️ PHONONEN (Cores: 1)...
+      ⚠️ Phonon Crash/OOM!
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- PHONON ERROR LOG ---
+           file Al.UPF: wavefunction(s)  3S 3P renormalized
+           file H.UPF: wavefunction(s)  1S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           G-vector sticks info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Sum        2617    1311    379               254335    89925   13855
+      
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🔩 aainit auch auf 1 Core -> skippee.

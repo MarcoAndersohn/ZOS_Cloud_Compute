@@ -342,29 +342,26 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
             return False
 
 def disable_symmetries_and_reduce_grid(input_file):
-    """
-    Setzt search_sym=.false., Grid auf 1x1x1.
-    FIX: Verwendet jetzt write_ph_input_safe() um eine saubere ph.in
-         von Grund auf neu zu schreiben, anstatt per Regex zu patchen
-         (was fildvscf und electron_phonon zerstören kann).
-    """
     if not os.path.exists(input_file): return
     with open(input_file, 'r') as f: content = f.read()
 
-    # Prefix und tr2 aus der bestehenden Datei extrahieren
     prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
     prefix       = prefix_match.group(1) if prefix_match else "calc"
     fildyn_match = re.search(r"fildyn\s*=\s*['\"]([^'\"]+)['\"]", content)
     fildyn       = fildyn_match.group(1) if fildyn_match else f"{prefix}.dyn"
 
-    # Sichere Neu-Generierung: alle kritischen Felder explizit setzen
     new_content = (
         f"Phonons\n&INPUTPH\n"
-        f" tr2_ph=1.0d-10, prefix='{prefix}', outdir='./tmp',\n"
-        f" fildyn='{fildyn}', fildvscf='dvscf',\n"
-        f" ldisp=.true., electron_phonon='interpolated', elph=.true.,\n"
+        f" tr2_ph=1.0d-10,\n"
+        f" prefix='{prefix}',\n"
+        f" outdir='./tmp',\n"
+        f" fildyn='{fildyn}',\n"
+        f" fildvscf='dvscf',\n"
+        f" ldisp=.true.,\n"
+        f" electron_phonon='interpolated',\n"
         f" search_sym=.false.,\n"
-        f" nq1=1, nq2=1, nq3=1 /\n"
+        f" nq1=1, nq2=1, nq3=1\n"
+        f"/\n"
     )
     with open(input_file, 'w') as f: f.write(new_content)
     print("      🛡️ ph.in neu generiert: Symmetrien deaktiviert & Grid auf 1x1x1.")
@@ -884,7 +881,7 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
 
     def write_ph_input(fname, tr2="1.0d-14", nq="2,2,2", search_sym=True):
         nq1, nq2, nq3 = nq.split(",")
-        sym_line = "" if search_sym else " search_sym=.false.,\n"
+        sym_line = " search_sym=.false.,\n" if not search_sym else ""
         with open(fname, "w") as f:
             f.write(
                 f"Phonons\n&INPUTPH\n"
@@ -895,7 +892,6 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
                 f" fildvscf='dvscf',\n"
                 f" ldisp=.true.,\n"
                 f" electron_phonon='interpolated',\n"
-                f" elph=.true.,\n"
                 f"{sym_line}"
                 f" nq1={nq1}, nq2={nq2}, nq3={nq3}\n"
                 f"/\n"

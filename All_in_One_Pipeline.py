@@ -882,22 +882,23 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
         match  = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
         prefix = match.group(1) if match else "calc"
 
-    def write_ph_input(fname, tr2="1.0d-14", nq="2,2,2", extra="",
-                       search_sym=True):
-        """
-        Schreibt eine vollständige, gültige ph.in.
-        FIX: fildvscf und electron_phonon sind IMMER enthalten.
-             search_sym=False deaktiviert die Symmetriesuche.
-        """
+    def write_ph_input(fname, tr2="1.0d-14", nq="2,2,2", search_sym=True):
         nq1, nq2, nq3 = nq.split(",")
-        sym_line = "" if search_sym else "\n search_sym=.false.,"
+        sym_line = "" if search_sym else " search_sym=.false.,\n"
         with open(fname, "w") as f:
             f.write(
                 f"Phonons\n&INPUTPH\n"
-                f" tr2_ph={tr2}, prefix='{prefix}', outdir='./tmp',\n"
-                f" fildyn='{name}.dyn', fildvscf='dvscf',\n"
-                f" ldisp=.true., electron_phonon='interpolated', elph=.true.,{sym_line}\n"
-                f" nq1={nq1}, nq2={nq2}, nq3={nq3}{extra} /\n"
+                f" tr2_ph={tr2},\n"
+                f" prefix='{prefix}',\n"
+                f" outdir='./tmp',\n"
+                f" fildyn='{name}.dyn',\n"
+                f" fildvscf='dvscf',\n"
+                f" ldisp=.true.,\n"
+                f" electron_phonon='interpolated',\n"
+                f" elph=.true.,\n"
+                f"{sym_line}"
+                f" nq1={nq1}, nq2={nq2}, nq3={nq3}\n"
+                f"/\n"
             )
 
     # Input-Datei anlegen / sicherstellen, dass alle Pflichtfelder da sind

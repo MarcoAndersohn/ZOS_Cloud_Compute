@@ -1421,3 +1421,82 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       exactly when Open MPI kills them.
       --------------------------------------------------------------------------
       --------------------
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   e5343b3a..aca3e290  main -> main
+🔄 Reaktiviere 10_TaTiH6Ru nach OOM...
+
+💎 Job: 10_TaTiH6Ru
+   ✅ SCF fertig: 10_TaTiH6Ru
+   ⚡ Metall (DOS=0.270). Berechne Phononen...
+      ⚙️ PHONONEN (Cores, 2)...
+      ⚠️ Phonon Crash/OOM!
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- PHONON ERROR LOG ---
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min        1032     519    150                31039    11037    1691
+           Max        1033     520    151                31040    11038    1692
+           Sum        2065    1039    301                62079    22075    3383
+      
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      [Supraleiter-HPC-Knoten:01759] 1 more process has sent help message help-mpi-api.txt / mpi-abort
+      [Supraleiter-HPC-Knoten:01759] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+      --------------------
+      🔩 aainit-Fehler -> wechsle auf 1 Core.
+      ⚙️ PHONONEN (Cores, 1)...
+      ⚠️ Phonon Crash/OOM!
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- PHONON ERROR LOG ---
+           ./tmp/TaTiH6Ru.save/
+           file H.UPF: wavefunction(s)  1S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           G-vector sticks info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Sum        2065    1039    301                62079    22075    3383
+      
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🔩 aainit auch auf 1 Core -> skippee.

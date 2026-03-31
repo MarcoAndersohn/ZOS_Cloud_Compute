@@ -1386,3 +1386,81 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       📉 RAM-Strategie: Stufe 4 (cg, mix=4, disk_io='low', 1 Core)
    1️⃣  SCF (1 Cores, OOM-Lvl 4)
       🆕 Kein Speicherstand -> From Scratch.
+      ⚙️ PWSCF (from_scratch, 1 Cores)...
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- QE ERROR LOG ---
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (  -0.0049938   0.0179815  -0.4814338), wk =   0.2500000
+              k(    3) = (   0.0256171  -0.6099235   0.4992904), wk =   0.2500000
+              k(    4) = (   0.0206233  -0.5919420   0.0178566), wk =   0.2500000
+              k(    5) = (  -0.5010458   0.0195362  -0.0056425), wk =   0.2500000
+              k(    6) = (  -0.5060396   0.0375177  -0.4870763), wk =   0.2500000
+              k(    7) = (  -0.4754286  -0.5903873   0.4936478), wk =   0.2500000
+              k(    8) = (  -0.4804224  -0.5724058   0.0122141), wk =   0.2500000
+      
+           Dense  grid:   233559 G-vectors     FFT dimensions: (  80,  72, 120)
+      
+           Smooth grid:    82555 G-vectors     FFT dimensions: (  60,  48,  80)
+      
+           Estimated max dynamical RAM per process >       1.11 GB
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   e5343b3a..aca3e290  main -> main
+🔄 Reaktiviere 10_TaTiH6Ru nach OOM...
+
+💎 Job: 10_TaTiH6Ru
+   ✅ SCF fertig: 10_TaTiH6Ru
+   ⚡ Metall (DOS=0.270). Berechne Phononen...
+      ⚙️ PHONONEN (Cores, 2)...
+      ⚠️ Phonon Crash/OOM!
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- PHONON ERROR LOG ---
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min        1032     519    150                31039    11037    1691
+           Max        1033     520    151                31040    11038    1692
+           Sum        2065    1039    301                62079    22075    3383
+      
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      [Supraleiter-HPC-Knoten:01759] 1 more process has sent help message help-mpi-api.txt / mpi-abort
+      [Supraleiter-HPC-Knoten:01759] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+      --------------------
+      🔩 aainit-Fehler -> wechsle auf 1 Core.

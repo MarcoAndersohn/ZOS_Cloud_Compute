@@ -194,7 +194,6 @@ def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
     except: return "-"
 
 def cleanup_heavy_files(work_dir, name, force=False):
-    # Sicherheitscheck gegen die CSV-Datei
     if not force:
         row_data = get_csv_full_info(name)
         if not row_data:
@@ -205,7 +204,6 @@ def cleanup_heavy_files(work_dir, name, force=False):
         tc_val = row_data.get('Tc (K)', '-')
         stab = row_data.get('Stabilität', '-')
         
-        # Löschfreigabe nur bei finalen Zuständen
         is_finished = ("Isolator" in status) or (stab == "INSTABIL") or (tc_val != "-")
         
         if not is_finished:
@@ -214,16 +212,13 @@ def cleanup_heavy_files(work_dir, name, force=False):
 
     deleted_something = False
     
-    # 1. Die gigantischen dvscf-Dateien löschen
     for dvscf_file in glob.glob(os.path.join(work_dir, "*dvscf*")):
         try:
             os.remove(dvscf_file)
             deleted_something = True
         except: pass
 
-    # 2. Die schweren temporären Ordner inklusive .save löschen
-    for path in [os.path.join(work_dir, p) for p in
-                 ["tmp", "tmp_SAFE_CHECKPOINT", "tmp_SAFE_PHONON_CHECKPOINT"]]:
+    for path in [os.path.join(work_dir, p) for p in ["tmp", "tmp_SAFE_CHECKPOINT", "tmp_SAFE_PHONON_CHECKPOINT"]]:
         if os.path.exists(path):
             try:
                 shutil.rmtree(path, ignore_errors=True)
@@ -234,7 +229,7 @@ def cleanup_heavy_files(work_dir, name, force=False):
     if deleted_something:
         print(f"      🧹 Heavy Files & dvscf für {name} sicher bereinigt.")
         git_sync(f"Cleanup Heavy Files, {name}")
-
+        
 def print_error_log(output_file, label="QE ERROR LOG"):
     """Gibt die letzten ERROR_LOG_LINES Zeilen einer Output-Datei aus."""
     if not os.path.exists(output_file): return
@@ -835,8 +830,14 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
 
             if reason == "AAINIT_ERROR":
                 if current_cores > 1:
+                    print("      🔩 aainit-Fehler -> LÖSCHE tmp und wechsle auf 1 Core.")
                     current_cores = 1
                     crash_counter = 0
+                    
+                    tmp_path = os.path.join(work_dir, "tmp")
+                    if os.path.exists(tmp_path):
+                        shutil.rmtree(tmp_path, ignore_errors=True)
+                        
                     update_csv(name, "Retrying (aainit -> 1 Core)")
                     continue
                 else:
@@ -844,7 +845,6 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
                         aainit_ecut_reduced = True
                         apply_aainit_workaround(scf_in)
                         
-                        # ALTES GITTER LÖSCHEN DAMIT ES KEINE KONFLIKTE GIBT
                         tmp_p = os.path.join(work_dir, "tmp")
                         if os.path.exists(tmp_p):
                             shutil.rmtree(tmp_p, ignore_errors=True)
@@ -875,16 +875,11 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             update_csv(name, f"Retrying (Crash {crash_counter}/3)")
             time.sleep(2)
             continue
-
+        
 # =============================================================================
 # 7. PHONON-BLOCK
 # =============================================================================
-def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
-                     e_fermi, dos_val):
-    """
-    Führt den kompletten Phonon-Loop durch.
-    Rückgabe DONE | CRASH | SCF_RESET
-    """
+def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, dos_val):
     with open(scf_in, 'r') as f:
         match  = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
         prefix = match.group(1) if match else "calc"
@@ -907,20 +902,16 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
                 f"/\n"
             )
 
-    # Input-Datei anlegen / sicherstellen, dass alle Pflichtfelder da sind
     if not os.path.exists(ph_in):
         write_ph_input(ph_in)
     else:
         with open(ph_in, 'r') as f: ph_content = f.read()
         changed = False
         if "fildvscf" not in ph_content:
-            ph_content = ph_content.replace(
-                "&INPUTPH", "&INPUTPH\n fildvscf='dvscf',")
+            ph_content = ph_content.replace("&INPUTPH", "&INPUTPH\n fildvscf='dvscf',")
             changed = True
         if "electron_phonon" not in ph_content:
-            ph_content = ph_content.replace(
-                "&INPUTPH",
-                "&INPUTPH\n electron_phonon='interpolated',")
+            ph_content = ph_content.replace("&INPUTPH", "&INPUTPH\n electron_phonon='interpolated',")
             changed = True
         if changed:
             with open(ph_in, 'w') as f: f.write(ph_content)
@@ -945,15 +936,36 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
         crash_reason = analyze_crash_reason(ph_out)
         print_error_log(ph_out, "PHONON ERROR LOG")
 
+        if crash_reason == "AAINIT_ERROR":
+            if ph_cores > 1 and not aainit_1core_done:
+                print("      🔩 aainit-Fehler -> LÖSCHE _ph0 und wechsle auf 1 Core.")
+                ph_cores = 1
+                aainit_1core_done = True
+                
+                ph0_path = os.path.join(work_dir, "tmp", "_ph0")
+                if os.path.exists(ph0_path):
+                    shutil.rmtree(ph0_path, ignore_errors=True)
+                    
+                chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
+                if os.path.exists(chkpt_path):
+                    shutil.rmtree(chkpt_path, ignore_errors=True)
+                
+                if os.path.exists(ph_out): os.remove(ph_out)
+                phonon_attempts -= 1
+                continue
+            else:
+                print("      🔩 aainit auch auf 1 Core -> skippe.")
+                update_csv(name, "SKIPPED (Phonon OOM)")
+                git_sync(f"Phonon OOM, {name}")
+                return "CRASH"
+
         if crash_reason == "HARD":
             if os.path.exists(ph_out):
                 try:
                     ph_content_check = open(ph_out, errors='ignore').read()
                     if "bad line in namelist" in ph_content_check:
                         print("      📝 Namelist-Fehler -> schreibe ph.in komplett neu.")
-                        nq_match = re.search(
-                            r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)",
-                            ph_content_check, re.DOTALL)
+                        nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", ph_content_check, re.DOTALL)
                         nq = "2,2,2"
                         if nq_match:
                             n1, n2, n3 = nq_match.groups()
@@ -963,32 +975,6 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
                         phonon_attempts -= 1
                         continue
                 except: pass
-
-        if crash_reason == "AAINIT_ERROR":
-            if ph_cores > 1 and not aainit_1core_done:
-                print("      🔩 aainit-Fehler -> wechsle auf 1 Core.")
-                ph_cores = 1
-                aainit_1core_done = True
-                
-                # --- NEUER FIX ---
-                # Wir müssen den _ph0 Ordner und den Checkpoint zwingend löschen, 
-                # da ph.x sonst versucht die 2-Core Daten auf 1 Core zu laden.
-                ph0_path = os.path.join(work_dir, "tmp", "_ph0")
-                if os.path.exists(ph0_path):
-                    shutil.rmtree(ph0_path, ignore_errors=True)
-                chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
-                if os.path.exists(chkpt_path):
-                    shutil.rmtree(chkpt_path, ignore_errors=True)
-                # -----------------
-
-                if os.path.exists(ph_out): os.remove(ph_out)
-                phonon_attempts -= 1
-                continue
-            else:
-                print("      🔩 aainit auch auf 1 Core -> skippee.")
-                update_csv(name, "SKIPPED (Phonon OOM)")
-                git_sync(f"Phonon OOM, {name}")
-                return "CRASH"
 
         if crash_reason == "XML_ERROR":
             print("      🧨 XML korrupt -> SCF-Reset.")
@@ -1032,10 +1018,7 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
             print("      🚨 NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, 1 Core, tr2_ph=1.0d-10")
             disable_symmetries_and_reduce_grid(ph_in)
             ph_cores = 1
-            for cleanup_path in [
-                os.path.join(work_dir, "tmp", "_ph0"),
-                os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
-            ]:
+            for cleanup_path in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
                 if os.path.exists(cleanup_path):
                     shutil.rmtree(cleanup_path, ignore_errors=True)
             if os.path.exists(ph_out):

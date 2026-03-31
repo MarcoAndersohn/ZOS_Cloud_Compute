@@ -726,6 +726,7 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             MPI-Prozesse relativ zu den G-Vektoren entsteht, nicht durch RAM-Mangel.
     FIX 3: Nach 3 HARD-Crashes letzter 1-Core-Rettungsversuch (one_core_tried).
     """
+    aainit_ecut_reduced = False
     file_level         = detect_oom_level(scf_in)
     start_crash_reason = analyze_crash_reason(scf_out)
 
@@ -827,25 +828,22 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             # problem: mit 1 Core entfällt die G-Vektor-Aufteilung komplett.
             # ---------------------------------------------------------------
             if reason == "AAINIT_ERROR":
-                aainit_counter += 1
                 if current_cores > 1:
-                    print(f"      🔩 aainit-Fehler #{aainit_counter} -> sofort auf 1 Core.")
                     current_cores = 1
-                    crash_counter = 0   # FIX: crash_counter zurücksetzen!
+                    crash_counter = 0
                     update_csv(name, "Retrying (aainit -> 1 Core)")
                     continue
                 else:
-                    # Auf 1 Core immer noch aainit → echter Speichermangel im QE-Build
-                    print(f"      🔩 aainit auf 1 Core -> QE-Build-Problem oder RAM. Eskaliere.")
-                    oom_level += 1
-                    aainit_counter = 0
-                    if oom_level > 4:
-                        update_csv(name, "SKIPPED (OOM Limit)")
-                        print("      ❌ Hardware-Limit. Skippe.")
-                        return "OOM_LIMIT"
-                    if oom_level == 4: current_cores = int(SAFE_CORES)
-                    update_csv(name, f"Retrying (aainit OOM Lvl {oom_level})")
-                    continue
+                    # 1 Core immer noch aainit → ecutwfc reduzieren
+                    if not aainit_ecut_reduced:
+                        aainit_ecut_reduced = True
+                        apply_aainit_workaround(scf_in)
+                        print("      🔧 aainit auf 1 Core -> reduziere ecutwfc.")
+                        update_csv(name, "Retrying (aainit -> ecutwfc=40)")
+                        continue
+                    # Immer noch aainit → wirklich unlösbar
+                    update_csv(name, "SKIPPED (OOM Limit)")
+                    return "OOM_LIMIT"
 
             # ---------------------------------------------------------------
             # Standard-HARD-Crash mit 1-Core-Rettungsversuch
@@ -1044,21 +1042,31 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
             print("      🚨 NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, 1 Core, tr2_ph=1.0d-10")
             disable_symmetries_and_reduce_grid(ph_in)
             ph_cores = 1
-
-            ph0 = os.path.join(work_dir, "tmp", "_ph0")
-            if os.path.exists(ph0):
-                try: shutil.rmtree(ph0, ignore_errors=True)
-                except: pass
+            # FIX: Checkpoint löschen - nq-Werte müssen übereinstimmen
+            for cleanup_path in [
+                os.path.join(work_dir, "tmp", "_ph0"),
+                os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
+            ]:
+                if os.path.exists(cleanup_path):
+                    shutil.rmtree(cleanup_path, ignore_errors=True)
             if os.path.exists(ph_out):
-                try: os.remove(ph_out)
-                except: pass
+                os.remove(ph_out)
             continue
-
+        
     print("      ❌ Phononen endgültig fehlgeschlagen.")
     update_csv(name, "SKIPPED (Phonon Crash)")
     git_sync(f"Phonon Crash: {name}")
     return "CRASH"
 
+def apply_aainit_workaround(input_file):
+    """Reduziert ecutwfc/ecutrho um aainit zu umgehen."""
+    with open(input_file, 'r') as f: content = f.read()
+    # ecutwfc von 50 auf 40 Ry reduzieren
+    content = re.sub(r"ecutwfc\s*=\s*[0-9\.]+", "ecutwfc = 40.0", content)
+    content = re.sub(r"ecutrho\s*=\s*[0-9\.]+", "ecutrho = 320.0", content)
+    with open(input_file, 'w') as f: f.write(content)
+    print("      🔧 aainit-Workaround: ecutwfc=40, ecutrho=320.")
+    
 # =============================================================================
 # 8. HAUPTPROGRAMM
 # =============================================================================

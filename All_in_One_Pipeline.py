@@ -562,11 +562,13 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
         file_mode = 'a' if mode == 'restart' else 'w'
         backup_log_file()
 
+        # Grundreinigung vor Ausführung
+        cleanup_system_memory()
+
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
             cmd     = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE]
             print(f"      ⚙️ PWSCF ({mode}, {active_cores} Cores)...")
-            
-            # WICHTIG Anpassung start_new_session=True kreiert eine eigene Prozessgruppe
+
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out,
                                        stderr=subprocess.STDOUT, cwd=cwd,
                                        start_new_session=True)
@@ -635,7 +637,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False)
         if reason == "AAINIT_ERROR":
             return "CRASH"
         return "CRASH"
-
+    
 # =============================================================================
 # 5. PHONON WRAPPER
 # =============================================================================
@@ -669,11 +671,13 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
     file_mode = 'a' if "recover=.true." in content else 'w'
     backup_log_file()
 
+    # Grundreinigung vor Ausführung
+    cleanup_system_memory()
+
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
         cmd     = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
         print(f"      ⚙️ PHONONEN (Cores, {active_cores})...")
-        
-        # WICHTIG Anpassung start_new_session=True kreiert eigene Prozessgruppe
+
         process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out,
                                    stderr=subprocess.STDOUT, cwd=cwd,
                                    start_new_session=True)
@@ -1030,6 +1034,32 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
     git_sync(f"Phonon Crash, {name}")
     return "CRASH"
 
+def cleanup_system_memory():
+    """Tötet hängengebliebene QE-Prozesse und leert das Shared Memory."""
+    print("      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...")
+    
+    target_procs = ['pw.x', 'ph.x', 'dos.x', 'q2r.x', 'matdyn.x']
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            if proc.info['name'] in target_procs:
+                proc.kill()
+        except:
+            pass
+
+    shm_dir = "/dev/shm"
+    if os.path.exists(shm_dir):
+        for item in os.listdir(shm_dir):
+            item_path = os.path.join(shm_dir, item)
+            try:
+                if os.path.isfile(item_path) or os.path.islink(item_path):
+                    os.remove(item_path)
+                elif os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+            except:
+                pass
+                
+    print("      ✅ System-RAM und Prozesse sind sauber.")
+    
 def apply_aainit_workaround(input_file):
     """Reduziert ecutwfc/ecutrho um aainit zu umgehen."""
     with open(input_file, 'r') as f: content = f.read()
@@ -1046,19 +1076,19 @@ def main():
     try:
         set_logic_app_state("Enabled")
         
-        # --- NEU: Sicherstellen, dass pipeline_output.txt existiert ---
-        # Nach der Datei-Initialisierung, VOR dem ersten truncate_log:
         if not os.path.exists(TXT_LOG_FILE):
             with open(TXT_LOG_FILE, 'w', encoding='utf-8') as f:
                 f.write(f"--- Init {datetime.now().strftime('%Y-%m-%d %H:%M')} ---\n")
-            git_sync("📄 pipeline_output.txt initialisiert")   # ← sofort pushen
-        # --------------------------------------------------------------
+            git_sync("📄 pipeline_output.txt initialisiert")
 
         truncate_log(TXT_LOG_FILE, max_size_mb=1.0)
         ts = datetime.now().strftime('%Y-%m-%d %H:%M')
         with open(TXT_LOG_FILE, "a") as f:
-            f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE: {ts}\n{'='*40}\n")
-        print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE: {ts}\n{'='*40}\n")
+            f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {ts}\n{'='*40}\n")
+        print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {ts}\n{'='*40}\n")
+
+        # Initiale Grundreinigung beim Hochfahren
+        cleanup_system_memory()
 
         if os.path.exists(SIGNAL_FILE):
             os.remove(SIGNAL_FILE)
@@ -1067,7 +1097,7 @@ def main():
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
 
         input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
-        send_notification(f"Start: {len(input_files)} Jobs.")
+        send_notification(f"Start, {len(input_files)} Jobs.")
         git_sync("🚀 Start")
 
         for input_file in input_files:
@@ -1085,7 +1115,6 @@ def main():
             if not tc_status: tc_status = "-"
             if not lam_status: lam_status = "-"
 
-            # --- Finale Zustände überspringen ---
             if "Isolator" in last_status:
                 cleanup_heavy_files(work_dir, name)
                 update_csv(name, last_status)
@@ -1103,7 +1132,6 @@ def main():
                 print(f"⏩ Skip {name} (vollständig, Tc={tc_status}K)")
                 continue
 
-            # --- Status-Routing ---
             if "SKIPPED" in last_status or "ERROR" in last_status or "SCF_RESET" in last_status:
 
                 if "Max BFGS" in last_status:
@@ -1119,7 +1147,7 @@ def main():
                     print(f"🔄 Reaktiviere {name} nach Permanent Crash (Reset)...")
                     if os.path.exists(work_dir):
                         shutil.rmtree(work_dir, ignore_errors=True)
-                        git_sync(f"Cleaned corrupted RUN dir: {name}")
+                        git_sync(f"Cleaned corrupted RUN dir, {name}")
 
                 elif "OOM Limit" in last_status or "Phonon OOM" in last_status:
                     print(f"🔄 Reaktiviere {name} nach OOM...")
@@ -1149,7 +1177,7 @@ def main():
 
                 else:
                     update_csv(name, last_status)
-                    print(f"⏩ Skip {name} (Unbekannter Status: {last_status})")
+                    print(f"⏩ Skip {name} (Unbekannter Status, {last_status})")
                     continue
 
             if stability == "STABIL":
@@ -1157,10 +1185,9 @@ def main():
             if "Metall" in last_status and stability == "-":
                 print(f"🔄 Retry Phonon {name} (Metall, Stabilität unbekannt)...")
 
-            # --- Job ausführen ---
             try:
                 if not os.path.exists(work_dir): os.makedirs(work_dir)
-                print(f"\n💎 Job: {name}")
+                print(f"\n💎 Job, {name}")
 
                 scf_in  = os.path.join(work_dir, "scf.in")
                 dos_in  = os.path.join(work_dir, "dos.in")
@@ -1170,7 +1197,6 @@ def main():
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-                # SCF-Phase
                 scf_already_done = (os.path.exists(scf_out) and
                     "JOB DONE" in open(scf_out, errors='ignore').read())
 
@@ -1184,14 +1210,14 @@ def main():
                     update_csv(name, "Rechnet SCF...")
                     scf_result = run_scf_block(name, work_dir, scf_in, scf_out)
                     if scf_result != "DONE":
-                        git_sync(f"Failed SCF: {name} ({scf_result})")
+                        git_sync(f"Failed SCF, {name} ({scf_result})")
                         continue
 
                 if analyze_crash_reason(scf_out) != "DONE":
-                    git_sync(f"Failed: {name}")
+                    git_sync(f"Failed, {name}")
                     continue
 
-                print(f"   ✅ SCF fertig: {name}")
+                print(f"   ✅ SCF fertig, {name}")
 
                 with open(scf_in, 'r') as f:
                     m      = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
@@ -1204,7 +1230,6 @@ def main():
                                       f.read())
                         if m: e_fermi = float(m.group(1))
 
-                # DOS-Phase
                 update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
                 if not os.path.exists(dos_out):
                     with open(dos_in, "w") as f:
@@ -1236,10 +1261,9 @@ def main():
                     update_csv(name, "Fertig (Isolator)", e_fermi,
                                round(dos_val, 4), "NEIN")
                     cleanup_heavy_files(work_dir, name)
-                    git_sync(f"Fertig: {name} (Isolator)")
+                    git_sync(f"Fertig, {name} (Isolator)")
                     continue
 
-                # Phonon-Phase
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi,
                            round(dos_val, 4), "JA")
@@ -1262,7 +1286,6 @@ def main():
                         ph_in, ph_out, e_fermi, dos_val)
                     if ph_result != "DONE": continue
 
-                # Stabilitätsprüfung
                 min_f, stab = "-", "Unbekannt"
                 if os.path.exists(ph_out):
                     with open(ph_out, 'r') as f:
@@ -1279,10 +1302,9 @@ def main():
                     update_csv(name, "Fertig (Metall)", e_fermi,
                                round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                     cleanup_heavy_files(work_dir, name)
-                    git_sync(f"Fertig: {name} (INSTABIL)")
+                    git_sync(f"Fertig, {name} (INSTABIL)")
                     continue
 
-                # El-Ph Kopplung: Q2R + Matdyn
                 if stab == "STABIL":
                     q2r_in     = os.path.join(work_dir, "q2r.in")
                     q2r_out    = os.path.join(work_dir, "q2r.out")
@@ -1312,7 +1334,7 @@ def main():
                         print("      ❌ Q2R fehlgeschlagen!")
                         print_error_log(q2r_out, "Q2R ERROR LOG")
                         update_csv(name, "ERROR (Q2R Crash)")
-                        git_sync(f"Q2R Crash: {name}")
+                        git_sync(f"Q2R Crash, {name}")
                         continue
 
                     update_csv(name, "Rechnet El-Ph (Matdyn)...", e_fermi,
@@ -1336,7 +1358,7 @@ def main():
                         print("      ❌ Matdyn fehlgeschlagen!")
                         print_error_log(matdyn_out, "MATDYN ERROR LOG")
                         update_csv(name, "ERROR (Matdyn Crash)")
-                        git_sync(f"Matdyn Crash: {name}")
+                        git_sync(f"Matdyn Crash, {name}")
                         continue
 
                     lam, wlog, tc = "-", "-", "-"
@@ -1357,24 +1379,18 @@ def main():
                                min_f=min_f, stab=stab, lam=lam, wlog=wlog, tc=tc)
                     git_sync(f"Fertig, {name} (Tc={tc}K)")
                     
-                    # HIER DAS NEUE CLEANUP AUFRUFEN
                     cleanup_heavy_files(work_dir, name)
 
-                else:
-                    update_csv(name, "Fertig (Metall)", e_fermi,
-                               round(dos_val, 4), "JA", min_f=min_f, stab=stab)
-                    git_sync(f"Fertig: {name} (Metall)")
-
             except Exception as job_err:
-                print(f"🚨 Fehler bei {name}: {job_err}")
+                print(f"🚨 Fehler bei {name}, {job_err}")
                 traceback.print_exc()
-                update_csv(name, f"ERROR (Python: {str(job_err)[:30]})")
+                update_csv(name, f"ERROR (Python, {str(job_err)[:30]})")
                 continue
 
         send_notification("🎉 Warteschlange komplett abgearbeitet.")
         set_logic_app_state("Disabled")
         with open(SIGNAL_FILE, "w") as f:
-            f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")
+            f.write(f"Status, Fertig\nTimestamp, {time.ctime()}")
         git_sync("🏁 Pipeline vollständig beendet")
         if os.name != 'nt':
             if is_ssh_session_active():
@@ -1384,10 +1400,10 @@ def main():
                 os.system("sudo shutdown -h now")
 
     except Exception as e:
-        full_error = (f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()}):\n"
+        full_error = (f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()})\n"
                       f"{e}\n{traceback.format_exc()}\n")
         with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
-        send_notification(f"🚨 KRITISCHER FEHLER: {e} -> Shutdown.")
+        send_notification(f"🚨 KRITISCHER FEHLER, {e} -> Shutdown.")
         set_logic_app_state("Disabled")
         if os.name != 'nt':
             if is_ssh_session_active():
@@ -1396,7 +1412,7 @@ def main():
             else:
                 os.system("sudo shutdown -h now")
         sys.exit()
-
+        
 def is_ssh_session_active():
     try:
         output = subprocess.check_output(["who"]).decode("utf-8")

@@ -193,8 +193,35 @@ def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
         return vorfaktor * math.exp(zaehler / nenner)
     except: return "-"
 
-def cleanup_heavy_files(work_dir, name):
+def cleanup_heavy_files(work_dir, name, force=False):
+    # Sicherheitscheck gegen die CSV-Datei
+    if not force:
+        row_data = get_csv_full_info(name)
+        if not row_data:
+            print(f"      ⚠️ Cleanup abgebrochen, {name} nicht in CSV gefunden.")
+            return
+        
+        status = row_data.get('Status', '')
+        tc_val = row_data.get('Tc (K)', '-')
+        stab = row_data.get('Stabilität', '-')
+        
+        # Löschfreigabe nur bei finalen Zuständen
+        is_finished = ("Isolator" in status) or (stab == "INSTABIL") or (tc_val != "-")
+        
+        if not is_finished:
+            print(f"      ⚠️ Cleanup blockiert, {name} ist noch nicht final in der CSV gesichert.")
+            return
+
     deleted_something = False
+    
+    # 1. Die gigantischen dvscf-Dateien löschen
+    for dvscf_file in glob.glob(os.path.join(work_dir, "*dvscf*")):
+        try:
+            os.remove(dvscf_file)
+            deleted_something = True
+        except: pass
+
+    # 2. Die schweren temporären Ordner inklusive .save löschen
     for path in [os.path.join(work_dir, p) for p in
                  ["tmp", "tmp_SAFE_CHECKPOINT", "tmp_SAFE_PHONON_CHECKPOINT"]]:
         if os.path.exists(path):
@@ -202,10 +229,11 @@ def cleanup_heavy_files(work_dir, name):
                 shutil.rmtree(path, ignore_errors=True)
                 deleted_something = True
             except Exception as e:
-                print(f"      ⚠️ Konnte {path} nicht löschen: {e}")
+                print(f"      ⚠️ Konnte {path} nicht löschen, {e}")
+                
     if deleted_something:
-        print(f"      🧹 Heavy Files für {name} bereinigt.")
-        git_sync(f"Cleanup Heavy Files: {name}")
+        print(f"      🧹 Heavy Files & dvscf für {name} sicher bereinigt.")
+        git_sync(f"Cleanup Heavy Files, {name}")
 
 def print_error_log(output_file, label="QE ERROR LOG"):
     """Gibt die letzten ERROR_LOG_LINES Zeilen einer Output-Datei aus."""
@@ -378,15 +406,15 @@ def detect_oom_level(input_file):
 
 def apply_oom_settings(input_file, level, force_cg=False):
     with open(input_file, 'r') as f: content = f.read()
-    diag, mix, disk = 'david', 6, None
+    diag, mix = 'david', 6
     msg = "Standard (david, mix=6)"
 
     if level >= 1 or force_cg: diag, mix, msg = 'cg', 4, "Stufe 1/CG (cg, mix=4)"
-    if level >= 2: disk, msg = 'low', "Stufe 2 (cg, mix=4, disk_io='low')"
-    if level >= 3: msg = "Stufe 3 (cg, mix=4, disk_io='low')"
-    if level >= 4: msg = "Stufe 4 (cg, mix=4, disk_io='low', 1 Core)"
+    if level >= 2: msg = "Stufe 2 (cg, mix=4)"
+    if level >= 3: msg = "Stufe 3 (cg, mix=4)"
+    if level >= 4: msg = "Stufe 4 (cg, mix=4, 1 Core)"
 
-    print(f"      📉 RAM-Strategie: {msg}")
+    print(f"      📉 RAM-Strategie, {msg}")
 
     if "diagonalization" in content:
         content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]",
@@ -401,14 +429,9 @@ def apply_oom_settings(input_file, level, force_cg=False):
         content = content.replace("&ELECTRONS",
                                   f"&ELECTRONS\n mixing_ndim = {mix},")
 
-    if disk == 'low':
-        if "disk_io" in content:
-            content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"]",
-                             "disk_io='low'", content)
-        else:
-            content = content.replace("&CONTROL", "&CONTROL\n disk_io='low',")
-    else:
-        content = re.sub(r"disk_io\s*=\s*['\"]low['\"],?", "", content)
+    # Entferne disk_io='low' falls es noch aus alten Durchläufen drinsteht
+    if "disk_io" in content:
+        content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"],?", "", content)
 
     if "! SMART_OOM_LEVEL" in content:
         content = re.sub(r"!\s*SMART_OOM_LEVEL\s*=\s*\d+",
@@ -715,17 +738,6 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 # 6. SCF-BLOCK
 # =============================================================================
 def run_scf_block(name, work_dir, scf_in, scf_out):
-    """
-    Führt den kompletten SCF-Loop durch.
-    Rückgabe: DONE | MAX_STEPS | OOM_LIMIT | NON_CONV | PERM_CRASH
-
-    FIX 1: aainit-Erkennung greift jetzt zuverlässig, weil analyze_crash_reason
-            AAINIT_ERROR vor HARD zurückgibt (Reihenfolge in analyze_crash_reason
-            korrigiert).
-    FIX 2: aainit → sofort auf 1 Core wechseln, da der Fehler durch zu viele
-            MPI-Prozesse relativ zu den G-Vektoren entsteht, nicht durch RAM-Mangel.
-    FIX 3: Nach 3 HARD-Crashes letzter 1-Core-Rettungsversuch (one_core_tried).
-    """
     aainit_ecut_reduced = False
     file_level         = detect_oom_level(scf_in)
     start_crash_reason = analyze_crash_reason(scf_out)
@@ -740,12 +752,12 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             ts = datetime.now().strftime("%H%M%S")
             try:
                 os.rename(scf_out, f"{scf_out}.crash_{ts}")
-                print(f"      👻 Ghost-Protection: scf.out.crash_{ts}")
+                print(f"      👻 Ghost-Protection, scf.out.crash_{ts}")
             except: pass
 
         if attempts >= MAX_RETRIES_LEVEL:
             oom_level = file_level + 1
-            print(f"      ❗ Eskaliere: Level {file_level} → {oom_level}.")
+            print(f"      ❗ Eskaliere, Level {file_level} -> {oom_level}.")
             update_csv(name, f"Recovering (Escalating to Lvl {oom_level})")
         else:
             oom_level = file_level
@@ -759,7 +771,6 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
 
     crash_counter  = 0
     oom_counter    = 0
-    aainit_counter = 0
     one_core_tried = False
 
     while True:
@@ -781,7 +792,7 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
 
         if result == "MAX_STEPS":
             update_csv(name, "SKIPPED (Max BFGS Steps)")
-            git_sync(f"Skipped {name}: >{MAX_BFGS_STEPS} BFGS Steps")
+            git_sync(f"Skipped {name}, >{MAX_BFGS_STEPS} BFGS Steps")
             return "MAX_STEPS"
 
         if result == "RESTART_NEEDED":
@@ -802,7 +813,7 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             crash_counter = 0
             print(f"      ⚠️ OOM-Limit. Eskaliere zu Level {oom_level}...")
             labels = {1: "Retrying (OOM Lvl 1, CG)",
-                      2: "Retrying (OOM Lvl 2, DiskIO)",
+                      2: "Retrying (OOM Lvl 2, Mix4)",
                       3: "Retrying (OOM Lvl 3, Mix4)",
                       4: "Retrying (OOM Lvl 4, 1Core)"}
             if oom_level in labels:
@@ -822,11 +833,6 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
                 update_csv(name, "SKIPPED (Non-Conv)")
                 return "NON_CONV"
 
-            # ---------------------------------------------------------------
-            # FIX: aainit → sofort auf 1 Core (MPI-Prozesse zu G-Vektor-Verhältnis)
-            # Dieses Problem ist KEIN RAM-Problem, sondern ein MPI-Partitionierungs-
-            # problem: mit 1 Core entfällt die G-Vektor-Aufteilung komplett.
-            # ---------------------------------------------------------------
             if reason == "AAINIT_ERROR":
                 if current_cores > 1:
                     current_cores = 1
@@ -834,20 +840,21 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
                     update_csv(name, "Retrying (aainit -> 1 Core)")
                     continue
                 else:
-                    # 1 Core immer noch aainit → ecutwfc reduzieren
                     if not aainit_ecut_reduced:
                         aainit_ecut_reduced = True
                         apply_aainit_workaround(scf_in)
-                        print("      🔧 aainit auf 1 Core -> reduziere ecutwfc.")
+                        
+                        # ALTES GITTER LÖSCHEN DAMIT ES KEINE KONFLIKTE GIBT
+                        tmp_p = os.path.join(work_dir, "tmp")
+                        if os.path.exists(tmp_p):
+                            shutil.rmtree(tmp_p, ignore_errors=True)
+                            
+                        print("      🔧 aainit auf 1 Core -> reduziere ecutwfc und lösche altes tmp.")
                         update_csv(name, "Retrying (aainit -> ecutwfc=40)")
                         continue
-                    # Immer noch aainit → wirklich unlösbar
                     update_csv(name, "SKIPPED (OOM Limit)")
                     return "OOM_LIMIT"
 
-            # ---------------------------------------------------------------
-            # Standard-HARD-Crash mit 1-Core-Rettungsversuch
-            # ---------------------------------------------------------------
             crash_counter += 1
             print(f"      ⚠️ Crash ({reason}). Versuch {crash_counter}/3...")
 
@@ -862,7 +869,7 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             if crash_counter >= 3:
                 print(f"      ❌ Zu viele Abstürze ({crash_counter}). Skippe.")
                 update_csv(name, "SKIPPED (Permanent Crash)")
-                git_sync(f"Skipped {name}: Permanent Crash")
+                git_sync(f"Skipped {name}, Permanent Crash")
                 return "PERM_CRASH"
 
             update_csv(name, f"Retrying (Crash {crash_counter}/3)")
@@ -876,13 +883,7 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
                      e_fermi, dos_val):
     """
     Führt den kompletten Phonon-Loop durch.
-    Rückgabe: DONE | CRASH | SCF_RESET
-
-    FIX 1: write_ph_input() schreibt jetzt IMMER fildvscf und electron_phonon.
-    FIX 2: disable_symmetries_and_reduce_grid() generiert ph.in komplett neu
-            (kein Regex-Patchen mehr → kein Datenverlust).
-    FIX 3: "bad line in namelist" wird erkannt und löst kompletten ph.in-Reset aus.
-    FIX 4: aainit → sofort auf 1 Core, phonon_attempts wird NICHT hochgezählt.
+    Rückgabe DONE | CRASH | SCF_RESET
     """
     with open(scf_in, 'r') as f:
         match  = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
@@ -923,7 +924,7 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
             changed = True
         if changed:
             with open(ph_in, 'w') as f: f.write(ph_content)
-            print("      🔧 ph.in: fehlende Pflichtfelder ergänzt.")
+            print("      🔧 ph.in, fehlende Pflichtfelder ergänzt.")
 
     ph_cores = int(DEFAULT_CORES)
     hist = count_job_attempts(TXT_LOG_FILE, name)
@@ -932,7 +933,7 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
     if hist > 1: ph_cores = 1
 
     phonon_attempts  = 0
-    aainit_1core_done = False   # FIX: aainit-1Core-Wechsel nur einmal
+    aainit_1core_done = False
 
     while phonon_attempts < 3:
         phonon_attempts += 1
@@ -944,18 +945,12 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
         crash_reason = analyze_crash_reason(ph_out)
         print_error_log(ph_out, "PHONON ERROR LOG")
 
-        # -------------------------------------------------------------------
-        # FIX: "bad line in namelist" → ph.in komplett neu schreiben
-        # (tritt auf wenn disable_symmetries_and_reduce_grid() die Namelist
-        # korrumpiert hat oder ein Regex-Patch fehlschlug)
-        # -------------------------------------------------------------------
         if crash_reason == "HARD":
             if os.path.exists(ph_out):
                 try:
                     ph_content_check = open(ph_out, errors='ignore').read()
                     if "bad line in namelist" in ph_content_check:
                         print("      📝 Namelist-Fehler -> schreibe ph.in komplett neu.")
-                        # Alten Grid-Stand beibehalten falls möglich
                         nq_match = re.search(
                             r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)",
                             ph_content_check, re.DOTALL)
@@ -965,31 +960,36 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
                             nq = f"{n1},{n2},{n3}"
                         write_ph_input(ph_in, tr2="1.0d-14", nq=nq)
                         if os.path.exists(ph_out): os.remove(ph_out)
-                        phonon_attempts -= 1  # diesen Versuch nicht zählen
+                        phonon_attempts -= 1
                         continue
                 except: pass
 
-        # -------------------------------------------------------------------
-        # FIX: aainit → sofort auf 1 Core wechseln (nur einmal versuchen)
-        # -------------------------------------------------------------------
         if crash_reason == "AAINIT_ERROR":
             if ph_cores > 1 and not aainit_1core_done:
                 print("      🔩 aainit-Fehler -> wechsle auf 1 Core.")
                 ph_cores = 1
                 aainit_1core_done = True
+                
+                # --- NEUER FIX ---
+                # Wir müssen den _ph0 Ordner und den Checkpoint zwingend löschen, 
+                # da ph.x sonst versucht die 2-Core Daten auf 1 Core zu laden.
+                ph0_path = os.path.join(work_dir, "tmp", "_ph0")
+                if os.path.exists(ph0_path):
+                    shutil.rmtree(ph0_path, ignore_errors=True)
+                chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
+                if os.path.exists(chkpt_path):
+                    shutil.rmtree(chkpt_path, ignore_errors=True)
+                # -----------------
+
                 if os.path.exists(ph_out): os.remove(ph_out)
-                phonon_attempts -= 1  # diesen Versuch nicht zählen
+                phonon_attempts -= 1
                 continue
             else:
-                # Auf 1 Core immer noch aainit = echter RAM/Build-Mangel
                 print("      🔩 aainit auch auf 1 Core -> skippee.")
                 update_csv(name, "SKIPPED (Phonon OOM)")
-                git_sync(f"Phonon OOM: {name}")
+                git_sync(f"Phonon OOM, {name}")
                 return "CRASH"
 
-        # -------------------------------------------------------------------
-        # XML-Korruption → SCF-Reset
-        # -------------------------------------------------------------------
         if crash_reason == "XML_ERROR":
             print("      🧨 XML korrupt -> SCF-Reset.")
             tmp_save = os.path.join(work_dir, "tmp")
@@ -998,9 +998,6 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
             update_csv(name, "SCF_RESET (XML Error)")
             return "SCF_RESET"
 
-        # -------------------------------------------------------------------
-        # Symmetrie-Fehler → nosym injizieren + SCF-Reset
-        # -------------------------------------------------------------------
         if crash_reason in ["SYMMETRY_ERROR", "FFT_SYMMETRY_ERROR"]:
             print("      🧩 Symmetrie-Problem -> nosym injizieren + SCF-Reset.")
             source_in = os.path.join(INPUTS_DIR, f"{name}.in")
@@ -1013,9 +1010,6 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
             update_csv(name, "SCF_RESET (Sym Error)")
             return "SCF_RESET"
 
-        # -------------------------------------------------------------------
-        # Fragmentierungs-Fehler → SCF-Recovery
-        # -------------------------------------------------------------------
         if crash_reason == "DAVCIO_ERROR" or is_recoverable_fragmentation_error(ph_out):
             print("      🤕 Fragmentierung -> 'Collect-Recovery'...")
             if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
@@ -1026,7 +1020,6 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
 
         print(f"      🛡️ Phonon-Recovery, Versuch {phonon_attempts}/3")
 
-        # Versuch 1: Konvergenz lockern
         if phonon_attempts == 1:
             print("      📉 tr2_ph=1.0d-12")
             with open(ph_in, 'r') as f: c = f.read()
@@ -1035,14 +1028,10 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
             if os.path.exists(ph_out): os.remove(ph_out)
             continue
 
-        # Versuch 2: Notfall-Modus (Grid 1x1x1, 1 Core)
-        # FIX: Benutzt disable_symmetries_and_reduce_grid() welches nun
-        #      ph.in komplett neu schreibt → keine Namelist-Korruption mehr.
         elif phonon_attempts == 2:
-            print("      🚨 NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, 1 Core, tr2_ph=1.0d-10")
+            print("      🚨 NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, 1 Core, tr2_ph=1.0d-10")
             disable_symmetries_and_reduce_grid(ph_in)
             ph_cores = 1
-            # FIX: Checkpoint löschen - nq-Werte müssen übereinstimmen
             for cleanup_path in [
                 os.path.join(work_dir, "tmp", "_ph0"),
                 os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
@@ -1052,10 +1041,10 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out,
             if os.path.exists(ph_out):
                 os.remove(ph_out)
             continue
-        
+
     print("      ❌ Phononen endgültig fehlgeschlagen.")
     update_csv(name, "SKIPPED (Phonon Crash)")
-    git_sync(f"Phonon Crash: {name}")
+    git_sync(f"Phonon Crash, {name}")
     return "CRASH"
 
 def apply_aainit_workaround(input_file):
@@ -1383,7 +1372,10 @@ def main():
                     update_csv(name, "Fertig (Metall)", e_fermi,
                                round(dos_val, 4), "JA",
                                min_f=min_f, stab=stab, lam=lam, wlog=wlog, tc=tc)
-                    git_sync(f"Fertig: {name} (Tc={tc}K)")
+                    git_sync(f"Fertig, {name} (Tc={tc}K)")
+                    
+                    # HIER DAS NEUE CLEANUP AUFRUFEN
+                    cleanup_heavy_files(work_dir, name)
 
                 else:
                     update_csv(name, "Fertig (Metall)", e_fermi,

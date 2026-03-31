@@ -404,10 +404,10 @@ def apply_oom_settings(input_file, level, force_cg=False):
     diag, mix = 'david', 6
     msg = "Standard (david, mix=6)"
 
-    if level >= 1 or force_cg: diag, mix, msg = 'cg', 4, "Stufe 1/CG (cg, mix=4)"
-    if level >= 2: msg = "Stufe 2 (cg, mix=4)"
-    if level >= 3: msg = "Stufe 3 (cg, mix=4)"
-    if level >= 4: msg = "Stufe 4 (cg, mix=4, 1 Core)"
+    if level >= 1 or force_cg: diag, mix, msg = 'cg', 6, "Stufe 1/CG (cg, mix=6)"
+    if level >= 2: msg = "Stufe 2 (cg, mix=6)"
+    if level >= 3: msg = "Stufe 3 (cg, mix=6)"
+    if level >= 4: msg = "Stufe 4 (cg, mix=6, 1 Core)"
 
     print(f"      📉 RAM-Strategie, {msg}")
 
@@ -424,7 +424,6 @@ def apply_oom_settings(input_file, level, force_cg=False):
         content = content.replace("&ELECTRONS",
                                   f"&ELECTRONS\n mixing_ndim = {mix},")
 
-    # Entferne disk_io='low' falls es noch aus alten Durchläufen drinsteht
     if "disk_io" in content:
         content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"],?", "", content)
 
@@ -435,7 +434,7 @@ def apply_oom_settings(input_file, level, force_cg=False):
         content += f"\n! SMART_OOM_LEVEL={level}\n"
 
     with open(input_file, 'w') as f: f.write(content)
-
+    
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
@@ -457,10 +456,11 @@ def fix_input_file(input_file, iteration_count=0):
     ensure("electron_maxstep", "&ELECTRONS", "electron_maxstep = 300",
            r"electron_maxstep\s*=\s*\d+")
 
+    # Hier lag die zweite Falle, mix_ndim bleibt ab sofort IMMER bei 6
     beta, mix_ndim = 0.4, 6
     if iteration_count >= 30: beta = 0.2
-    if iteration_count >= 60: beta, mix_ndim = 0.1, 4
-    if iteration_count >= 90: beta, mix_ndim = 0.05, 4
+    if iteration_count >= 60: beta = 0.1
+    if iteration_count >= 90: beta = 0.05
 
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+",
@@ -471,7 +471,8 @@ def fix_input_file(input_file, iteration_count=0):
 
     if "mixing_ndim" in content:
         m = re.search(r"mixing_ndim\s*=\s*(\d+)", content)
-        if m and int(m.group(1)) > mix_ndim:
+        # Wir korrigieren es hart auf mix_ndim (also 6)
+        if m and int(m.group(1)) != mix_ndim:
             content = re.sub(r"mixing_ndim\s*=\s*\d+",
                              f"mixing_ndim = {mix_ndim}", content)
     else:

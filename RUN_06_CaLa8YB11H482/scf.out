@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on 31Mar2026 at 11:27:55 
+     Program PWSCF v.6.7MaX starts on 31Mar2026 at 12:33: 9 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -28,7 +28,7 @@
      G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Sum       14679    7347   1951              1439643   508969   70389
+     Sum       11753    5879   1583              1030053   364209   51039
 
 
 
@@ -39,8 +39,8 @@
      number of atomic types    =            5
      number of electrons       =       271.00
      number of Kohn-Sham states=          163
-     kinetic-energy cutoff     =      50.0000  Ry
-     charge density cutoff     =     400.0000  Ry
+     kinetic-energy cutoff     =      40.0000  Ry
+     charge density cutoff     =     320.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.4000
      number of iterations used =            4  plain     mixing
@@ -291,11 +291,11 @@
         k(    7) = (  -0.4995554  -0.4997647   0.0048465), wk =   0.2500000
         k(    8) = (  -0.4979252  -0.4965483  -0.4598286), wk =   0.2500000
 
-     Dense  grid:  1439643 G-vectors     FFT dimensions: ( 144, 144, 150)
+     Dense  grid:  1030053 G-vectors     FFT dimensions: ( 125, 125, 135)
 
-     Smooth grid:   508969 G-vectors     FFT dimensions: ( 100, 100, 108)
+     Smooth grid:   364209 G-vectors     FFT dimensions: (  90,  90,  96)
 
-     Estimated max dynamical RAM per process >      12.85 GB
+     Estimated max dynamical RAM per process >       9.19 GB
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      Error in routine aainit (14):

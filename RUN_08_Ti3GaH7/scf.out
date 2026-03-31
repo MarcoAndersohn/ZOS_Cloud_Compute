@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on 31Mar2026 at 11:30:22 
+     Program PWSCF v.6.7MaX starts on 31Mar2026 at 12:35:36 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -32,7 +32,7 @@ NOTICE: Bravais lattice has wrong number ( 3) of symmetries - symmetries are dis
      G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Sum        2181    1089    325                76145    26943    4391
+     Sum        1741     869    265                54447    19267    3215
 
 
 
@@ -43,8 +43,8 @@ NOTICE: Bravais lattice has wrong number ( 3) of symmetries - symmetries are dis
      number of atomic types    =            3
      number of electrons       =        56.00
      number of Kohn-Sham states=           34
-     kinetic-energy cutoff     =      50.0000  Ry
-     charge density cutoff     =     400.0000  Ry
+     kinetic-energy cutoff     =      40.0000  Ry
+     charge density cutoff     =     320.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.4000
      number of iterations used =            4  plain     mixing
@@ -148,11 +148,11 @@ NOTICE: Bravais lattice has wrong number ( 3) of symmetries - symmetries are dis
         k(    7) = (  -0.4967181  -0.4967185  -0.0000001), wk =   0.2500000
         k(    8) = (  -0.4933697  -0.5000670  -0.5000676), wk =   0.2500000
 
-     Dense  grid:    76145 G-vectors     FFT dimensions: (  54,  54,  54)
+     Dense  grid:    54447 G-vectors     FFT dimensions: (  48,  48,  48)
 
-     Smooth grid:    26943 G-vectors     FFT dimensions: (  40,  40,  40)
+     Smooth grid:    19267 G-vectors     FFT dimensions: (  36,  36,  36)
 
-     Estimated max dynamical RAM per process >     305.99 MB
+     Estimated max dynamical RAM per process >     220.40 MB
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      Error in routine aainit (14):

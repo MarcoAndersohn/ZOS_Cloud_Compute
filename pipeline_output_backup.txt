@@ -370,3 +370,49 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       ❤️ Git Heartbeat (Phonon)...
 To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    5a9b6b45..14daa9e0  main -> main
+      ⚠️ Phonon Crash/OOM! (Phase, El-Ph)
+      --- PHONON ERROR LOG ---
+      
+      At line 806 of file elphon.f90 (unit = 40, file = './tmp/BaMg3H8.a2Fsave')
+      Fortran runtime error: End of file
+      
+      Error termination. Backtrace:
+      #0  0x7e8c89e23960 in ???
+      #1  0x7e8c89e244d9 in ???
+      #2  0x7e8c89e2510f in ???
+      #3  0x7e8c8a07817b in ???
+      #4  0x7e8c8a071684 in ???
+      #5  0x7e8c8a0722aa in ???
+      #6  0x6303b5ec7a71 in ???
+      #7  0x6303b5eb2c32 in ???
+      #8  0x6303b5eac191 in ???
+      #9  0x6303b5eabffe in ???
+      #10  0x7e8c89a29d8f in ???
+      #11  0x7e8c89a29e3f in ???
+      #12  0x6303b5eac02d in ???
+      #13  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28730,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      --------------------
+      🛡️ Phonon-Recovery, Versuch 3/3
+      ❌ Phononen endgültig fehlgeschlagen.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   14daa9e0..d333a19e  main -> main
+
+💎 Job, 02_K3Sr4TaGaB11H48
+   ✅ SCF fertig, 02_K3Sr4TaGaB11H48
+   ⚡ Metall (DOS=1.326). Berechne Phononen...
+   🔍 PHASE 1: Reine Stabilitätsanalyse (ohne El-Ph-Kopplung)...
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PHONONEN (Cores, 2)...
+      💾 Phonon-Checkpoint...

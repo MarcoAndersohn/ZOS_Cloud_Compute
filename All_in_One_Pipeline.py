@@ -407,7 +407,7 @@ def apply_oom_settings(input_file, level, force_cg=False):
     if level >= 1 or force_cg: diag, mix, msg = 'cg', 6, "Stufe 1/CG (cg, mix=6)"
     if level >= 2: msg = "Stufe 2 (cg, mix=6)"
     if level >= 3: msg = "Stufe 3 (cg, mix=6)"
-    if level >= 4: msg = "Stufe 4 (cg, mix=6, 1 Core)"
+    if level >= 4: msg = "Stufe 4 (cg, mix=6)" # KEIN 1-Core mehr!
 
     print(f"      📉 RAM-Strategie, {msg}")
 
@@ -766,12 +766,11 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
     else:
         oom_level = file_level
 
-    current_cores  = int(DEFAULT_CORES)
-    if oom_level >= 4: current_cores = int(SAFE_CORES)
+    # IMMER auf den eingestellten Cores bleiben
+    current_cores = int(DEFAULT_CORES)
 
-    crash_counter  = 0
-    oom_counter    = 0
-    one_core_tried = False
+    crash_counter = 0
+    oom_counter   = 0
 
     while True:
         force_cg = False
@@ -813,12 +812,11 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             crash_counter = 0
             print(f"      ⚠️ OOM-Limit. Eskaliere zu Level {oom_level}...")
             labels = {1: "Retrying (OOM Lvl 1, CG)",
-                      2: "Retrying (OOM Lvl 2, Mix4)",
-                      3: "Retrying (OOM Lvl 3, Mix4)",
-                      4: "Retrying (OOM Lvl 4, 1Core)"}
+                      2: "Retrying (OOM Lvl 2, Mix6)",
+                      3: "Retrying (OOM Lvl 3, Mix6)",
+                      4: "Retrying (OOM Lvl 4, Mix6)"}
             if oom_level in labels:
                 update_csv(name, labels[oom_level])
-                if oom_level == 4: current_cores = int(SAFE_CORES)
             else:
                 update_csv(name, "SKIPPED (OOM Limit)")
                 print("      ❌ Hardware-Limit erreicht. Skippe.")
@@ -834,42 +832,24 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
                 return "NON_CONV"
 
             if reason == "AAINIT_ERROR":
-                if current_cores > 1:
-                    print("      🔩 aainit-Fehler -> LÖSCHE tmp und wechsle auf 1 Core.")
-                    current_cores = 1
-                    crash_counter = 0
+                if not aainit_ecut_reduced:
+                    aainit_ecut_reduced = True
+                    apply_aainit_workaround(scf_in)
                     
-                    tmp_path = os.path.join(work_dir, "tmp")
-                    if os.path.exists(tmp_path):
-                        shutil.rmtree(tmp_path, ignore_errors=True)
+                    tmp_p = os.path.join(work_dir, "tmp")
+                    if os.path.exists(tmp_p):
+                        shutil.rmtree(tmp_p, ignore_errors=True)
                         
-                    update_csv(name, "Retrying (aainit -> 1 Core)")
+                    print("      🔧 aainit-Fehler -> reduziere ecutwfc (40Ry) und lösche altes tmp.")
+                    update_csv(name, "Retrying (aainit -> ecutwfc=40)")
                     continue
-                else:
-                    if not aainit_ecut_reduced:
-                        aainit_ecut_reduced = True
-                        apply_aainit_workaround(scf_in)
-                        
-                        tmp_p = os.path.join(work_dir, "tmp")
-                        if os.path.exists(tmp_p):
-                            shutil.rmtree(tmp_p, ignore_errors=True)
-                            
-                        print("      🔧 aainit auf 1 Core -> reduziere ecutwfc und lösche altes tmp.")
-                        update_csv(name, "Retrying (aainit -> ecutwfc=40)")
-                        continue
-                    update_csv(name, "SKIPPED (OOM Limit)")
-                    return "OOM_LIMIT"
+                
+                print("      ❌ aainit-Fehler unlösbar. System zu komplex. Skippe.")
+                update_csv(name, "SKIPPED (OOM Limit)")
+                return "OOM_LIMIT"
 
             crash_counter += 1
             print(f"      ⚠️ Crash ({reason}). Versuch {crash_counter}/3...")
-
-            if crash_counter >= 3 and not one_core_tried and current_cores > 1:
-                one_core_tried = True
-                current_cores  = 1
-                crash_counter  = 0
-                print("      🆘 3 Crashes auf Multi-Core -> letzter Versuch auf 1 Core.")
-                update_csv(name, "Retrying (1-Core-Fallback)")
-                continue
 
             if crash_counter >= 3:
                 print(f"      ❌ Zu viele Abstürze ({crash_counter}). Skippe.")
@@ -909,14 +889,9 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
             )
 
     def execute_ph_phase(is_elph_phase=False):
+        # IMMER auf den eingestellten Cores bleiben, kein 1-Core Fallback
         ph_cores = int(DEFAULT_CORES)
-        hist = count_job_attempts(TXT_LOG_FILE, name)
-        if os.path.exists(BACKUP_LOG_FILE):
-            hist = max(hist, count_job_attempts(BACKUP_LOG_FILE, name))
-        if hist > 1: ph_cores = 1
-
-        phonon_attempts  = 0
-        aainit_1core_done = False
+        phonon_attempts = 0
 
         while phonon_attempts < 3:
             phonon_attempts += 1
@@ -930,24 +905,10 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
             print_error_log(ph_out, "PHONON ERROR LOG")
 
             if crash_reason == "AAINIT_ERROR":
-                if ph_cores > 1 and not aainit_1core_done:
-                    print("      🔩 aainit-Fehler -> LÖSCHE _ph0 und wechsle auf 1 Core.")
-                    ph_cores = 1
-                    aainit_1core_done = True
-                    
-                    ph0_path = os.path.join(work_dir, "tmp", "_ph0")
-                    if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
-                    chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
-                    if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
-                    
-                    if os.path.exists(ph_out): os.remove(ph_out)
-                    phonon_attempts -= 1
-                    continue
-                else:
-                    print("      🔩 aainit auch auf 1 Core -> skippe.")
-                    update_csv(name, f"SKIPPED (Phonon OOM, Phase {phase_name})")
-                    git_sync(f"Phonon OOM, {name}")
-                    return "CRASH"
+                print("      🔩 aainit-Fehler -> System-Komplexität zu hoch (Grid/MPI Limit). Skippe.")
+                update_csv(name, f"SKIPPED (Phonon OOM, Phase {phase_name})")
+                git_sync(f"Phonon OOM, {name}")
+                return "CRASH"
 
             if crash_reason == "HARD":
                 if os.path.exists(ph_out):
@@ -1004,7 +965,6 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
 
             elif phonon_attempts == 2:
                 print("      🚨 NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, tr2_ph=1.0d-10")
-                # Grid reduzieren, aber El-Ph Status beibehalten
                 write_ph_input(ph_in, tr2="1.0d-10", nq="1,1,1", search_sym=False, elph=is_elph_phase)
                 
                 for cleanup_path in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
@@ -1017,9 +977,6 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
         git_sync(f"Phonon Crash, {name}")
         return "CRASH"
 
-    # -------------------------------------------------------------
-    # INIT: Lese aktuelles Grid aus bestehender ph.in (falls existent)
-    # -------------------------------------------------------------
     current_nq = "2,2,2"
     is_phase2 = False
     
@@ -1030,9 +987,6 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
             nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", content, re.DOTALL)
             if nq_match: current_nq = f"{nq_match.group(1)},{nq_match.group(2)},{nq_match.group(3)}"
 
-    # -------------------------------------------------------------
-    # PHASE 1: Reine Stabilitätsanalyse (Kein dvscf, kein el-ph)
-    # -------------------------------------------------------------
     if not is_phase2:
         print("   🔍 PHASE 1: Reine Stabilitätsanalyse (ohne El-Ph-Kopplung)...")
         
@@ -1057,12 +1011,16 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
             
         print(f"   ✅ Material ist STABIL (Min Freq, {min_f} THz). Gehe zu Phase 2...")
         
-        # Vorbereitung für Phase 2
+        # --- DER ENTSCHEIDENDE FIX: ALTE DATEN VOR PHASE 2 LÖSCHEN ---
+        print("      🧹 Bereinige alte Phononen-Daten für sauberen El-Ph Start...")
+        ph0_path = os.path.join(work_dir, "tmp", "_ph0")
+        if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
+        chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
+        if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
+        if os.path.exists(ph_out): os.remove(ph_out)
+        
         write_ph_input(ph_in, nq=current_nq, elph=True)
 
-    # -------------------------------------------------------------
-    # PHASE 2: Elektron-Phonon-Kopplung (Nur für stabile Materialien)
-    # -------------------------------------------------------------
     print("   ⚛️ PHASE 2: Berechne Elektron-Phonon-Kopplung...")
     phase2_res = execute_ph_phase(is_elph_phase=True)
     return phase2_res

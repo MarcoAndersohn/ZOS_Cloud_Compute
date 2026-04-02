@@ -29,3 +29,84 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       💾 Phonon-Checkpoint...
       ✅ Phonon-Checkpoint gesichert.
       ❤️ Git Heartbeat (Phonon)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   6d91dcc8..bb497c20  main -> main
+      ⚠️ Phonon Crash/OOM! (Phase, El-Ph)
+      --- PHONON ERROR LOG ---
+      
+      At line 806 of file elphon.f90 (unit = 40, file = './tmp/BaMg3H8.a2Fsave')
+      Fortran runtime error: End of file
+      
+      Error termination. Backtrace:
+      #0  0x7d493a223960 in ???
+      #1  0x7d493a2244d9 in ???
+      #2  0x7d493a22510f in ???
+      #3  0x7d493a47817b in ???
+      #4  0x7d493a471684 in ???
+      #5  0x7d493a4722aa in ???
+      #6  0x617c85f70a71 in ???
+      #7  0x617c85f5bc32 in ???
+      #8  0x617c85f55191 in ???
+      #9  0x617c85f54ffe in ???
+      #10  0x7d4939e29d8f in ???
+      #11  0x7d4939e29e3f in ???
+      #12  0x617c85f5502d in ???
+      #13  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[30682,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      --------------------
+      🛡️ Phonon-Recovery, Versuch 1/3
+      📉 tr2_ph=1.0d-12
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PHONONEN (Cores, 2)...
+      ⚠️ Phonon Crash/OOM! (Phase, El-Ph)
+      --- PHONON ERROR LOG ---
+      
+      Error termination. Backtrace:
+      #0  0x7946cde23960 in ???
+      #1  0x7946cde244d9 in ???
+      #2  0x7946cde2510f in ???
+      #3  0x7946ce07b96d in ???
+      #4  0x5e3def62da2a in ???
+      #5  0x5e3def62e413 in ???
+      #6  0x5e3def62f946 in ???
+      #7  0x5e3def1aadd5 in ???
+      #8  0x5e3def1b70ab in ???
+      #9  0x5e3def18eb55 in ???
+      #10  0x5e3def15ba6e in ???
+      #11  0x5e3def155191 in ???
+      #12  0x5e3def154ffe in ???
+      #13  0x7946cda29d8f in ???
+      #14  0x7946cda29e3f in ???
+      #15  0x5e3def15502d in ???
+      #16  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28827,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      --------------------
+      🛡️ Phonon-Recovery, Versuch 2/3
+      🚨 NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, tr2_ph=1.0d-10
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PHONONEN (Cores, 2)...
+      💾 Phonon-Checkpoint...
+      ✅ Phonon-Checkpoint gesichert.
+      ❤️ Git Heartbeat (Phonon)...

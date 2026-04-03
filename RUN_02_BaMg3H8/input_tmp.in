@@ -1,0 +1,13 @@
+Phonons
+&INPUTPH
+ recover=.true.,
+ tr2_ph=1.0d-10,
+ prefix='BaMg3H8',
+ outdir='./tmp',
+ fildyn='02_BaMg3H8.dyn',
+ ldisp=.true.,
+ fildvscf='dvscf',
+ electron_phonon='interpolated',
+ search_sym=.false.,
+ nq1=1, nq2=1, nq3=1
+/

@@ -824,28 +824,46 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
     row_data = get_csv_full_info(name)
     already_stable = (row_data.get('Stabilität', '') == 'STABIL')
 
+    # Lese aktuelles Grid aus bestehender ph.in (falls existent)
+    current_nq = "2,2,2"
+    if os.path.exists(ph_in):
+        with open(ph_in, 'r') as f:
+            nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", f.read(), re.DOTALL)
+            if nq_match: current_nq = f"{nq_match.group(1)},{nq_match.group(2)},{nq_match.group(3)}"
+
     if not already_stable:
         print(f"   🔍 PHASE 1: Stabilitätsanalyse für {name}...")
-        write_ph_input(ph_in, elph=False)
+        write_ph_input(ph_in, nq=current_nq, elph=False)
         res = execute_ph_phase(is_elph_phase=False)
         if res != "DONE": return res
         
-        # Stabilität prüfen (Code wie bisher...)
+        # Stabilität prüfen
+        min_f, stab = "-", "Unbekannt"
         with open(ph_out, 'r') as f:
             freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", f.read())
-            if freqs and min(float(x) for x in freqs) <= -0.05:
-                print("   🛑 INSTABIL. Abbruch.")
-                return "DONE"
+            if freqs:
+                min_f = min(float(x) for x in freqs)
+                stab  = "STABIL" if min_f > -0.05 else "INSTABIL"
+
+        if stab == "INSTABIL":
+            print(f"   🛑 Material ist INSTABIL (Min Freq, {min_f} THz). Überspringe El-Ph.")
+            return "DONE"
+            
+        print(f"   ✅ Material ist STABIL (Min Freq, {min_f} THz). Gehe zu Phase 2...")
+        update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
 
     # --- PHASE 2 VORBEREITUNG (Der radikale Hausputz) ---
     print(f"   ⚛️ PHASE 2 Vorbereitung für {name}: Lösche alle alten Dateien...")
     tmp_path = os.path.join(work_dir, "tmp")
     
-    # 1. Lösche _ph0 Ordner
+    # 1. Lösche _ph0 Ordner UND DEN CHECKPOINT, damit nichts wiederhergestellt wird!
     ph0_path = os.path.join(tmp_path, "_ph0")
     if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
     
-    # 2. Lösche die korrupten .a2Fsave Dateien (DIE URSACHE FÜR BaMg FEHLER)
+    chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
+    if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
+    
+    # 2. Lösche die korrupten .a2Fsave Dateien
     for f in glob.glob(os.path.join(tmp_path, "*.a2Fsave*")):
         os.remove(f)
         
@@ -855,7 +873,8 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
 
     if os.path.exists(ph_out): os.remove(ph_out)
     
-    write_ph_input(ph_in, elph=True)
+    write_ph_input(ph_in, nq=current_nq, elph=True)
+    print("   ⚛️ PHASE 2: Berechne Elektron-Phonon-Kopplung...")
     return execute_ph_phase(is_elph_phase=True)
 
 def cleanup_system_memory():
@@ -972,9 +991,14 @@ def main():
                     if os.path.exists(work_dir):
                         shutil.rmtree(work_dir, ignore_errors=True)
                         git_sync(f"Cleaned corrupted RUN dir, {name}")
-
+                        
                 elif "OOM Limit" in last_status or "Phonon OOM" in last_status:
-                    print(f"🔄 Reaktiviere {name} nach OOM...")
+                    if "OOM Limit" in last_status:
+                        print(f"🔄 Reaktiviere {name} nach OOM Limit (Kompletter VM-Reset)...")
+                        if os.path.exists(work_dir):
+                            shutil.rmtree(work_dir, ignore_errors=True)
+                    else:
+                        print(f"🔄 Reaktiviere {name} nach Phonon OOM...")
 
                 elif "Phonon Crash" in last_status:
                     print(f"🔄 Reaktiviere {name} nach Phonon Crash...")

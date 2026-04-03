@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on  1Apr2026 at 16:33:33 
+     Program PWSCF v.6.7MaX starts on  3Apr2026 at  2:18:27 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,9 +9,10 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     1 processors
+     Parallel version (MPI), running on     2 processors
 
      MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
@@ -27,9 +28,11 @@
      a serial algorithm will be used
 
 
-     G-vector sticks info
+     Parallelization info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        2905    1456    404               250317    88526   12883
+     Max        2906    1457    405               250320    88527   12884
      Sum        5811    2913    809               500637   177053   25767
 
 
@@ -251,19 +254,7 @@
 
      Smooth grid:   177053 G-vectors     FFT dimensions: (  60,  64,  96)
 
-     Estimated max dynamical RAM per process >       5.95 GB
+     Estimated max dynamical RAM per process >       2.99 GB
 
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine aainit (14):
-     mx dimension too small
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-     stopping ...
---------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
-with errorcode 14.
-
-NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
-You may or may not see output from other processes, depending on
-exactly when Open MPI kills them.
---------------------------------------------------------------------------
+     Estimated total dynamical RAM >       5.99 GB
+[Supraleiter-HPC-Knoten:01136] [[28742,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 507

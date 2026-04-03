@@ -1,7 +1,6 @@
 &CONTROL
  restart_mode='from_scratch',
  wf_collect=.true.,
- 
  nstep = 100,
   calculation = 'vc-relax'
   prefix = 'Rb4Y4ScB15H64'
@@ -138,4 +137,4 @@ CELL_PARAMETERS (angstrom)
   0.328426  8.327700  0.118197
   0.600261  8.394053  10.682158
 
-! SMART_OOM_LEVEL=4
+! SMART_OOM_LEVEL=3

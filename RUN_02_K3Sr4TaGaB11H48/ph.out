@@ -2254,3 +2254,1091 @@ warning: file closed at level 1 with tag Root open
 
       iter #   2 total cpu time : 17885.3 secs   av.it.:  23.0
       thresh= 1.336E-06 alpha_mix =  0.700 |ddv_scf|^2 =  2.006E-11
+
+     Program PHONON v.6.7MaX starts on  3Apr2026 at  0:53:44 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on     2 processors
+
+     MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       2
+     Waiting for input...
+     Reading input from standard input
+
+     Reading xml data from directory:
+
+     ./tmp/K3Sr4TaGaB11H48.save/
+     file Ga.UPF: wavefunction(s)  4S renormalized
+     file H.UPF: wavefunction(s)  1S renormalized
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        3121    1561    432               258182    91282   13257
+     Max        3122    1562    433               258183    91285   13260
+     Sum        6243    3123    865               516365   182567   26517
+
+
+     negative rho (up, down):  6.995E-08 0.000E+00
+     Reading collected, re-writing distributed wavefunctions
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+        8 /   8 q-points for this run, from  1 to  8:
+       N       xq(1)         xq(2)         xq(3) 
+       1   0.000000000   0.000000000  -0.000000000
+       2   0.375513053  -0.002246456   0.002465118
+       3  -0.003177453   0.556735970   0.012054122
+       4   0.372335600   0.554489514   0.014519240
+       5   0.006704134   0.003375745   0.491184424
+       6   0.382217187   0.001129290   0.493649542
+       7   0.003526681   0.560111716   0.503238546
+       8   0.379039734   0.557865260   0.505703664
+
+
+     Calculation of q =    0.0000000   0.0000000  -0.0000000
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+ end of file reached, closing tag not found
+warning: file closed at level 1 with tag Root open
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+     Message from routine ph_restart_set_filename :
+     cannot open file for reading or writing
+
+     Restart in Phonon calculation
+
+     Phonons                                                                    
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =      16.3696  a.u.
+     unit-cell volume          =    5340.9890 (a.u.)^3
+     number of atoms/cell      =           68
+     number of atomic types    =            6
+     kinetic-energy cut-off    =      40.0000  Ry
+     charge density cut-off    =     320.0000  Ry
+     convergence threshold     =      1.0E-14
+     beta                      =       0.7000
+     number of iterations used =            4
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+
+
+     celldm(1)=   16.36956  celldm(2)=    0.00000  celldm(3)=    0.00000
+     celldm(4)=    0.00000  celldm(5)=    0.00000  celldm(6)=    0.00000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (  0.0068  0.0221 -1.0182 )  
+               a(2) = ( -0.0054 -0.8983  0.0062 )  
+               a(3) = ( -1.3317 -0.0080  0.0182 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = ( -0.0134 -0.0068 -0.9824 )  
+               b(2) = (  0.0064 -1.1135 -0.0241 )  
+               b(3) = ( -0.7510  0.0045 -0.0049 )  
+
+
+     Atoms inside the unit cell: 
+
+     Cartesian axes
+
+     site n.  atom      mass           positions (alat units)
+        1     K    1.0000   tau(    1) = (   -1.03888   -0.86572   -0.56304  )
+        2     K    1.0000   tau(    2) = (   -0.36749    0.01331   -0.41273  )
+        3     Ga   1.0000   tau(    3) = (   -0.13325   -0.42396   -0.94526  )
+        4     K    1.0000   tau(    4) = (   -0.91180   -0.49162   -0.05825  )
+        5     Sr   1.0000   tau(    5) = (   -0.67629   -0.92753   -0.97481  )
+        6     Sr   1.0000   tau(    6) = (   -1.33212   -0.04102   -0.03181  )
+        7     Sr   1.0000   tau(    7) = (   -1.28925   -0.46031   -0.44372  )
+        8     Sr   1.0000   tau(    8) = (   -0.68011   -0.45346   -0.51080  )
+        9     B    1.0000   tau(    9) = (   -1.00079   -0.32347   -0.48046  )
+       10     B    1.0000   tau(   10) = (   -0.38580   -0.57869   -0.63333  )
+       11     B    1.0000   tau(   11) = (   -0.31528   -0.80434    0.00834  )
+       12     B    1.0000   tau(   12) = (   -1.00985   -0.13345   -0.97228  )
+       13     B    1.0000   tau(   13) = (   -0.60538   -0.28586   -0.19763  )
+       14     Ta   1.0000   tau(   14) = (   -1.45899   -0.67212   -0.71644  )
+       15     B    1.0000   tau(   15) = (   -1.18888   -0.71914   -0.22717  )
+       16     B    1.0000   tau(   16) = (   -0.60012   -0.15768   -0.68948  )
+       17     B    1.0000   tau(   17) = (   -0.79786   -0.65160   -0.77634  )
+       18     B    1.0000   tau(   18) = (   -0.12169   -0.24657   -0.28973  )
+       19     B    1.0000   tau(   19) = (   -0.06137   -0.05118   -0.72856  )
+       20     B    1.0000   tau(   20) = (   -0.71987   -0.72292   -0.28047  )
+       21     H    1.0000   tau(   21) = (   -1.04223   -0.31977   -0.34477  )
+       22     H    1.0000   tau(   22) = (   -0.48691   -0.52734   -0.71589  )
+       23     H    1.0000   tau(   23) = (   -0.45279   -0.77235    0.00413  )
+       24     H    1.0000   tau(   24) = (   -1.08468   -0.05388   -0.88162  )
+       25     H    1.0000   tau(   25) = (   -0.98123   -0.45881   -0.52026  )
+       26     H    1.0000   tau(   26) = (   -0.41356   -0.57132   -0.49484  )
+       27     H    1.0000   tau(   27) = (   -0.28021   -0.01821   -0.98004  )
+       28     H    1.0000   tau(   28) = (   -0.96370   -0.96936   -0.04608  )
+       29     H    1.0000   tau(   29) = (   -1.10205   -0.26952   -0.56340  )
+       30     H    1.0000   tau(   30) = (   -0.36502   -0.71627   -0.66902  )
+       31     H    1.0000   tau(   31) = (   -0.25868   -0.67152   -0.92305  )
+       32     H    1.0000   tau(   32) = (   -1.10243   -0.24862   -0.01922  )
+       33     H    1.0000   tau(   33) = (   -0.88351   -0.24717   -0.49632  )
+       34     H    1.0000   tau(   34) = (   -0.26604   -0.49964   -0.65291  )
+       35     H    1.0000   tau(   35) = (   -0.25888   -0.77360   -0.11836  )
+       36     H    1.0000   tau(   36) = (   -0.91235   -0.20463   -0.89781  )
+       37     H    1.0000   tau(   37) = (   -0.61815   -0.32868   -0.06201  )
+       38     H    1.0000   tau(   38) = (   -1.34130   -0.63510   -0.88964  )
+       39     H    1.0000   tau(   39) = (   -1.10589   -0.64158   -0.31194  )
+       40     H    1.0000   tau(   40) = (   -0.56534   -0.19158   -0.55633  )
+       41     H    1.0000   tau(   41) = (   -0.54171   -0.15837   -0.20122  )
+       42     H    1.0000   tau(   42) = (   -1.25661   -0.64838   -0.66218  )
+       43     H    1.0000   tau(   43) = (   -1.14194   -0.70818   -0.09415  )
+       44     H    1.0000   tau(   44) = (   -0.48960   -0.09353   -0.75045  )
+       45     H    1.0000   tau(   45) = (   -0.52298   -0.37937   -0.26502  )
+       46     H    1.0000   tau(   46) = (   -1.39930   -0.46924   -0.70400  )
+       47     H    1.0000   tau(   47) = (   -1.18101   -0.85427   -0.26958  )
+       48     H    1.0000   tau(   48) = (   -0.71051   -0.06930   -0.68750  )
+       49     H    1.0000   tau(   49) = (   -0.73406   -0.27219   -0.25682  )
+       50     H    1.0000   tau(   50) = (   -0.10305   -0.67456   -0.52473  )
+       51     H    1.0000   tau(   51) = (    0.00730   -0.66817   -0.24791  )
+       52     H    1.0000   tau(   52) = (   -0.63274   -0.27345   -0.76514  )
+       53     H    1.0000   tau(   53) = (   -0.77983   -0.69502   -0.64249  )
+       54     H    1.0000   tau(   54) = (   -0.10444   -0.19590   -0.42070  )
+       55     H    1.0000   tau(   55) = (   -0.07198   -0.14741   -0.83247  )
+       56     H    1.0000   tau(   56) = (   -0.70592   -0.71105   -0.13951  )
+       57     H    1.0000   tau(   57) = (   -0.90383   -0.72504   -0.83486  )
+       58     H    1.0000   tau(   58) = (   -0.20239   -0.16100   -0.21197  )
+       59     H    1.0000   tau(   59) = (   -0.19204   -0.00350   -0.69698  )
+       60     H    1.0000   tau(   60) = (   -0.82123   -0.63181   -0.32089  )
+       61     H    1.0000   tau(   61) = (   -0.82743   -0.51297   -0.77867  )
+       62     H    1.0000   tau(   62) = (   -0.18179   -0.37437   -0.29291  )
+       63     H    1.0000   tau(   63) = (    0.01911    0.05874   -0.77984  )
+       64     H    1.0000   tau(   64) = (   -0.75507   -0.85293   -0.32078  )
+       65     H    1.0000   tau(   65) = (   -0.67568   -0.67122   -0.84485  )
+       66     H    1.0000   tau(   66) = (   -1.32386   -0.26996   -0.21292  )
+       67     H    1.0000   tau(   67) = (   -1.32763   -0.11315   -0.59976  )
+       68     H    1.0000   tau(   68) = (   -0.59590   -0.68253   -0.33580  )
+
+     Computing dynamical matrix for 
+                    q = (   0.0000000   0.0000000  -0.0000000 )
+
+      2 Sym.Ops. (with q -> -q+G )
+
+
+     G cutoff = 2172.0232  ( 258183 G-vectors)     FFT grid: ( 96, 90,125)
+     G cutoff = 1086.0116  (  91285 G-vectors)  smooth grid: ( 72, 60, 90)
+
+     number of k points=     8  Marzari-Vanderbilt smearing, width (Ry)=  0.0200
+
+     PseudoPot. # 1 for B  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/B.UPF
+     MD5 check sum: d9c678ba5d3b2fd7b74e61139c9288d8
+     Pseudo is Projector augmented-wave + core cor, Zval =  3.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1059 points,  4 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for Ga read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Ga.UPF
+     MD5 check sum: 79e63b61437c88080bf469cc04ca4be8
+     Pseudo is Projector augmented-wave + core cor, Zval = 13.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1205 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for H  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/H.UPF
+     MD5 check sum: 850d63dcbcc06c5de8b44e0ab9f952da
+     Pseudo is Projector augmented-wave, Zval =  1.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of  929 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 4 for K  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/K.UPF
+     MD5 check sum: 0975f8d1feef6b2899f42b1061589f29
+     Pseudo is Norm-conserving + core correction, Zval =  1.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of 1165 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   1
+
+     PseudoPot. # 5 for Sr read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Sr.UPF
+     MD5 check sum: 71c4688e601547c0814ef38edf55aea6
+     Pseudo is Ultrasoft + core correction, Zval = 10.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  883 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  8 coefficients,  rinner =    1.200   1.200   1.200
+                                                       1.200   1.200
+
+     PseudoPot. # 6 for Ta read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Ta.UPF
+     MD5 check sum: 395be6f3d7fb4652d9fb26f9961305c8
+     Pseudo is Ultrasoft + core correction, Zval = 13.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  921 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  6 coefficients,  rinner =    1.000   1.000   1.000
+                                                       1.000   1.000
+
+     Mode symmetry, C_1 (1)     point group:
+
+
+     Atomic displacements:
+     There are  204 irreducible representations
+
+     Representation     1      1 modes -  Done
+
+     Representation     2      1 modes -  Done
+
+     Representation     3      1 modes -  Done
+
+     Representation     4      1 modes -  Done
+
+     Representation     5      1 modes -  Done
+
+     Representation     6      1 modes -  Done
+
+     Representation     7      1 modes -  Done
+
+     Representation     8      1 modes -  Done
+
+     Representation     9      1 modes -  Done
+
+     Representation    10      1 modes -  Done
+
+     Representation    11      1 modes -  To be done
+
+     Representation    12      1 modes -  To be done
+
+     Representation    13      1 modes -  To be done
+
+     Representation    14      1 modes -  To be done
+
+     Representation    15      1 modes -  To be done
+
+     Representation    16      1 modes -  To be done
+
+     Representation    17      1 modes -  To be done
+
+     Representation    18      1 modes -  To be done
+
+     Representation    19      1 modes -  To be done
+
+     Representation    20      1 modes -  To be done
+
+     Representation    21      1 modes -  To be done
+
+     Representation    22      1 modes -  To be done
+
+     Representation    23      1 modes -  To be done
+
+     Representation    24      1 modes -  To be done
+
+     Representation    25      1 modes -  To be done
+
+     Representation    26      1 modes -  To be done
+
+     Representation    27      1 modes -  To be done
+
+     Representation    28      1 modes -  To be done
+
+     Representation    29      1 modes -  To be done
+
+     Representation    30      1 modes -  To be done
+
+     Representation    31      1 modes -  To be done
+
+     Representation    32      1 modes -  To be done
+
+     Representation    33      1 modes -  To be done
+
+     Representation    34      1 modes -  To be done
+
+     Representation    35      1 modes -  To be done
+
+     Representation    36      1 modes -  To be done
+
+     Representation    37      1 modes -  To be done
+
+     Representation    38      1 modes -  To be done
+
+     Representation    39      1 modes -  To be done
+
+     Representation    40      1 modes -  To be done
+
+     Representation    41      1 modes -  To be done
+
+     Representation    42      1 modes -  To be done
+
+     Representation    43      1 modes -  To be done
+
+     Representation    44      1 modes -  To be done
+
+     Representation    45      1 modes -  To be done
+
+     Representation    46      1 modes -  To be done
+
+     Representation    47      1 modes -  To be done
+
+     Representation    48      1 modes -  To be done
+
+     Representation    49      1 modes -  To be done
+
+     Representation    50      1 modes -  To be done
+
+     Representation    51      1 modes -  To be done
+
+     Representation    52      1 modes -  To be done
+
+     Representation    53      1 modes -  To be done
+
+     Representation    54      1 modes -  To be done
+
+     Representation    55      1 modes -  To be done
+
+     Representation    56      1 modes -  To be done
+
+     Representation    57      1 modes -  To be done
+
+     Representation    58      1 modes -  To be done
+
+     Representation    59      1 modes -  To be done
+
+     Representation    60      1 modes -  To be done
+
+     Representation    61      1 modes -  To be done
+
+     Representation    62      1 modes -  To be done
+
+     Representation    63      1 modes -  To be done
+
+     Representation    64      1 modes -  To be done
+
+     Representation    65      1 modes -  To be done
+
+     Representation    66      1 modes -  To be done
+
+     Representation    67      1 modes -  To be done
+
+     Representation    68      1 modes -  To be done
+
+     Representation    69      1 modes -  To be done
+
+     Representation    70      1 modes -  To be done
+
+     Representation    71      1 modes -  To be done
+
+     Representation    72      1 modes -  To be done
+
+     Representation    73      1 modes -  To be done
+
+     Representation    74      1 modes -  To be done
+
+     Representation    75      1 modes -  To be done
+
+     Representation    76      1 modes -  To be done
+
+     Representation    77      1 modes -  To be done
+
+     Representation    78      1 modes -  To be done
+
+     Representation    79      1 modes -  To be done
+
+     Representation    80      1 modes -  To be done
+
+     Representation    81      1 modes -  To be done
+
+     Representation    82      1 modes -  To be done
+
+     Representation    83      1 modes -  To be done
+
+     Representation    84      1 modes -  To be done
+
+     Representation    85      1 modes -  To be done
+
+     Representation    86      1 modes -  To be done
+
+     Representation    87      1 modes -  To be done
+
+     Representation    88      1 modes -  To be done
+
+     Representation    89      1 modes -  To be done
+
+     Representation    90      1 modes -  To be done
+
+     Representation    91      1 modes -  To be done
+
+     Representation    92      1 modes -  To be done
+
+     Representation    93      1 modes -  To be done
+
+     Representation    94      1 modes -  To be done
+
+     Representation    95      1 modes -  To be done
+
+     Representation    96      1 modes -  To be done
+
+     Representation    97      1 modes -  To be done
+
+     Representation    98      1 modes -  To be done
+
+     Representation    99      1 modes -  To be done
+
+     Representation   100      1 modes -  To be done
+
+     Representation   101      1 modes -  To be done
+
+     Representation   102      1 modes -  To be done
+
+     Representation   103      1 modes -  To be done
+
+     Representation   104      1 modes -  To be done
+
+     Representation   105      1 modes -  To be done
+
+     Representation   106      1 modes -  To be done
+
+     Representation   107      1 modes -  To be done
+
+     Representation   108      1 modes -  To be done
+
+     Representation   109      1 modes -  To be done
+
+     Representation   110      1 modes -  To be done
+
+     Representation   111      1 modes -  To be done
+
+     Representation   112      1 modes -  To be done
+
+     Representation   113      1 modes -  To be done
+
+     Representation   114      1 modes -  To be done
+
+     Representation   115      1 modes -  To be done
+
+     Representation   116      1 modes -  To be done
+
+     Representation   117      1 modes -  To be done
+
+     Representation   118      1 modes -  To be done
+
+     Representation   119      1 modes -  To be done
+
+     Representation   120      1 modes -  To be done
+
+     Representation   121      1 modes -  To be done
+
+     Representation   122      1 modes -  To be done
+
+     Representation   123      1 modes -  To be done
+
+     Representation   124      1 modes -  To be done
+
+     Representation   125      1 modes -  To be done
+
+     Representation   126      1 modes -  To be done
+
+     Representation   127      1 modes -  To be done
+
+     Representation   128      1 modes -  To be done
+
+     Representation   129      1 modes -  To be done
+
+     Representation   130      1 modes -  To be done
+
+     Representation   131      1 modes -  To be done
+
+     Representation   132      1 modes -  To be done
+
+     Representation   133      1 modes -  To be done
+
+     Representation   134      1 modes -  To be done
+
+     Representation   135      1 modes -  To be done
+
+     Representation   136      1 modes -  To be done
+
+     Representation   137      1 modes -  To be done
+
+     Representation   138      1 modes -  To be done
+
+     Representation   139      1 modes -  To be done
+
+     Representation   140      1 modes -  To be done
+
+     Representation   141      1 modes -  To be done
+
+     Representation   142      1 modes -  To be done
+
+     Representation   143      1 modes -  To be done
+
+     Representation   144      1 modes -  To be done
+
+     Representation   145      1 modes -  To be done
+
+     Representation   146      1 modes -  To be done
+
+     Representation   147      1 modes -  To be done
+
+     Representation   148      1 modes -  To be done
+
+     Representation   149      1 modes -  To be done
+
+     Representation   150      1 modes -  To be done
+
+     Representation   151      1 modes -  To be done
+
+     Representation   152      1 modes -  To be done
+
+     Representation   153      1 modes -  To be done
+
+     Representation   154      1 modes -  To be done
+
+     Representation   155      1 modes -  To be done
+
+     Representation   156      1 modes -  To be done
+
+     Representation   157      1 modes -  To be done
+
+     Representation   158      1 modes -  To be done
+
+     Representation   159      1 modes -  To be done
+
+     Representation   160      1 modes -  To be done
+
+     Representation   161      1 modes -  To be done
+
+     Representation   162      1 modes -  To be done
+
+     Representation   163      1 modes -  To be done
+
+     Representation   164      1 modes -  To be done
+
+     Representation   165      1 modes -  To be done
+
+     Representation   166      1 modes -  To be done
+
+     Representation   167      1 modes -  To be done
+
+     Representation   168      1 modes -  To be done
+
+     Representation   169      1 modes -  To be done
+
+     Representation   170      1 modes -  To be done
+
+     Representation   171      1 modes -  To be done
+
+     Representation   172      1 modes -  To be done
+
+     Representation   173      1 modes -  To be done
+
+     Representation   174      1 modes -  To be done
+
+     Representation   175      1 modes -  To be done
+
+     Representation   176      1 modes -  To be done
+
+     Representation   177      1 modes -  To be done
+
+     Representation   178      1 modes -  To be done
+
+     Representation   179      1 modes -  To be done
+
+     Representation   180      1 modes -  To be done
+
+     Representation   181      1 modes -  To be done
+
+     Representation   182      1 modes -  To be done
+
+     Representation   183      1 modes -  To be done
+
+     Representation   184      1 modes -  To be done
+
+     Representation   185      1 modes -  To be done
+
+     Representation   186      1 modes -  To be done
+
+     Representation   187      1 modes -  To be done
+
+     Representation   188      1 modes -  To be done
+
+     Representation   189      1 modes -  To be done
+
+     Representation   190      1 modes -  To be done
+
+     Representation   191      1 modes -  To be done
+
+     Representation   192      1 modes -  To be done
+
+     Representation   193      1 modes -  To be done
+
+     Representation   194      1 modes -  To be done
+
+     Representation   195      1 modes -  To be done
+
+     Representation   196      1 modes -  To be done
+
+     Representation   197      1 modes -  To be done
+
+     Representation   198      1 modes -  To be done
+
+     Representation   199      1 modes -  To be done
+
+     Representation   200      1 modes -  To be done
+
+     Representation   201      1 modes -  To be done
+
+     Representation   202      1 modes -  To be done
+
+     Representation   203      1 modes -  To be done
+
+     Representation   204      1 modes -  To be done
+
+

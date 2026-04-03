@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on  3Apr2026 at  3:34: 5 
+     Program PWSCF v.6.7MaX starts on  3Apr2026 at 20: 6:12 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -188,4 +188,11 @@
      Estimated max dynamical RAM per process >     433.83 MB
 
      Estimated total dynamical RAM >     867.66 MB
-[Supraleiter-HPC-Knoten:07820] [[27322,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 507
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 14.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on  1Apr2026 at 16:34: 6 
+     Program PWSCF v.6.7MaX starts on  3Apr2026 at  2:18:49 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,9 +9,10 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     1 processors
+     Parallel version (MPI), running on     2 processors
 
      MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
@@ -25,9 +26,11 @@
      a serial algorithm will be used
 
 
-     G-vector sticks info
+     Parallelization info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min         378     189     60                 6925     2477     445
+     Max         379     190     61                 6926     2480     448
      Sum         757     379    121                13851     4957     893
 
 
@@ -123,7 +126,10 @@
 
      Smooth grid:     4957 G-vectors     FFT dimensions: (  24,  24,  24)
 
-     Estimated max dynamical RAM per process >      57.84 MB
+     Estimated max dynamical RAM per process >      31.79 MB
+
+     Estimated total dynamical RAM >      63.58 MB
+[Supraleiter-HPC-Knoten:01198] [[28824,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 501
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      Error in routine aainit (14):

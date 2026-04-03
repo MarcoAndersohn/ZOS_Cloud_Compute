@@ -2037,3 +2037,109 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       💀 Abruptes Ende (Silent OOM).
       ⚠️ OOM-Limit. Eskaliere zu Level 5...
       ❌ Hardware-Limit erreicht. Skippe.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   07946253..22e37587  main -> main
+⏩ Skip 09_SrLi5BH62 (Isolator)
+🔄 Reaktiviere 10_HfTh3TiH38 nach OOM...
+
+💎 Job, 10_HfTh3TiH38
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- QE ERROR LOG ---
+              k(    2) = (   0.0000440  -0.0000498  -0.3082250), wk =   0.2500000
+              k(    3) = (  -0.4986776  -0.2884032   0.0000247), wk =   0.2500000
+              k(    4) = (  -0.4986336  -0.2884530  -0.3082003), wk =   0.2500000
+              k(    5) = (  -0.4990198   0.2889958   0.0001175), wk =   0.2500000
+              k(    6) = (  -0.4989757   0.2889460  -0.3081074), wk =   0.2500000
+              k(    7) = (  -0.9976974   0.0005926   0.0001422), wk =   0.2500000
+              k(    8) = (  -0.9976534   0.0005428  -0.3080828), wk =   0.2500000
+      
+           Dense  grid:   217001 G-vectors     FFT dimensions: (  72,  72, 108)
+      
+           Smooth grid:    76693 G-vectors     FFT dimensions: (  48,  48,  80)
+      
+           Estimated max dynamical RAM per process >       1.20 GB
+      
+           Estimated total dynamical RAM >       2.40 GB
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🔧 aainit-Workaround: ecutwfc=40, ecutrho=320.
+      🔧 aainit-Fehler -> reduziere ecutwfc (40Ry) und lösche altes tmp.
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 1/3 auf Lvl 4...
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 2/3 auf Lvl 4...
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- QE ERROR LOG ---
+              34           H   tau(  34) = (   0.7106234  -0.4090309   0.2429765  )
+              35           H   tau(  35) = (   0.2912711  -0.4092793   0.2429193  )
+              36           H   tau(  36) = (   0.5011615  -0.0468506   0.2428937  )
+      
+           number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (   0.0000440  -0.0000498  -0.3082250), wk =   0.2500000
+              k(    3) = (  -0.4986776  -0.2884032   0.0000247), wk =   0.2500000
+              k(    4) = (  -0.4986336  -0.2884530  -0.3082003), wk =   0.2500000
+              k(    5) = (  -0.4990198   0.2889958   0.0001175), wk =   0.2500000
+              k(    6) = (  -0.4989757   0.2889460  -0.3081074), wk =   0.2500000
+              k(    7) = (  -0.9976974   0.0005926   0.0001422), wk =   0.2500000
+              k(    8) = (  -0.9976534   0.0005428  -0.3080828), wk =   0.2500000
+      
+           Dense  grid:   217001 G-vectors     FFT dimensions: (  72,  72, 108)
+      
+           Smooth grid:    76693 G-vectors     FFT dimensions: (  48,  48,  80)
+      
+           Estimated max dynamical RAM per process >       1.20 GB
+      
+           Estimated total dynamical RAM >       2.40 GB
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      [Supraleiter-HPC-Knoten:01997] [[29691,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 513
+      --------------------
+      ❌ aainit-Fehler unlösbar. System zu komplex. Skippe.

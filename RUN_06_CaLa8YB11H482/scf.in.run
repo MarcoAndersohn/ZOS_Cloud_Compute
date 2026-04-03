@@ -1,7 +1,6 @@
 &CONTROL
  restart_mode='from_scratch',
  wf_collect=.true.,
- 
  nstep = 100,
   calculation = 'vc-relax'
   prefix = 'CaLa8YB11H482'
@@ -15,8 +14,8 @@
   ibrav = 0
   nat = 128
   ntyp = 5
-  ecutwfc = 40.0
-  ecutrho = 320.0
+  ecutwfc = 50.0
+  ecutrho = 400.0
   occupations = 'smearing'
   smearing = 'methfessel-paxton'
   degauss = 0.02
@@ -178,4 +177,4 @@ CELL_PARAMETERS (angstrom)
   0.010573  11.360727  0.078673
   0.039944  0.078673  12.229854
 
-! SMART_OOM_LEVEL=4
+! SMART_OOM_LEVEL=1

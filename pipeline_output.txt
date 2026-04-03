@@ -1401,3 +1401,187 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       [Supraleiter-HPC-Knoten:01552] [[29222,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 501
       --------------------
       ❌ aainit-Fehler unlösbar. System zu komplex. Skippe.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   9f8f8b2b..c3bf74de  main -> main
+⏩ Skip 07_K4Sr4LaB11H48 (Isolator)
+🔄 Reaktiviere 07_KBaLaGd2B7H32 nach OOM...
+
+💎 Job, 07_KBaLaGd2B7H32
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 1/3 auf Lvl 4...
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- QE ERROR LOG ---
+              42           H   tau(  42) = (   0.1509043   0.9388040   0.1451963  )
+              43           H   tau(  43) = (   0.1988086   0.6494371   0.6340354  )
+              44           H   tau(  44) = (   0.7910841   0.0910357   0.6417289  )
+      
+           number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (  -0.0746034   0.0081337  -0.5282064), wk =   0.2500000
+              k(    3) = (  -0.0195867  -0.4829486   0.0114237), wk =   0.2500000
+              k(    4) = (  -0.0941901  -0.4748149  -0.5167827), wk =   0.2500000
+              k(    5) = (  -0.5042204  -0.0210927   0.0154514), wk =   0.2500000
+              k(    6) = (  -0.5788238  -0.0129590  -0.5127550), wk =   0.2500000
+              k(    7) = (  -0.5238072  -0.5040414   0.0268752), wk =   0.2500000
+              k(    8) = (  -0.5984106  -0.4959076  -0.5013313), wk =   0.2500000
+      
+           Dense  grid:   352327 G-vectors     FFT dimensions: (  90,  96,  90)
+      
+           Smooth grid:   124605 G-vectors     FFT dimensions: (  64,  72,  60)
+      
+           Estimated max dynamical RAM per process >       1.97 GB
+      
+           Estimated total dynamical RAM >       3.93 GB
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      [Supraleiter-HPC-Knoten:01595] [[29197,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 507
+      --------------------
+      🔧 aainit-Workaround: ecutwfc=40, ecutrho=320.
+      🔧 aainit-Fehler -> reduziere ecutwfc (40Ry) und lösche altes tmp.
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 2/3 auf Lvl 4...
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      --- QE ERROR LOG ---
+              42           H   tau(  42) = (   0.1509043   0.9388040   0.1451963  )
+              43           H   tau(  43) = (   0.1988086   0.6494371   0.6340354  )
+              44           H   tau(  44) = (   0.7910841   0.0910357   0.6417289  )
+      
+           number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (  -0.0746034   0.0081337  -0.5282064), wk =   0.2500000
+              k(    3) = (  -0.0195867  -0.4829486   0.0114237), wk =   0.2500000
+              k(    4) = (  -0.0941901  -0.4748149  -0.5167827), wk =   0.2500000
+              k(    5) = (  -0.5042204  -0.0210927   0.0154514), wk =   0.2500000
+              k(    6) = (  -0.5788238  -0.0129590  -0.5127550), wk =   0.2500000
+              k(    7) = (  -0.5238072  -0.5040414   0.0268752), wk =   0.2500000
+              k(    8) = (  -0.5984106  -0.4959076  -0.5013313), wk =   0.2500000
+      
+           Dense  grid:   352327 G-vectors     FFT dimensions: (  90,  96,  90)
+      
+           Smooth grid:   124605 G-vectors     FFT dimensions: (  64,  72,  60)
+      
+           Estimated max dynamical RAM per process >       1.97 GB
+      
+           Estimated total dynamical RAM >       3.93 GB
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      ⚠️ Crash (HARD). Versuch 1/3...
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      --- QE ERROR LOG ---
+              42           H   tau(  42) = (   0.1509043   0.9388040   0.1451963  )
+              43           H   tau(  43) = (   0.1988086   0.6494371   0.6340354  )
+              44           H   tau(  44) = (   0.7910841   0.0910357   0.6417289  )
+      
+           number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (  -0.0746034   0.0081337  -0.5282064), wk =   0.2500000
+              k(    3) = (  -0.0195867  -0.4829486   0.0114237), wk =   0.2500000
+              k(    4) = (  -0.0941901  -0.4748149  -0.5167827), wk =   0.2500000
+              k(    5) = (  -0.5042204  -0.0210927   0.0154514), wk =   0.2500000
+              k(    6) = (  -0.5788238  -0.0129590  -0.5127550), wk =   0.2500000
+              k(    7) = (  -0.5238072  -0.5040414   0.0268752), wk =   0.2500000
+              k(    8) = (  -0.5984106  -0.4959076  -0.5013313), wk =   0.2500000
+      
+           Dense  grid:   352327 G-vectors     FFT dimensions: (  90,  96,  90)
+      
+           Smooth grid:   124605 G-vectors     FFT dimensions: (  64,  72,  60)
+      
+           Estimated max dynamical RAM per process >       1.97 GB
+      
+           Estimated total dynamical RAM >       3.93 GB
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      ⚠️ Crash (HARD). Versuch 2/3...
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- QE ERROR LOG ---
+              42           H   tau(  42) = (   0.1509043   0.9388040   0.1451963  )
+              43           H   tau(  43) = (   0.1988086   0.6494371   0.6340354  )
+              44           H   tau(  44) = (   0.7910841   0.0910357   0.6417289  )
+      
+           number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (  -0.0746034   0.0081337  -0.5282064), wk =   0.2500000
+              k(    3) = (  -0.0195867  -0.4829486   0.0114237), wk =   0.2500000
+              k(    4) = (  -0.0941901  -0.4748149  -0.5167827), wk =   0.2500000
+              k(    5) = (  -0.5042204  -0.0210927   0.0154514), wk =   0.2500000
+              k(    6) = (  -0.5788238  -0.0129590  -0.5127550), wk =   0.2500000
+              k(    7) = (  -0.5238072  -0.5040414   0.0268752), wk =   0.2500000
+              k(    8) = (  -0.5984106  -0.4959076  -0.5013313), wk =   0.2500000
+      
+           Dense  grid:   352327 G-vectors     FFT dimensions: (  90,  96,  90)
+      
+           Smooth grid:   124605 G-vectors     FFT dimensions: (  64,  72,  60)
+      
+           Estimated max dynamical RAM per process >       1.97 GB
+      
+           Estimated total dynamical RAM >       3.93 GB
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      [Supraleiter-HPC-Knoten:01645] [[29275,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 507
+      --------------------
+      ❌ aainit-Fehler unlösbar. System zu komplex. Skippe.

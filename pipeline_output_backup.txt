@@ -1095,3 +1095,61 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       📉 RAM-Strategie, Stufe 4 (cg, mix=6)
    1️⃣  SCF (2 Cores, OOM-Lvl 4)
       🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM-Limit. Eskaliere zu Level 5...
+      ❌ Hardware-Limit erreicht. Skippe.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   824bd34c..264ce7fd  main -> main
+⏩ Skip 05_ZrScH12 (INSTABIL)
+🔄 Reaktiviere 06_CaLa8YB11H482 nach OOM...
+
+💎 Job, 06_CaLa8YB11H482
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- QE ERROR LOG ---
+              k(    2) = (   0.0016302   0.0032164  -0.4646751), wk =   0.2500000
+              k(    3) = (   0.0004541  -0.5002187   0.0032164), wk =   0.2500000
+              k(    4) = (   0.0020842  -0.4970024  -0.4614588), wk =   0.2500000
+              k(    5) = (  -0.5000095   0.0004541   0.0016302), wk =   0.2500000
+              k(    6) = (  -0.4983793   0.0036704  -0.4630449), wk =   0.2500000
+              k(    7) = (  -0.4995554  -0.4997647   0.0048465), wk =   0.2500000
+              k(    8) = (  -0.4979252  -0.4965483  -0.4598286), wk =   0.2500000
+      
+           Dense  grid:  1030053 G-vectors     FFT dimensions: ( 125, 125, 135)
+      
+           Smooth grid:   364209 G-vectors     FFT dimensions: (  90,  90,  96)
+      
+           Estimated max dynamical RAM per process >       4.63 GB
+      
+           Estimated total dynamical RAM >       9.27 GB
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🔧 aainit-Workaround: ecutwfc=40, ecutrho=320.
+      🔧 aainit-Fehler -> reduziere ecutwfc (40Ry) und lösche altes tmp.
+      📉 RAM-Strategie, Stufe 4 (cg, mix=6)
+   1️⃣  SCF (2 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.

@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on  1Apr2026 at 16:36:50 
+     Program PWSCF v.6.7MaX starts on  3Apr2026 at  2:22:26 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,9 +9,10 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     1 processors
+     Parallel version (MPI), running on     2 processors
 
      MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
@@ -25,9 +26,11 @@
      a serial algorithm will be used
 
 
-     G-vector sticks info
+     Parallelization info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        5876    2939    791               515026   182104   25519
+     Max        5877    2940    792               515027   182105   25520
      Sum       11753    5879   1583              1030053   364209   51039
 
 
@@ -295,7 +298,9 @@
 
      Smooth grid:   364209 G-vectors     FFT dimensions: (  90,  90,  96)
 
-     Estimated max dynamical RAM per process >       9.25 GB
+     Estimated max dynamical RAM per process >       4.63 GB
+
+     Estimated total dynamical RAM >       9.27 GB
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      Error in routine aainit (14):

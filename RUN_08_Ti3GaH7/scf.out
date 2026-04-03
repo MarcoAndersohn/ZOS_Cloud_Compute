@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on  1Apr2026 at 16:39: 8 
+     Program PWSCF v.6.7MaX starts on  3Apr2026 at  2:25:56 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,9 +9,10 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     1 processors
+     Parallel version (MPI), running on     2 processors
 
      MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
@@ -29,9 +30,11 @@
 NOTICE: Bravais lattice has wrong number ( 3) of symmetries - symmetries are disabled
 --------------------------------------------------------------------------------
 
-     G-vector sticks info
+     Parallelization info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min         870     434    132                27223     9632    1607
+     Max         871     435    133                27224     9635    1608
      Sum        1741     869    265                54447    19267    3215
 
 
@@ -152,7 +155,9 @@ NOTICE: Bravais lattice has wrong number ( 3) of symmetries - symmetries are dis
 
      Smooth grid:    19267 G-vectors     FFT dimensions: (  36,  36,  36)
 
-     Estimated max dynamical RAM per process >     223.73 MB
+     Estimated max dynamical RAM per process >     116.18 MB
+
+     Estimated total dynamical RAM >     232.37 MB
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      Error in routine aainit (14):

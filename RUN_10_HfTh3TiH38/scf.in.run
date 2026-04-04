@@ -1,7 +1,6 @@
 &CONTROL
  restart_mode='from_scratch',
  wf_collect=.true.,
- nstep = 100,
   calculation = 'vc-relax'
   prefix = 'HfTh3TiH38'
   outdir = './tmp/'
@@ -21,11 +20,9 @@
   degauss = 0.02
 /
 &ELECTRONS
- mixing_beta = 0.4,
- electron_maxstep = 300,
- mixing_mode='plain',
- mixing_ndim = 6,
- diagonalization='cg',
+ electron_maxstep = 150,
+ mixing_ndim = 8,
+ diagonalization='david',
   conv_thr = 1.0d-6
 /
 &IONS
@@ -84,4 +81,4 @@ CELL_PARAMETERS (angstrom)
   3.101063  5.354720  -0.000423
   0.001428  -0.001612  10.027576
 
-! SMART_OOM_LEVEL=4
+! SMART_OOM_LEVEL=0

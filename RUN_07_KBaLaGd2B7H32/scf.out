@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on  3Apr2026 at 19:27:12 
+     Program PWSCF v.6.7MaX starts on  4Apr2026 at  8:17:49 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -9,10 +9,9 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     2 processors
+     Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
@@ -27,11 +26,9 @@
      a serial algorithm will be used
 
 
-     Parallelization info
+     G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min        3184    1593    445               176163    62302    9256
-     Max        3185    1594    446               176164    62303    9257
      Sum        6369    3187    891               352327   124605   18513
 
 
@@ -46,14 +43,14 @@
      kinetic-energy cutoff     =      40.0000  Ry
      charge density cutoff     =     320.0000  Ry
      scf convergence threshold =      1.0E-06
-     mixing beta               =       0.4000
-     number of iterations used =            6  plain     mixing
+     mixing beta               =       0.7000
+     number of iterations used =            4  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
      Exchange-correlation=  SLA  PW   PBE  PBE
                            (   1   4   3   4   0   0   0)
-     nstep                     =          100
+     nstep                     =           50
 
 
      celldm(1)=  15.548635  celldm(2)=   0.000000  celldm(3)=   0.000000
@@ -228,7 +225,19 @@
 
      Smooth grid:   124605 G-vectors     FFT dimensions: (  64,  72,  60)
 
-     Estimated max dynamical RAM per process >       1.97 GB
+     Estimated max dynamical RAM per process >       3.87 GB
 
-     Estimated total dynamical RAM >       3.93 GB
-[Supraleiter-HPC-Knoten:08186] [[27596,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine aainit (14):
+     mx dimension too small
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     stopping ...
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 14.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------

@@ -294,3 +294,87 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       [Supraleiter-HPC-Knoten:01000] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
       --------------------
       🔩 aainit-Fehler auf 2 Cores -> LÖSCHE _ph0 und wechsle auf 1 Core.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PHONONEN (Cores, 1)...
+      ⚠️ Phonon Crash/OOM! (Phase: El-Ph)
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- PHONON ERROR LOG ---
+           mismatch in mesh size, discarding the one in header
+           file H.UPF: wavefunction(s)  1S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           G-vector sticks info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Sum        3047    1515    437               125727    44357    6931
+      
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🔩 aainit-Fehler unlösbar -> System-Komplexität zu hoch. Skippe.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   32bab4a9..78fe808d  main -> main
+
+💎 Job, 02_K3Sr4TaGaB11H48
+   ✅ SCF fertig, 02_K3Sr4TaGaB11H48
+   ⚡ Metall (DOS=1.326). Berechne Phononen...
+   🔍 PHASE 1: Stabilitätsanalyse für 02_K3Sr4TaGaB11H48...
+      🧠 Erbe Kernanzahl von SCF: Starte mit 2 Core(s).
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PHONONEN (Cores, 2)...
+      ⚠️ Phonon Crash/OOM! (Phase: Stabilität)
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- PHONON ERROR LOG ---
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min        3121    1561    432               258182    91282   13257
+           Max        3122    1562    433               258183    91285   13260
+           Sum        6243    3123    865               516365   182567   26517
+      
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      [Supraleiter-HPC-Knoten:01039] 1 more process has sent help message help-mpi-api.txt / mpi-abort
+      [Supraleiter-HPC-Knoten:01039] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+      --------------------
+      🔩 aainit-Fehler auf 2 Cores -> LÖSCHE _ph0 und wechsle auf 1 Core.

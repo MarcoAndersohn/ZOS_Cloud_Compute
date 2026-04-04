@@ -33,6 +33,19 @@ def truncate_log(log_path, max_size_mb=1.0):
         except Exception as e:
             print(f"⚠️ Konnte Logfile nicht kürzen: {e}")
 
+def get_scf_cores(scf_out_path, default_cores=2):
+    """Liest aus der scf.out aus, mit wie vielen Cores die Rechnung beendet wurde."""
+    if not os.path.exists(scf_out_path): 
+        return int(default_cores)
+    try:
+        with open(scf_out_path, 'r', errors='ignore') as f:
+            # Wir suchen alle Einträge und nehmen den allerletzten (relevant bei Restarts)
+            matches = re.findall(r"running on\s+(\d+)\s+processors", f.read())
+            if matches:
+                return int(matches[-1])
+    except: pass
+    return int(default_cores)
+
 # =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
@@ -871,39 +884,40 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
             )
 
     def execute_ph_phase(is_elph_phase=False):
-        # Phononen müssen auf 1 Core laufen, wenn SCF Probleme hatte!
-        ph_cores = int(DEFAULT_CORES)
-        if "SMART_OOM_LEVEL=4" in open(scf_in).read() or "SMART_OOM_LEVEL=5" in open(scf_in).read():
-            ph_cores = 1
-            
+        # 💡 HIER IST DIE MAGIE: Wir lesen aus, was pw.x verwendet hat!
+        ph_cores = get_scf_cores(scf_out, DEFAULT_CORES)
+        print(f"      🧠 Erbe Kernanzahl von SCF: Starte mit {ph_cores} Core(s).")
+        
         phonon_attempts = 0
         aainit_1core_done = False
 
         while phonon_attempts < 3:
             phonon_attempts += 1
             ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
-
+            
             if ph_res == "DONE": return "DONE"
 
             phase_name = "El-Ph" if is_elph_phase else "Stabilität"
-            print(f"      ⚠️ Phonon Crash/OOM! (Phase, {phase_name})")
+            print(f"      ⚠️ Phonon Crash/OOM! (Phase: {phase_name})")
             crash_reason = analyze_crash_reason(ph_out)
             print_error_log(ph_out, "PHONON ERROR LOG")
 
             if crash_reason == "AAINIT_ERROR":
                 if ph_cores > 1 and not aainit_1core_done:
-                    print("      🔩 aainit-Fehler -> LÖSCHE _ph0 und wechsle auf 1 Core.")
+                    print("      🔩 aainit-Fehler auf 2 Cores -> LÖSCHE _ph0 und wechsle auf 1 Core.")
                     ph_cores = 1
                     aainit_1core_done = True
+                    
                     ph0_path = os.path.join(work_dir, "tmp", "_ph0")
                     if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
                     chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
                     if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
+                    
                     if os.path.exists(ph_out): os.remove(ph_out)
                     phonon_attempts -= 1
                     continue
                 else:
-                    print("      🔩 aainit auch auf 1 Core -> skippe.")
+                    print("      🔩 aainit-Fehler unlösbar -> System-Komplexität zu hoch. Skippe.")
                     update_csv(name, f"SKIPPED (Phonon OOM, Phase {phase_name})")
                     git_sync(f"Phonon OOM, {name}")
                     return "CRASH"
@@ -964,6 +978,7 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
             elif phonon_attempts == 2:
                 print("      🚨 NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, tr2_ph=1.0d-10")
                 write_ph_input(ph_in, tr2="1.0d-10", nq="1,1,1", search_sym=False, elph=is_elph_phase)
+                
                 for cleanup_path in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
                     if os.path.exists(cleanup_path): shutil.rmtree(cleanup_path, ignore_errors=True)
                 if os.path.exists(ph_out): os.remove(ph_out)
@@ -974,17 +989,28 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
         git_sync(f"Phonon Crash, {name}")
         return "CRASH"
 
+    # -------------------------------------------------------------
+    # INIT: Lese aktuelles Grid aus bestehender ph.in (falls existent)
+    # -------------------------------------------------------------
     current_nq = "2,2,2"
+    is_phase2 = False
+    
     if os.path.exists(ph_in):
         with open(ph_in, 'r') as f:
-            nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", f.read(), re.DOTALL)
+            content = f.read()
+            if "electron_phonon" in content: is_phase2 = True
+            nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", content, re.DOTALL)
             if nq_match: current_nq = f"{nq_match.group(1)},{nq_match.group(2)},{nq_match.group(3)}"
 
     row_data = get_csv_full_info(name)
     already_stable = (row_data.get('Stabilität', '') == 'STABIL')
 
+    # -------------------------------------------------------------
+    # PHASE 1: Reine Stabilitätsanalyse (Kein dvscf, kein el-ph)
+    # -------------------------------------------------------------
     if not already_stable:
         print(f"   🔍 PHASE 1: Stabilitätsanalyse für {name}...")
+        
         write_ph_input(ph_in, nq=current_nq, elph=False)
         if os.path.exists(ph_out): os.remove(ph_out)
         
@@ -993,7 +1019,8 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
 
         min_f, stab = "-", "Unbekannt"
         with open(ph_out, 'r') as f:
-            freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", f.read())
+            content = f.read()
+            freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
             if freqs:
                 min_f = min(float(x) for x in freqs)
                 stab  = "STABIL" if min_f > -0.05 else "INSTABIL"
@@ -1005,7 +1032,9 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
         print(f"   ✅ Material ist STABIL (Min Freq, {min_f} THz). Gehe zu Phase 2...")
         update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
 
-    # Vorbereitung für Phase 2: Alten Müll restlos löschen!
+    # -------------------------------------------------------------
+    # PHASE 2: Elektron-Phonon-Kopplung (Nur für stabile Materialien)
+    # -------------------------------------------------------------
     print(f"   ⚛️ PHASE 2 Vorbereitung für {name}: Lösche alle alten Dateien...")
     tmp_path = os.path.join(work_dir, "tmp")
     

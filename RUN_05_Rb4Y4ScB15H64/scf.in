@@ -1,4 +1,5 @@
 &CONTROL
+ disk_io='low',
  nstep = 100,
   calculation = 'vc-relax'
   prefix = 'Rb4Y4ScB15H64'
@@ -19,10 +20,10 @@
   degauss = 0.02
 /
 &ELECTRONS
- mixing_beta = 0.4,
- electron_maxstep = 300,
+ mixing_beta = 0.7,
+ electron_maxstep = 150,
  mixing_mode='plain',
- mixing_ndim = 6,
+ mixing_ndim = 2,
  diagonalization='cg',
   conv_thr = 1.0d-6
 /
@@ -135,4 +136,4 @@ CELL_PARAMETERS (angstrom)
   0.328426  8.327700  0.118197
   0.600261  8.394053  10.682158
 
-! SMART_OOM_LEVEL=3
+! SMART_OOM_LEVEL=4

@@ -1,5 +1,4 @@
 &CONTROL
- nstep = 100,
   calculation = 'vc-relax'
   prefix = 'TiH2'
   outdir = './tmp/'
@@ -20,11 +19,9 @@
   degauss = 0.02
 /
 &ELECTRONS
- mixing_beta = 0.4,
- electron_maxstep = 300,
- mixing_mode='plain',
- mixing_ndim = 6,
- diagonalization='cg',
+ electron_maxstep = 150,
+ mixing_ndim = 8,
+ diagonalization='david',
   conv_thr = 1.0d-6
 /
 &IONS
@@ -48,4 +45,4 @@ CELL_PARAMETERS (angstrom)
   0.900371  2.546634  1.559488
   0.000001  0.000000  3.118977
 
-! SMART_OOM_LEVEL=4
+! SMART_OOM_LEVEL=0

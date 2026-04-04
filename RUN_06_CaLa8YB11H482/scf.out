@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on  3Apr2026 at 19:22: 4 
+     Program PWSCF v.6.7MaX starts on  4Apr2026 at  8:14:35 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -45,8 +45,8 @@
      kinetic-energy cutoff     =      50.0000  Ry
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
-     mixing beta               =       0.4000
-     number of iterations used =            6  plain     mixing
+     mixing beta               =       0.7000
+     number of iterations used =            4  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -298,9 +298,9 @@
 
      Smooth grid:   508969 G-vectors     FFT dimensions: ( 100, 100, 108)
 
-     Estimated max dynamical RAM per process >       6.48 GB
+     Estimated max dynamical RAM per process >       6.43 GB
 
-     Estimated total dynamical RAM >      12.95 GB
+     Estimated total dynamical RAM >      12.86 GB
 --------------------------------------------------------------------------
 MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
 with errorcode 14.

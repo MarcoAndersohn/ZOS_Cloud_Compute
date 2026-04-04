@@ -1168,3 +1168,133 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       ❌ Zu viele Abstürze (3). Skippe.
 To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    ea4d3ecf..110168fa  main -> main
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   110168fa..8833ef9d  main -> main
+⏩ Skip 06_EuGaH4 (INSTABIL)
+🔄 Reaktiviere 06_LiMg4Ga3H20 nach OOM Limit (Kompletter VM-Reset)...
+
+💎 Job, 06_LiMg4Ga3H20
+      📉 RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- QE ERROR LOG ---
+              26           H   tau(  26) = (   0.6866139   0.6967217   0.5539026  )
+              27           H   tau(  27) = (   0.8014543   1.1593945   1.1057104  )
+              28           H   tau(  28) = (   0.1801064   0.6945173  -0.0179065  )
+      
+           number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (  -0.0018748  -0.0007680  -0.4491825), wk =   0.2500000
+              k(    3) = (  -0.0001264  -0.5338388   0.4448773), wk =   0.2500000
+              k(    4) = (  -0.0020012  -0.5346069  -0.0043052), wk =   0.2500000
+              k(    5) = (  -0.5000236  -0.0018789  -0.0021183), wk =   0.2500000
+              k(    6) = (  -0.5018984  -0.0026469  -0.4513008), wk =   0.2500000
+              k(    7) = (  -0.5001500  -0.5357178   0.4427590), wk =   0.2500000
+              k(    8) = (  -0.5020248  -0.5364858  -0.0064235), wk =   0.2500000
+      
+           Dense  grid:   337201 G-vectors     FFT dimensions: (  90,  80, 125)
+      
+           Smooth grid:   119195 G-vectors     FFT dimensions: (  64,  60,  90)
+      
+           Estimated max dynamical RAM per process >     835.09 MB
+      
+           Estimated total dynamical RAM >       1.63 GB
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      [Supraleiter-HPC-Knoten:01496] [[29166,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 507
+      --------------------
+      🔩 aainit-Fehler -> LÖSCHE tmp und wechsle auf 1 Core.
+      📉 RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (1 Cores, OOM-Lvl 0)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 1 Cores)...
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- QE ERROR LOG ---
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (  -0.0018748  -0.0007680  -0.4491825), wk =   0.2500000
+              k(    3) = (  -0.0001264  -0.5338388   0.4448773), wk =   0.2500000
+              k(    4) = (  -0.0020012  -0.5346069  -0.0043052), wk =   0.2500000
+              k(    5) = (  -0.5000236  -0.0018789  -0.0021183), wk =   0.2500000
+              k(    6) = (  -0.5018984  -0.0026469  -0.4513008), wk =   0.2500000
+              k(    7) = (  -0.5001500  -0.5357178   0.4427590), wk =   0.2500000
+              k(    8) = (  -0.5020248  -0.5364858  -0.0064235), wk =   0.2500000
+      
+           Dense  grid:   337201 G-vectors     FFT dimensions: (  90,  80, 125)
+      
+           Smooth grid:   119195 G-vectors     FFT dimensions: (  64,  60,  90)
+      
+           Estimated max dynamical RAM per process >       1.62 GB
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🔧 aainit-Workaround: ecutwfc=40, ecutrho=320.
+      🔧 aainit auf 1 Core -> reduziere ecutwfc und lösche altes tmp.
+      📉 RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (1 Cores, OOM-Lvl 0)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 1 Cores)...
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- QE ERROR LOG ---
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (  -0.0018748  -0.0007680  -0.4491825), wk =   0.2500000
+              k(    3) = (  -0.0001264  -0.5338388   0.4448773), wk =   0.2500000
+              k(    4) = (  -0.0020012  -0.5346069  -0.0043052), wk =   0.2500000
+              k(    5) = (  -0.5000236  -0.0018789  -0.0021183), wk =   0.2500000
+              k(    6) = (  -0.5018984  -0.0026469  -0.4513008), wk =   0.2500000
+              k(    7) = (  -0.5001500  -0.5357178   0.4427590), wk =   0.2500000
+              k(    8) = (  -0.5020248  -0.5364858  -0.0064235), wk =   0.2500000
+      
+           Dense  grid:   241311 G-vectors     FFT dimensions: (  80,  72, 120)
+      
+           Smooth grid:    85213 G-vectors     FFT dimensions: (  54,  54,  80)
+      
+           Estimated max dynamical RAM per process >       1.16 GB
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      ❌ aainit-Fehler unlösbar. System zu komplex. Skippe.

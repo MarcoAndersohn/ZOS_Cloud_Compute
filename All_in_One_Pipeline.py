@@ -401,35 +401,37 @@ def detect_oom_level(input_file):
 
 def apply_oom_settings(input_file, level, force_cg=False):
     with open(input_file, 'r') as f: content = f.read()
-    diag, mix = 'david', 6
-    msg = "Standard (david, mix=6)"
+    diag = 'david'; mix = 8; disk = None 
+    msg = "Standard (david, mix=8)"
 
-    if level >= 1 or force_cg: diag, mix, msg = 'cg', 6, "Stufe 1/CG (cg, mix=6)"
-    if level >= 2: msg = "Stufe 2 (cg, mix=6)"
-    if level >= 3: msg = "Stufe 3 (cg, mix=6)"
-    if level >= 4: msg = "Stufe 4 (cg, mix=6)" # KEIN 1-Core mehr!
+    if level >= 1 or force_cg: diag = 'cg'; mix = 4; msg = "Stufe 1 (cg, mix=4)"
+    if level >= 2: disk = 'low'; msg = "Stufe 2 (cg, mix=4, disk_io='low')"
+    if level >= 3: mix = 3; msg = "Stufe 3 (cg, mix=3, disk_io='low')"
+    if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
 
     print(f"      📉 RAM-Strategie, {msg}")
 
     if "diagonalization" in content:
-        content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]",
-                         f"diagonalization='{diag}'", content)
+        content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", f"diagonalization='{diag}'", content)
     else:
-        content = content.replace("&ELECTRONS",
-                                  f"&ELECTRONS\n diagonalization='{diag}',")
+        content = content.replace("&ELECTRONS", f"&ELECTRONS\n diagonalization='{diag}',")
 
     if "mixing_ndim" in content:
         content = re.sub(r"mixing_ndim\s*=\s*\d+", f"mixing_ndim = {mix}", content)
     else:
-        content = content.replace("&ELECTRONS",
-                                  f"&ELECTRONS\n mixing_ndim = {mix},")
+        content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_ndim = {mix},")
 
-    if "disk_io" in content:
-        content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"],?", "", content)
+    if disk == 'low':
+        if "disk_io" in content:
+            content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"]", "disk_io='low'", content)
+        else:
+            content = content.replace("&CONTROL", "&CONTROL\n disk_io='low',")
+    else:
+        if "disk_io='low'" in content or 'disk_io="low"' in content:
+             content = re.sub(r"disk_io\s*=\s*['\"]low['\"],?", "", content)
 
     if "! SMART_OOM_LEVEL" in content:
-        content = re.sub(r"!\s*SMART_OOM_LEVEL\s*=\s*\d+",
-                         f"! SMART_OOM_LEVEL={level}", content)
+        content = re.sub(r"!\s*SMART_OOM_LEVEL\s*=\s*\d+", f"! SMART_OOM_LEVEL={level}", content)
     else:
         content += f"\n! SMART_OOM_LEVEL={level}\n"
 
@@ -438,53 +440,23 @@ def apply_oom_settings(input_file, level, force_cg=False):
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
+    if "pseudo_dir" in content:
+        content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
+    else:
+        content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    def ensure(field, block, value, pattern=None):
-        nonlocal content
-        if field in content:
-            if pattern:
-                content = re.sub(pattern, value, content)
-        else:
-            content = content.replace(block, f"{block}\n {value},")
-
-    ensure("pseudo_dir", "&CONTROL",
-           f"pseudo_dir='{corr_path}'",
-           rf"pseudo_dir\s*=\s*['\"].*['\"]")
-    ensure("nstep", "&CONTROL", "nstep = 100", r"nstep\s*=\s*\d+")
-    ensure("mixing_mode", "&ELECTRONS", "mixing_mode='plain'",
-           r"mixing_mode\s*=\s*['\"][a-zA-Z\-]+['\"]")
-    ensure("electron_maxstep", "&ELECTRONS", "electron_maxstep = 300",
-           r"electron_maxstep\s*=\s*\d+")
-
-    # Hier lag die zweite Falle, mix_ndim bleibt ab sofort IMMER bei 6
-    beta, mix_ndim = 0.4, 6
-    if iteration_count >= 30: beta = 0.2
-    if iteration_count >= 60: beta = 0.1
-    if iteration_count >= 90: beta = 0.05
+    target_beta = 0.7
+    if iteration_count >= 30: target_beta = 0.4
+    if iteration_count >= 60: target_beta = 0.25
+    if iteration_count >= 90: target_beta = 0.15
 
     if "mixing_beta" in content:
-        content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+",
-                         f"mixing_beta = {beta}", content)
+        content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
+    
+    if "electron_maxstep" in content:
+        content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 150", content)
     else:
-        content = content.replace("&ELECTRONS",
-                                  f"&ELECTRONS\n mixing_beta = {beta},")
-
-    if "mixing_ndim" in content:
-        m = re.search(r"mixing_ndim\s*=\s*(\d+)", content)
-        # Wir korrigieren es hart auf mix_ndim (also 6)
-        if m and int(m.group(1)) != mix_ndim:
-            content = re.sub(r"mixing_ndim\s*=\s*\d+",
-                             f"mixing_ndim = {mix_ndim}", content)
-    else:
-        content = content.replace("&ELECTRONS",
-                                  f"&ELECTRONS\n mixing_ndim = {mix_ndim},")
-
-    if iteration_count >= 60:
-        if "smearing" in content:
-            content = re.sub(r"smearing\s*=\s*['\"][a-zA-Z\-]+['\"]",
-                             "smearing='m-v'", content)
-        else:
-            content = content.replace("&SYSTEM", "&SYSTEM\n smearing='m-v',")
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 150,")
 
     with open(input_file, 'w') as f: f.write(content)
     return True
@@ -738,41 +710,138 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 # 6. SCF-BLOCK
 # =============================================================================
 def run_scf_block(name, work_dir, scf_in, scf_out):
-    # AUTO-HEAL: Wenn kein Output da ist, ignoriere alte OOM-Level in der Datei
-    if not os.path.exists(scf_out):
-        oom_level = 0
-    else:
-        oom_level = detect_oom_level(scf_in)
+    aainit_ecut_reduced = False
     
+    # Auto-Heal: Frischer Start = Level 0
+    if not os.path.exists(scf_out): file_level = 0
+    else: file_level = detect_oom_level(scf_in)
+        
+    start_crash_reason = analyze_crash_reason(scf_out)
+
+    if start_crash_reason == "LIKELY_OOM":
+        attempts = count_job_attempts(TXT_LOG_FILE, name)
+        if os.path.exists(BACKUP_LOG_FILE):
+            attempts = max(attempts, count_job_attempts(BACKUP_LOG_FILE, name))
+        print(f"      🕵️ OOM-Signatur erkannt. Versuch Nr. {attempts} auf Level {file_level}.")
+
+        if os.path.exists(scf_out):
+            ts = datetime.now().strftime("%H%M%S")
+            try:
+                os.rename(scf_out, f"{scf_out}.crash_{ts}")
+                print(f"      👻 Ghost-Protection, scf.out.crash_{ts}")
+            except: pass
+
+        if attempts >= MAX_RETRIES_LEVEL:
+            oom_level = file_level + 1
+            print(f"      ❗ Eskaliere, Level {file_level} -> {oom_level}.")
+            update_csv(name, f"Recovering (Escalating to Lvl {oom_level})")
+        else:
+            oom_level = file_level
+            print(f"      🔄 Level {file_level} nochmal.")
+            update_csv(name, f"Retrying (Attempt {attempts}/{MAX_RETRIES_LEVEL})")
+    else:
+        oom_level = file_level
+
+    # RETTUNG: Bei Stufe 4 wird auf 1 Core zurückgeschaltet!
     current_cores = int(DEFAULT_CORES)
+    if oom_level >= 4: current_cores = int(SAFE_CORES)
+
     crash_counter = 0
+    oom_counter   = 0
 
     while True:
-        apply_oom_settings(scf_in, oom_level)
+        force_cg = False
+        if os.path.exists(scf_out):
+            try:
+                with open(scf_out, 'r', errors='ignore') as f:
+                    if "eigenvalues not converged" in f.read():
+                        force_cg = True
+                        print("      ⚠️ Konvergenz-Probleme -> erzwinge CG.")
+            except: pass
+
+        apply_oom_settings(scf_in, oom_level, force_cg)
         print(f"   1️⃣  SCF ({current_cores} Cores, OOM-Lvl {oom_level})")
         result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
 
         if result == "DONE": return "DONE"
-        
+        if result == "MAX_STEPS":
+            update_csv(name, "SKIPPED (Max BFGS Steps)")
+            git_sync(f"Skipped {name}, >{MAX_BFGS_STEPS} BFGS Steps")
+            return "MAX_STEPS"
+
+        if result == "RESTART_NEEDED":
+            update_csv(name, "Rechnet SCF (Fortsetzung)...")
+            print("      🔄 nstep-Limit -> Geometrie-Optimierung fortsetzen...")
+            continue
+
         if result == "OOM":
+            oom_counter += 1
+            if oom_counter < 3:
+                print(f"      ⚠️ OOM Verdacht. Versuch {oom_counter}/3 auf Lvl {oom_level}...")
+                update_csv(name, f"Retrying (OOM Wait {oom_counter}/3)")
+                time.sleep(2)
+                continue
+
             oom_level += 1
-            if oom_level > 4: 
+            oom_counter = 0
+            crash_counter = 0
+            print(f"      ⚠️ OOM-Limit. Eskaliere zu Level {oom_level}...")
+            
+            labels = {1: "Retrying (OOM Lvl 1, CG)",
+                      2: "Retrying (OOM Lvl 2, DiskIO)",
+                      3: "Retrying (OOM Lvl 3, Mix3)",
+                      4: "Retrying (OOM Lvl 4, 1Core)"}
+            if oom_level in labels:
+                update_csv(name, labels[oom_level])
+                if oom_level == 4: current_cores = int(SAFE_CORES)
+            else:
                 update_csv(name, "SKIPPED (OOM Limit)")
+                print("      ❌ Hardware-Limit erreicht. Skippe.")
                 return "OOM_LIMIT"
             continue
 
         if result == "CRASH":
             reason = analyze_crash_reason(scf_out)
+            print_error_log(scf_out)
+
+            if reason == "NON_CONVERGED":
+                update_csv(name, "SKIPPED (Non-Conv)")
+                return "NON_CONV"
+
+            # RETTUNG: aainit schaltet ebenfalls wieder zurück auf 1 Core
             if reason == "AAINIT_ERROR":
-                # Sofortiger ecut-Workaround statt 1-Core-Suizid
-                apply_aainit_workaround(scf_in)
-                tmp_p = os.path.join(work_dir, "tmp")
-                if os.path.exists(tmp_p): shutil.rmtree(tmp_p, ignore_errors=True)
-                continue
-            
+                if current_cores > 1:
+                    print("      🔩 aainit-Fehler -> LÖSCHE tmp und wechsle auf 1 Core.")
+                    current_cores = 1
+                    crash_counter = 0
+                    tmp_path = os.path.join(work_dir, "tmp")
+                    if os.path.exists(tmp_path): shutil.rmtree(tmp_path, ignore_errors=True)
+                    update_csv(name, "Retrying (aainit -> 1 Core)")
+                    continue
+                else:
+                    if not aainit_ecut_reduced:
+                        aainit_ecut_reduced = True
+                        apply_aainit_workaround(scf_in)
+                        tmp_p = os.path.join(work_dir, "tmp")
+                        if os.path.exists(tmp_p): shutil.rmtree(tmp_p, ignore_errors=True)
+                        print("      🔧 aainit auf 1 Core -> reduziere ecutwfc und lösche altes tmp.")
+                        update_csv(name, "Retrying (aainit -> ecutwfc=40)")
+                        continue
+                    print("      ❌ aainit-Fehler unlösbar. System zu komplex. Skippe.")
+                    update_csv(name, "SKIPPED (OOM Limit)")
+                    return "OOM_LIMIT"
+
             crash_counter += 1
-            if crash_counter >= 3: return "PERM_CRASH"
+            print(f"      ⚠️ Crash ({reason}). Versuch {crash_counter}/3...")
+            if crash_counter >= 3:
+                print(f"      ❌ Zu viele Abstürze ({crash_counter}). Skippe.")
+                update_csv(name, "SKIPPED (Permanent Crash)")
+                git_sync(f"Skipped {name}, Permanent Crash")
+                return "PERM_CRASH"
+
+            update_csv(name, f"Retrying (Crash {crash_counter}/3)")
             time.sleep(2)
+            continue
             
 # =============================================================================
 # 7. PHONON-BLOCK (STRATEGIE A: 2-PHASEN-LOGIK)
@@ -802,42 +871,126 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
             )
 
     def execute_ph_phase(is_elph_phase=False):
+        # Phononen müssen auf 1 Core laufen, wenn SCF Probleme hatte!
         ph_cores = int(DEFAULT_CORES)
+        if "SMART_OOM_LEVEL=4" in open(scf_in).read() or "SMART_OOM_LEVEL=5" in open(scf_in).read():
+            ph_cores = 1
+            
         phonon_attempts = 0
+        aainit_1core_done = False
+
         while phonon_attempts < 3:
             phonon_attempts += 1
             ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+
             if ph_res == "DONE": return "DONE"
 
+            phase_name = "El-Ph" if is_elph_phase else "Stabilität"
+            print(f"      ⚠️ Phonon Crash/OOM! (Phase, {phase_name})")
             crash_reason = analyze_crash_reason(ph_out)
+            print_error_log(ph_out, "PHONON ERROR LOG")
+
             if crash_reason == "AAINIT_ERROR":
-                print("      🔩 aainit-Fehler -> System-Komplexität zu hoch. Skippe.")
-                return "CRASH"
-            
-            # Bei jedem anderen Crash in Phase 2: Tabula Rasa für den nächsten Versuch
-            print(f"      🛡️ Phonon-Recovery Versuch {phonon_attempts}/3...")
-            if os.path.exists(ph_out): os.remove(ph_out)
-            continue
+                if ph_cores > 1 and not aainit_1core_done:
+                    print("      🔩 aainit-Fehler -> LÖSCHE _ph0 und wechsle auf 1 Core.")
+                    ph_cores = 1
+                    aainit_1core_done = True
+                    ph0_path = os.path.join(work_dir, "tmp", "_ph0")
+                    if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
+                    chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
+                    if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
+                    if os.path.exists(ph_out): os.remove(ph_out)
+                    phonon_attempts -= 1
+                    continue
+                else:
+                    print("      🔩 aainit auch auf 1 Core -> skippe.")
+                    update_csv(name, f"SKIPPED (Phonon OOM, Phase {phase_name})")
+                    git_sync(f"Phonon OOM, {name}")
+                    return "CRASH"
+
+            if crash_reason == "HARD":
+                if os.path.exists(ph_out):
+                    try:
+                        ph_content_check = open(ph_out, errors='ignore').read()
+                        if "bad line in namelist" in ph_content_check:
+                            print("      📝 Namelist-Fehler -> schreibe ph.in komplett neu.")
+                            nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", ph_content_check, re.DOTALL)
+                            nq = "2,2,2"
+                            if nq_match: nq = f"{nq_match.group(1)},{nq_match.group(2)},{nq_match.group(3)}"
+                            write_ph_input(ph_in, tr2="1.0d-14", nq=nq, elph=is_elph_phase)
+                            if os.path.exists(ph_out): os.remove(ph_out)
+                            phonon_attempts -= 1
+                            continue
+                    except: pass
+
+            if crash_reason == "XML_ERROR":
+                print("      🧨 XML korrupt -> SCF-Reset.")
+                tmp_save = os.path.join(work_dir, "tmp")
+                if os.path.exists(tmp_save): shutil.rmtree(tmp_save, ignore_errors=True)
+                if os.path.exists(scf_out):  os.remove(scf_out)
+                update_csv(name, "SCF_RESET (XML Error)")
+                return "SCF_RESET"
+
+            if crash_reason in ["SYMMETRY_ERROR", "FFT_SYMMETRY_ERROR"]:
+                print("      🧩 Symmetrie-Problem -> nosym injizieren + SCF-Reset.")
+                source_in = os.path.join(INPUTS_DIR, f"{name}.in")
+                if os.path.exists(source_in):
+                    with open(source_in, 'r') as f: c = f.read()
+                    if "nosym" not in c:
+                        c = c.replace("&SYSTEM", "&SYSTEM\n nosym=.true.,")
+                        with open(source_in, 'w') as f: f.write(c)
+                if os.path.exists(work_dir): shutil.rmtree(work_dir, ignore_errors=True)
+                update_csv(name, "SCF_RESET (Sym Error)")
+                return "SCF_RESET"
+
+            if crash_reason == "DAVCIO_ERROR" or is_recoverable_fragmentation_error(ph_out):
+                print("      🤕 Fragmentierung -> 'Collect-Recovery'...")
+                if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
+                    print("      👍 Recovery OK -> Phononen neu starten.")
+                    if os.path.exists(ph_out): os.remove(ph_out)
+                    continue
+                print("      👎 Recovery fehlgeschlagen.")
+
+            print(f"      🛡️ Phonon-Recovery, Versuch {phonon_attempts}/3")
+
+            if phonon_attempts == 1:
+                print("      📉 tr2_ph=1.0d-12")
+                with open(ph_in, 'r') as f: c = f.read()
+                c = re.sub(r"tr2_ph\s*=\s*[0-9\.dD\-]+", "tr2_ph=1.0d-12", c)
+                with open(ph_in, 'w') as f: f.write(c)
+                if os.path.exists(ph_out): os.remove(ph_out)
+                continue
+
+            elif phonon_attempts == 2:
+                print("      🚨 NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, tr2_ph=1.0d-10")
+                write_ph_input(ph_in, tr2="1.0d-10", nq="1,1,1", search_sym=False, elph=is_elph_phase)
+                for cleanup_path in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                    if os.path.exists(cleanup_path): shutil.rmtree(cleanup_path, ignore_errors=True)
+                if os.path.exists(ph_out): os.remove(ph_out)
+                continue
+
+        print("      ❌ Phononen endgültig fehlgeschlagen.")
+        update_csv(name, "SKIPPED (Phonon Crash)")
+        git_sync(f"Phonon Crash, {name}")
         return "CRASH"
 
-    # --- PHASE 1 Check ---
-    row_data = get_csv_full_info(name)
-    already_stable = (row_data.get('Stabilität', '') == 'STABIL')
-
-    # Lese aktuelles Grid aus bestehender ph.in (falls existent)
     current_nq = "2,2,2"
     if os.path.exists(ph_in):
         with open(ph_in, 'r') as f:
             nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", f.read(), re.DOTALL)
             if nq_match: current_nq = f"{nq_match.group(1)},{nq_match.group(2)},{nq_match.group(3)}"
 
+    row_data = get_csv_full_info(name)
+    already_stable = (row_data.get('Stabilität', '') == 'STABIL')
+
     if not already_stable:
         print(f"   🔍 PHASE 1: Stabilitätsanalyse für {name}...")
         write_ph_input(ph_in, nq=current_nq, elph=False)
-        res = execute_ph_phase(is_elph_phase=False)
-        if res != "DONE": return res
+        if os.path.exists(ph_out): os.remove(ph_out)
         
-        # Stabilität prüfen
+        phase1_res = execute_ph_phase(is_elph_phase=False)
+        if phase1_res != "DONE": return phase1_res
+
         min_f, stab = "-", "Unbekannt"
         with open(ph_out, 'r') as f:
             freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", f.read())
@@ -852,24 +1005,18 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
         print(f"   ✅ Material ist STABIL (Min Freq, {min_f} THz). Gehe zu Phase 2...")
         update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
 
-    # --- PHASE 2 VORBEREITUNG (Der radikale Hausputz) ---
+    # Vorbereitung für Phase 2: Alten Müll restlos löschen!
     print(f"   ⚛️ PHASE 2 Vorbereitung für {name}: Lösche alle alten Dateien...")
     tmp_path = os.path.join(work_dir, "tmp")
     
-    # 1. Lösche _ph0 Ordner UND DEN CHECKPOINT, damit nichts wiederhergestellt wird!
     ph0_path = os.path.join(tmp_path, "_ph0")
     if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
     
     chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
     if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
     
-    # 2. Lösche die korrupten .a2Fsave Dateien
-    for f in glob.glob(os.path.join(tmp_path, "*.a2Fsave*")):
-        os.remove(f)
-        
-    # 3. Lösche alte dvscf Dateien
-    for f in glob.glob(os.path.join(tmp_path, "*.dvscf*")):
-        os.remove(f)
+    for f in glob.glob(os.path.join(tmp_path, "*.a2Fsave*")): os.remove(f)
+    for f in glob.glob(os.path.join(tmp_path, "*.dvscf*")): os.remove(f)
 
     if os.path.exists(ph_out): os.remove(ph_out)
     

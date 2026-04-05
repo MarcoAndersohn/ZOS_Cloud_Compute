@@ -1,5 +1,5 @@
 
-     Program PWSCF v.7.5 starts on  5Apr2026 at  8: 6:38 
+     Program PWSCF v.7.5 starts on  5Apr2026 at 18: 0:52 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -10,10 +10,10 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     1 processors
+     Parallel version (MPI), running on     2 processors
 
      MPI processes distributed on     1 nodes
-     6686 MiB available memory on the printing compute node when the environment starts
+     6456 MiB available memory on the printing compute node when the environment starts
 
      Waiting for input...
      Reading input from standard input
@@ -28,13 +28,16 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
      Exact exchange band parallelism type set to band_pairs
 
 
+     R & G space division:  proc/nbgrp/npool/nimage =       2
      Subspace diagonalization in iterative solution of the eigenvalue problem:
      a serial algorithm will be used
 
 
-     G-vector sticks info
+     Parallelization info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        7577    3790   1012               692930   245050   33977
+     Max        7578    3791   1013               692931   245051   33978
      Sum       15155    7581   2025              1385861   490101   67955
 
      Using Slab Decomposition
@@ -52,7 +55,7 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            2  plain     mixing
+     number of iterations used =            8  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -305,31 +308,6 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
 
      Smooth grid:   490101 G-vectors     FFT dimensions: ( 100, 100, 100)
 
-     Estimated max dynamical RAM per process >      12.23 GB
+     Estimated max dynamical RAM per process >       6.25 GB
 
-     Initial potential from superposition of free atoms
-
-     starting charge     262.7628, renormalised to     263.0000
-
-     negative rho (up, down):  4.329E-02 0.000E+00
-     Starting wfcs are  302 randomized atomic wfcs
-     Checking if some PAW data can be deallocated... 
-
-     total cpu time spent up to now is       95.7 secs
-
-     Self-consistent Calculation
-
-     iteration #  1     ecut=    50.00 Ry     beta= 0.70
-     CG style diagonalization
-     ethr =  1.00E-02,  avg # of iterations =  2.8
-
-     negative rho (up, down):  4.400E-02 0.000E+00
-
-     total cpu time spent up to now is      908.7 secs
-
-     total energy              =   -1293.87066536 Ry
-     estimated scf accuracy    <      12.97067218 Ry
-
-     iteration #  2     ecut=    50.00 Ry     beta= 0.70
-     CG style diagonalization
-     ethr =  4.93E-03,  avg # of iterations =  3.6
+     Estimated total dynamical RAM >      12.49 GB

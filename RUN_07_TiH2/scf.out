@@ -1,34 +1,45 @@
 
-     Program PWSCF v.6.7MaX starts on  4Apr2026 at  8:18:15 
+     Program PWSCF v.7.5 starts on  5Apr2026 at 18: 6:41 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
          "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
          "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+         "P. Giannozzi et al., J. Chem. Phys. 152 154105 (2020);
           URL http://www.quantum-espresso.org", 
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     1 processors
+     Parallel version (MPI), running on     2 processors
 
      MPI processes distributed on     1 nodes
+     6521 MiB available memory on the printing compute node when the environment starts
+
      Waiting for input...
      Reading input from standard input
 
      Current dimensions of program PWSCF are:
      Max number of different atomic species (ntypx) = 10
      Max number of k-points (npk) =  40000
-     Max angular momentum in pseudopotentials (lmaxx) =  3
+     Max angular momentum in pseudopotentials (lmaxx) =  4
      file H.UPF: wavefunction(s)  1S renormalized
 
+     Exact exchange band parallelism type set to band_pairs
+
+
+     R & G space division:  proc/nbgrp/npool/nimage =       2
      Subspace diagonalization in iterative solution of the eigenvalue problem:
      a serial algorithm will be used
 
 
-     G-vector sticks info
+     Parallelization info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Sum         769     379    121                14067     4957     893
+     Min         477     237     75                 9788     3426     604
+     Max         478     238     76                 9791     3429     607
+     Sum         955     475    151                19579     6855    1211
+
+     Using Slab Decomposition
 
 
 
@@ -39,8 +50,8 @@
      number of atomic types    =            2
      number of electrons       =        14.00
      number of Kohn-Sham states=           11
-     kinetic-energy cutoff     =      40.0000  Ry
-     charge density cutoff     =     320.0000  Ry
+     kinetic-energy cutoff     =      50.0000  Ry
+     charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
      number of iterations used =            8  plain     mixing
@@ -94,8 +105,8 @@
                                                        1.000   1.000
 
      atomic species   valence    mass     pseudopotential
-        H              1.00     1.00000     H ( 1.00)
-        Ti            12.00     1.00000     Ti( 1.00)
+     H                 1.00     1.00000     H ( 1.00)
+     Ti               12.00     1.00000     Ti( 1.00)
 
      No symmetry found
 
@@ -104,9 +115,9 @@
    Cartesian axes
 
      site n.     atom                  positions (alat units)
-         1           Ti  tau(   1) = (   0.0000000  -0.0000000  -0.0000000  )
-         2           H   tau(   2) = (   0.8660254   0.6123727   1.4999998  )
-         3           H   tau(   3) = (   0.2886751   0.2041243   0.4999999  )
+         1        Ti     tau(   1) = (   0.0000000  -0.0000000  -0.0000000  )
+         2        H      tau(   2) = (   0.8660254   0.6123727   1.4999998  )
+         3        H      tau(   3) = (   0.2886751   0.2041243   0.4999999  )
 
      number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
                        cart. coord. in units 2pi/alat
@@ -119,23 +130,222 @@
         k(    7) = (  -0.5773503  -0.4082483   0.0000002), wk =   0.2500000
         k(    8) = (  -0.2886753  -0.2041242  -0.4999998), wk =   0.2500000
 
-     Dense  grid:    14067 G-vectors     FFT dimensions: (  36,  36,  36)
+     Dense  grid:    19579 G-vectors     FFT dimensions: (  40,  40,  40)
 
-     Smooth grid:     4957 G-vectors     FFT dimensions: (  24,  24,  24)
+     Smooth grid:     6855 G-vectors     FFT dimensions: (  27,  27,  27)
 
-     Estimated max dynamical RAM per process >      59.44 MB
+     Estimated max dynamical RAM per process >      43.76 MB
 
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine aainit (14):
-     mx dimension too small
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Estimated total dynamical RAM >      87.51 MB
 
-     stopping ...
+     Initial potential from superposition of free atoms
+
+     starting charge      12.9999, renormalised to      14.0000
+     Starting wfcs are   12 randomized atomic wfcs
+     Checking if some PAW data can be deallocated... 
+
+     total cpu time spent up to now is        1.0 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     ethr =  1.00E-02,  avg # of iterations =  3.6
+
+     total cpu time spent up to now is        1.5 secs
+
+     total energy              =    -118.83333790 Ry
+     estimated scf accuracy    <       0.59336134 Ry
+
+     iteration #  2     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     ethr =  4.24E-03,  avg # of iterations =  4.0
+
+     total cpu time spent up to now is        2.0 secs
+
+     total energy              =    -119.00605024 Ry
+     estimated scf accuracy    <       0.27171353 Ry
+
+     iteration #  3     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     ethr =  1.94E-03,  avg # of iterations =  3.4
+
+     total cpu time spent up to now is        2.4 secs
+
+     total energy              =    -119.05901837 Ry
+     estimated scf accuracy    <       0.00164328 Ry
+
+     iteration #  4     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     ethr =  1.17E-05,  avg # of iterations =  3.1
+
+     total cpu time spent up to now is        2.9 secs
+
+     total energy              =    -119.06058068 Ry
+     estimated scf accuracy    <       0.00029580 Ry
+
+     iteration #  5     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     ethr =  2.11E-06,  avg # of iterations =  2.0
+
+     total cpu time spent up to now is        3.3 secs
+
+     total energy              =    -119.06059555 Ry
+     estimated scf accuracy    <       0.00005096 Ry
+
+     iteration #  6     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     ethr =  3.64E-07,  avg # of iterations =  2.4
+
+     total cpu time spent up to now is        3.8 secs
+
+     total energy              =    -119.06060343 Ry
+     estimated scf accuracy    <       0.00000381 Ry
+
+     iteration #  7     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     ethr =  2.72E-08,  avg # of iterations =  4.0
+
+     total cpu time spent up to now is        4.2 secs
+
+     End of self-consistent calculation
+
+          k = 0.0000 0.0000 0.0000 (   869 PWs)   bands (ev):
+
+   -44.6895 -20.7970 -20.7967 -20.7965   1.4884  12.0637  12.0637  12.0639
+    12.5087  13.9318  13.9318
+
+          k = 0.2887 0.2041-0.5000 (   862 PWs)   bands (ev):
+
+   -44.6279 -21.2215 -20.8497 -20.8495   4.7537   6.8761  12.1815  12.1816
+    14.7537  14.7539  17.2421
+
+          k = 0.0000-0.6124 0.0000 (   862 PWs)   bands (ev):
+
+   -44.6279 -21.2214 -20.8498 -20.8495   4.7537   6.8761  12.1815  12.1815
+    14.7537  14.7540  17.2422
+
+          k = 0.2887-0.4082-0.5000 (   846 PWs)   bands (ev):
+
+   -44.6077 -21.2110 -20.9371 -20.9367   6.1317   6.8190   9.1876  14.8626
+    14.8767  14.8770  19.5307
+
+          k =-0.5774 0.2041 0.0000 (   862 PWs)   bands (ev):
+
+   -44.6279 -21.2212 -20.8499 -20.8495   4.7537   6.8762  12.1813  12.1814
+    14.7538  14.7540  17.2423
+
+          k =-0.2887 0.4082-0.5000 (   846 PWs)   bands (ev):
+
+   -44.6077 -21.2110 -20.9370 -20.9368   6.1317   6.8190   9.1876  14.8626
+    14.8767  14.8769  19.5307
+
+          k =-0.5774-0.4082 0.0000 (   846 PWs)   bands (ev):
+
+   -44.6077 -21.2110 -20.9369 -20.9368   6.1318   6.8190   9.1876  14.8626
+    14.8767  14.8768  19.5307
+
+          k =-0.2887-0.2041-0.5000 (   862 PWs)   bands (ev):
+
+   -44.6279 -21.2211 -20.8499 -20.8496   4.7537   6.8762  12.1813  12.1814
+    14.7538  14.7540  17.2423
+
+     the Fermi energy is    12.1671 ev
+
+!    total energy              =    -119.06060445 Ry
+     estimated scf accuracy    <       0.00000035 Ry
+     smearing contrib. (-TS)   =      -0.00658458 Ry
+     internal energy E=F+TS    =    -119.05401987 Ry
+
+     The total energy is F=E-TS. E is the sum of the following terms:
+     one-electron contribution =     -44.11536434 Ry
+     hartree contribution      =      26.35210981 Ry
+     xc contribution           =     -16.10405152 Ry
+     ewald contribution        =     -85.18643375 Ry
+     one-center paw contrib.   =      -0.00028006 Ry
+
+     convergence has been achieved in   7 iterations
+
+     Forces acting on atoms (cartesian axes, Ry/au):
+
+     atom    1 type  2   force =    -0.00000788   -0.00000020   -0.00000786
+     atom    2 type  1   force =     0.00000849   -0.00001055   -0.00001405
+     atom    3 type  1   force =    -0.00000061    0.00001075    0.00002191
+
+     Total force =     0.000033     Total SCF correction =     0.000072
+     SCF correction compared to forces is large: reduce conv_thr to get better values
+
+
+     Computing stress (Cartesian axis) and pressure
+
+          total   stress  (Ry/bohr**3)                   (kbar)     P=       99.01
+   0.00067357  -0.00000022   0.00000103           99.09       -0.03        0.15
+  -0.00000022   0.00067262   0.00000069           -0.03       98.95        0.10
+   0.00000103   0.00000069   0.00067306            0.15        0.10       99.01
+
+
+     BFGS Geometry Optimization
+     Energy error            =      4.8E-03 Ry
+     Gradient error          =      2.2E-05 Ry/Bohr
+     Cell gradient error     =      9.9E+01 kbar
+
+     number of scf cycles    =   1
+     number of bfgs steps    =   0
+
+     enthalpy           new  =    -119.0606044519 Ry
+
+     new trust radius        =       0.0405242236 bohr
+     new conv_thr            =       0.0000010000 Ry
+
+     new unit-cell volume =    152.21566 a.u.^3 (    22.55603 Ang^3 )
+     density =      0.22086 g/cm^3
+
+CELL_PARAMETERS (angstrom)
+   2.746638087   0.000011947   1.585798298
+   0.915558623   2.589478753   1.585795993
+   0.000081244   0.000053906   3.171458655
+
+ATOMIC_POSITIONS (angstrom)
+Ti              -0.0000042416       -0.0000001064       -0.0000042309
+H                2.7467122709        1.9421532882        4.7572813882
+H                0.9155689083        0.6473924420        1.5857747719
+
+
+
+     Writing config-only to output data dir ./tmp/TiH2.save/ :
+     XML data file
+     NEW-OLD atomic charge density approx. for the potential
+     New effective cutoffs (rho, wfc):  384.17   47.68
+
+     total cpu time spent up to now is        5.1 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     ethr =  1.00E-06,  avg # of iterations =  6.4
+
+     total cpu time spent up to now is        5.8 secs
+
+     total energy              =    -119.06339762 Ry
+     estimated scf accuracy    <       0.00024537 Ry
+
+     iteration #  2     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     ethr =  1.75E-06,  avg # of iterations =  4.0
+
+     total cpu time spent up to now is        6.3 secs
+
+     total energy              =    -119.06344506 Ry
+     estimated scf accuracy    <       0.00023645 Ry
+
+     iteration #  3     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+     ethr =  1.69E-06,  avg # of iterations =  2.8
 --------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
-with errorcode 14.
-
-NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
-You may or may not see output from other processes, depending on
-exactly when Open MPI kills them.
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
 --------------------------------------------------------------------------

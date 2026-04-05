@@ -758,3 +758,16 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    1️⃣  SCF (2 Cores, OOM-Lvl 0)
       🛡️ tmp defekt! Lade Safe-Checkpoint...
       ✅ Checkpoint geladen!
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (restart, 2 Cores)...
+      💾 Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+ ! [remote rejected]   main -> main (cannot lock ref 'refs/heads/main': is at bca34c19f91634fc0fc76bea5046d011a46cc364 but expected 2af58fdac97efed943a77b316e3b34585da20d98)
+error: failed to push some refs to 'https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git'
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 1/3 auf Lvl 0...
+      📉 RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      ✅ Gültige XML gefunden -> Restart.

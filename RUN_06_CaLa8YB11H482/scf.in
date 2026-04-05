@@ -20,7 +20,7 @@
 /
 &ELECTRONS
  electron_maxstep = 150,
- mixing_ndim = 3,
+ mixing_ndim = 2,
  diagonalization='cg',
   conv_thr = 1.0d-6
 /
@@ -173,4 +173,4 @@ CELL_PARAMETERS (angstrom)
   0.010573  11.360727  0.078673
   0.039944  0.078673  12.229854
 
-! SMART_OOM_LEVEL=3
+! SMART_OOM_LEVEL=4

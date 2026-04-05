@@ -1,8 +1,8 @@
 Name,Status,Fermi Energie (eV),DOS @ Fermi,Metall?,Min Freq (THz),Stabilität,Lambda,Omega_log (K),Tc (K),Timestamp
-01_HfH3_Top1,Fertig (Isolator),8.6779,-0.0,NEIN,-,-,,,,2026-04-05 02:51
+01_HfH3_Top1,Fertig (Isolator),8.6779,-0.0,NEIN,-,-,,,,2026-04-05 17:52
 01_K7SrMg4AlB15H64,SKIPPED (Permanent Crash),-,-,-,-,-,,,,2026-03-24 13:19
-01_LiTaH6Ru,Fertig (Isolator),11.6038,-0.4188,NEIN,-,-,,,,2026-04-05 02:51
-01_SrMgGaB3H16,Fertig (Isolator),-1.5695,-0.0,NEIN,-,-,,,,2026-04-05 02:51
+01_LiTaH6Ru,Fertig (Isolator),11.6038,-0.4188,NEIN,-,-,,,,2026-04-05 17:52
+01_SrMgGaB3H16,Fertig (Isolator),-1.5695,-0.0,NEIN,-,-,,,,2026-04-05 17:52
 02_K3Sr4TaGaB11H48,SCF_RESET (XML Error),2.9163,1.326,JA,-,-,,,,2026-04-05 02:51
 02_K4BaGd2AlBH412,SKIPPED (OOM Limit),-,-,-,-,-,,,,2026-04-05 03:41
 02_Rb3BaCaGa3H16,SKIPPED (Phonon Crash),5.136,7.061,JA,-,Unbekannt,,,,2026-03-24 13:20
@@ -16,7 +16,7 @@ Name,Status,Fermi Energie (eV),DOS @ Fermi,Metall?,Min Freq (THz),Stabilität,La
 04_LiMgAl2H92,Fertig (Isolator),-0.4804,0.0,NEIN,-,-,,,,2026-04-05 08:34
 05_HfTiBH42,Fertig (Metall),14.4022,0.9265,JA,-55.989224,INSTABIL,,,,2026-04-05 08:34
 05_K4MgB3H16,Fertig (Isolator),1.9394,0.0,NEIN,-,-,,,,2026-04-05 08:34
-05_Rb4Y4ScB15H64,Rechnet SCF...,-,-,-,-,-,,,,2026-04-05 08:34
+05_Rb4Y4ScB15H64,Retrying (Crash 1/3),-,-,-,-,-,,,,2026-04-05 17:52
 05_ZrScH12,Fertig (Metall),4.1985,0.5212,JA,-428.121879,INSTABIL,,,,2026-04-04 08:13
 06_CaLa8YB11H482,SKIPPED (Permanent Crash),-,-,-,-,-,,,,2026-04-04 08:15
 06_EuGaH4,Fertig (Metall),11.0653,0.6396,JA,-29.850576,INSTABIL,,,,2026-04-04 08:15
@@ -36,6 +36,6 @@ Name,Status,Fermi Energie (eV),DOS @ Fermi,Metall?,Min Freq (THz),Stabilität,La
 10_Mg4ZrGa3H20,SKIPPED (OOM Limit),3.6541,3.73,JA,-,-,,,,2026-04-04 08:20
 07_K4Sr4LaB11H48,Fertig (Isolator),2.131,0.0,NEIN,-,-,,,,2026-04-04 08:16
 10_TaTiH6Ru,"SKIPPED (Phonon OOM, Phase Stabilität)",13.8939,0.2695,JA,-,-,,,,2026-04-04 08:20
-02_BaMg3H8,SCF_RESET (XML Error),7.6266,0.2343,JA,3.654379,STABIL,,,,2026-04-05 02:51
+02_BaMg3H8,Rechnet SCF...,7.6266,0.2343,JA,3.654379,STABIL,,,,2026-04-05 17:52
 08_Ti3GaH7,SKIPPED (OOM Limit),-,-,-,-,-,,,,2026-04-04 08:19
 09_Sr3ZrAlH54,SKIPPED (OOM Limit),-,-,-,-,-,,,,2026-04-04 08:19

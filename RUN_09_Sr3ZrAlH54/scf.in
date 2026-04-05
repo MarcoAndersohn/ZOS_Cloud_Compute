@@ -1,6 +1,5 @@
 &CONTROL
  disk_io='low',
- nstep = 100,
   calculation = 'vc-relax'
   prefix = 'Sr3ZrAlH54'
   outdir = './tmp/'
@@ -13,17 +12,15 @@
   ibrav = 0
   nat = 28
   ntyp = 4
-  ecutwfc = 40.0
-  ecutrho = 320.0
+  ecutwfc = 50.0
+  ecutrho = 400.0
   occupations = 'smearing'
   smearing = 'methfessel-paxton'
   degauss = 0.02
 /
 &ELECTRONS
- mixing_beta = 0.7,
  electron_maxstep = 150,
- mixing_mode='plain',
- mixing_ndim = 4,
+ mixing_ndim = 3,
  diagonalization='cg',
   conv_thr = 1.0d-6
 /
@@ -75,4 +72,4 @@ CELL_PARAMETERS (angstrom)
   -0.018933  4.988538  0.071522
   0.009204  0.173965  12.173293
 
-! SMART_OOM_LEVEL=2
+! SMART_OOM_LEVEL=3

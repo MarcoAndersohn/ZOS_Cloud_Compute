@@ -1,5 +1,5 @@
 
-     Program PWSCF v.7.5 starts on  5Apr2026 at 18:13: 5 
+     Program PWSCF v.7.5 starts on  5Apr2026 at 18:15:11 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -10,10 +10,10 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     2 processors
+     Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     6509 MiB available memory on the printing compute node when the environment starts
+     6433 MiB available memory on the printing compute node when the environment starts
 
      Waiting for input...
      Reading input from standard input
@@ -30,16 +30,13 @@
      Message from routine setup:
      using ibrav=0 with symmetry is DISCOURAGED, use correct ibrav instead
 
-     R & G space division:  proc/nbgrp/npool/nimage =       2
      Subspace diagonalization in iterative solution of the eigenvalue problem:
      a serial algorithm will be used
 
 
-     Parallelization info
+     G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min        1203     600    189                27961     9870    1749
-     Max        1204     601    190                27964     9871    1750
      Sum        2407    1201    379                55925    19741    3499
 
      Using Slab Decomposition
@@ -57,7 +54,7 @@
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            4  plain     mixing
+     number of iterations used =            2  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -159,9 +156,7 @@
 
      Smooth grid:    19741 G-vectors     FFT dimensions: (  45,  45,  30)
 
-     Estimated max dynamical RAM per process >     114.24 MB
-
-     Estimated total dynamical RAM >     228.49 MB
+     Estimated max dynamical RAM per process >     215.41 MB
 
      Initial potential from superposition of free atoms
 
@@ -171,9 +166,27 @@
      Starting wfcs are   28 randomized atomic wfcs
      Checking if some PAW data can be deallocated... 
 
-     total cpu time spent up to now is        3.2 secs
+     total cpu time spent up to now is        2.9 secs
 
      Self-consistent Calculation
 
      iteration #  1     ecut=    50.00 Ry     beta= 0.70
      CG style diagonalization
+     ethr =  1.00E-02,  avg # of iterations =  2.5
+
+     negative rho (up, down):  6.072E-02 0.000E+00
+
+     total cpu time spent up to now is        4.8 secs
+
+     total energy              =    -852.78034374 Ry
+     estimated scf accuracy    <       0.94697050 Ry
+
+     iteration #  2     ecut=    50.00 Ry     beta= 0.70
+     CG style diagonalization
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
+--------------------------------------------------------------------------

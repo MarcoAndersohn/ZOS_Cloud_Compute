@@ -1,5 +1,5 @@
 
-     Program PWSCF v.7.5 starts on  5Apr2026 at 18:10: 7 
+     Program PWSCF v.7.5 starts on  5Apr2026 at 18:20:54 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -13,7 +13,7 @@
      Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     6512 MiB available memory on the printing compute node when the environment starts
+     6503 MiB available memory on the printing compute node when the environment starts
 
      Waiting for input...
      Reading input from standard input
@@ -183,17 +183,11 @@
      CG style diagonalization
      ethr =  1.00E-02,  avg # of iterations =  2.5
 
-     total cpu time spent up to now is        5.3 secs
+     total cpu time spent up to now is        5.2 secs
 
      total energy              =    -850.15880897 Ry
      estimated scf accuracy    <       0.45390104 Ry
 
      iteration #  2     ecut=    50.00 Ry     beta= 0.70
      CG style diagonalization
---------------------------------------------------------------------------
-Primary job  terminated normally, but 1 process returned
-a non-zero exit code. Per user-direction, the job has been aborted.
---------------------------------------------------------------------------
---------------------------------------------------------------------------
-mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
---------------------------------------------------------------------------
+     ethr =  1.62E-03,  avg # of iterations =  4.0

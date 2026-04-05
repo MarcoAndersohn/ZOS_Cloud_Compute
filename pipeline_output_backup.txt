@@ -1947,3 +1947,160 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       💾 Erstelle Checkpoint...
       ✅ Checkpoint erstellt.
 Everything up-to-date
+      --- QE ERROR LOG ---
+      CELL_PARAMETERS (angstrom)
+         2.760454624   0.000309263   1.594234364
+         0.920434230   2.601106618   1.594249758
+         0.001572074   0.001129753   3.185748611
+      
+      ATOMIC_POSITIONS (angstrom)
+      Ti              -0.0001029327       -0.0000474182       -0.0001182257
+      H                2.7618872376        1.9519417228        4.7807644276
+      H                0.9206756018        0.6506523503        1.5935855091
+      
+      
+      
+           Writing config-only to output data dir ./tmp/TiH2.save/ :
+           XML data file
+           NEW-OLD atomic charge density approx. for the potential
+           New effective cutoffs (rho, wfc):  381.19   47.31
+      
+           total cpu time spent up to now is        5.3 secs
+      
+           Self-consistent Calculation
+      
+           iteration #  1     ecut=    50.00 Ry     beta= 0.70
+           Davidson diagonalization with overlap
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
+      --------------------------------------------------------------------------
+      --------------------
+      ⚠️ Crash (HARD). Versuch 3/3...
+      ❌ Zu viele Abstürze (3). Skippe.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   5ff3144d..146f0352  main -> main
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   146f0352..d9b77764  main -> main
+⏩ Skip 08_Li5Al3H16 (Isolator)
+🔄 Reaktiviere 08_LiScH6Pt nach OOM Limit (Kompletter VM-Reset)...
+
+💎 Job, 08_LiScH6Pt
+      📉 RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 1/3 auf Lvl 0...
+      📉 RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 2/3 auf Lvl 0...
+      📉 RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM-Limit. Eskaliere zu Level 1...
+      📉 RAM-Strategie, Stufe 1 (cg, mix=4)
+   1️⃣  SCF (2 Cores, OOM-Lvl 1)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 1/3 auf Lvl 1...
+      📉 RAM-Strategie, Stufe 1 (cg, mix=4)
+   1️⃣  SCF (2 Cores, OOM-Lvl 1)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 2/3 auf Lvl 1...
+      📉 RAM-Strategie, Stufe 1 (cg, mix=4)
+   1️⃣  SCF (2 Cores, OOM-Lvl 1)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM-Limit. Eskaliere zu Level 2...
+      📉 RAM-Strategie, Stufe 2 (cg, mix=4, disk_io='low')
+   1️⃣  SCF (2 Cores, OOM-Lvl 2)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 1/3 auf Lvl 2...
+      📉 RAM-Strategie, Stufe 2 (cg, mix=4, disk_io='low')
+   1️⃣  SCF (2 Cores, OOM-Lvl 2)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 2/3 auf Lvl 2...
+      📉 RAM-Strategie, Stufe 2 (cg, mix=4, disk_io='low')
+   1️⃣  SCF (2 Cores, OOM-Lvl 2)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM-Limit. Eskaliere zu Level 3...
+      📉 RAM-Strategie, Stufe 3 (cg, mix=3, disk_io='low')
+   1️⃣  SCF (2 Cores, OOM-Lvl 3)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 1/3 auf Lvl 3...
+      📉 RAM-Strategie, Stufe 3 (cg, mix=3, disk_io='low')
+   1️⃣  SCF (2 Cores, OOM-Lvl 3)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 2/3 auf Lvl 3...
+      📉 RAM-Strategie, Stufe 3 (cg, mix=3, disk_io='low')
+   1️⃣  SCF (2 Cores, OOM-Lvl 3)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM-Limit. Eskaliere zu Level 4...
+      📉 RAM-Strategie, Stufe 4 (cg, mix=2, disk_io='low', 1 Core)
+   1️⃣  SCF (1 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 1 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 1/3 auf Lvl 4...
+      📉 RAM-Strategie, Stufe 4 (cg, mix=2, disk_io='low', 1 Core)
+   1️⃣  SCF (1 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 1 Cores)...
+      💀 Abruptes Ende (Silent OOM).
+      ⚠️ OOM Verdacht. Versuch 2/3 auf Lvl 4...
+      📉 RAM-Strategie, Stufe 4 (cg, mix=2, disk_io='low', 1 Core)
+   1️⃣  SCF (1 Cores, OOM-Lvl 4)
+      🆕 Kein Speicherstand -> From Scratch.

@@ -1,5 +1,5 @@
 
-     Program PWSCF v.7.5 starts on  5Apr2026 at 18:18:40 
+     Program PWSCF v.7.5 starts on  5Apr2026 at 18:20:46 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -10,10 +10,10 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     2 processors
+     Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     6522 MiB available memory on the printing compute node when the environment starts
+     6511 MiB available memory on the printing compute node when the environment starts
 
      Waiting for input...
      Reading input from standard input
@@ -29,16 +29,13 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
      Exact exchange band parallelism type set to band_pairs
 
 
-     R & G space division:  proc/nbgrp/npool/nimage =       2
      Subspace diagonalization in iterative solution of the eigenvalue problem:
      a serial algorithm will be used
 
 
-     Parallelization info
+     G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min        2643    1322    369               163239    57709    8529
-     Max        2644    1323    370               163242    57710    8530
      Sum        5287    2645    739               326481   115419   17059
 
      Using Slab Decomposition
@@ -56,7 +53,7 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            8  plain     mixing
+     number of iterations used =            2  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -195,9 +192,7 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
 
      Smooth grid:   115419 G-vectors     FFT dimensions: (  64,  54,  90)
 
-     Estimated max dynamical RAM per process >     816.25 MB
-
-     Estimated total dynamical RAM >       1.59 GB
+     Estimated max dynamical RAM per process >       1.52 GB
 
      Initial potential from superposition of free atoms
 
@@ -205,3 +200,10 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
 
      negative rho (up, down):  6.079E-02 0.000E+00
      Starting wfcs are  100 randomized atomic wfcs
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
+--------------------------------------------------------------------------

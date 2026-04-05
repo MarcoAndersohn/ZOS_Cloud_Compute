@@ -1,5 +1,5 @@
 
-     Program PWSCF v.7.5 starts on  5Apr2026 at 17:56:34 
+     Program PWSCF v.7.5 starts on  5Apr2026 at 17:56:56 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -13,7 +13,7 @@
      Parallel version (MPI), running on     2 processors
 
      MPI processes distributed on     1 nodes
-     6348 MiB available memory on the printing compute node when the environment starts
+     6381 MiB available memory on the printing compute node when the environment starts
 
      Waiting for input...
      Reading input from standard input
@@ -54,7 +54,7 @@
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            4  plain     mixing
+     number of iterations used =            3  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -306,19 +306,6 @@
 
      Smooth grid:   508969 G-vectors     FFT dimensions: ( 100, 100, 108)
 
-     Estimated max dynamical RAM per process >       6.43 GB
+     Estimated max dynamical RAM per process >       6.41 GB
 
-     Estimated total dynamical RAM >      12.86 GB
-
-     Initial potential from superposition of free atoms
-
-     starting charge     270.7264, renormalised to     271.0000
-
-     negative rho (up, down):  4.324E-02 0.000E+00
---------------------------------------------------------------------------
-Primary job  terminated normally, but 1 process returned
-a non-zero exit code. Per user-direction, the job has been aborted.
---------------------------------------------------------------------------
---------------------------------------------------------------------------
-mpirun noticed that process rank 1 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
---------------------------------------------------------------------------
+     Estimated total dynamical RAM >      12.82 GB

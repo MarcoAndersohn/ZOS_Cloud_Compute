@@ -1,6 +1,7 @@
 &CONTROL
  restart_mode='from_scratch',
  wf_collect=.true.,
+ disk_io='low',
   calculation = 'vc-relax'
   prefix = 'HfTh3TiH38'
   outdir = './tmp/'
@@ -13,16 +14,16 @@
   ibrav = 0
   nat = 36
   ntyp = 4
-  ecutwfc = 40.0
-  ecutrho = 320.0
+  ecutwfc = 50.0
+  ecutrho = 400.0
   occupations = 'smearing'
   smearing = 'methfessel-paxton'
   degauss = 0.02
 /
 &ELECTRONS
  electron_maxstep = 150,
- mixing_ndim = 8,
- diagonalization='david',
+ mixing_ndim = 3,
+ diagonalization='cg',
   conv_thr = 1.0d-6
 /
 &IONS
@@ -81,4 +82,4 @@ CELL_PARAMETERS (angstrom)
   3.101063  5.354720  -0.000423
   0.001428  -0.001612  10.027576
 
-! SMART_OOM_LEVEL=0
+! SMART_OOM_LEVEL=3

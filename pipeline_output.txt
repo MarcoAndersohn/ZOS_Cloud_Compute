@@ -1946,3 +1946,38 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       ⚙️ PWSCF (restart, 2 Cores)...
       💾 Erstelle Checkpoint...
       ✅ Checkpoint erstellt.
+Everything up-to-date
+      --- QE ERROR LOG ---
+      CELL_PARAMETERS (angstrom)
+         2.760454624   0.000309263   1.594234364
+         0.920434230   2.601106618   1.594249758
+         0.001572074   0.001129753   3.185748611
+      
+      ATOMIC_POSITIONS (angstrom)
+      Ti              -0.0001029327       -0.0000474182       -0.0001182257
+      H                2.7618872376        1.9519417228        4.7807644276
+      H                0.9206756018        0.6506523503        1.5935855091
+      
+      
+      
+           Writing config-only to output data dir ./tmp/TiH2.save/ :
+           XML data file
+           NEW-OLD atomic charge density approx. for the potential
+           New effective cutoffs (rho, wfc):  381.19   47.31
+      
+           total cpu time spent up to now is        5.3 secs
+      
+           Self-consistent Calculation
+      
+           iteration #  1     ecut=    50.00 Ry     beta= 0.70
+           Davidson diagonalization with overlap
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
+      --------------------------------------------------------------------------
+      --------------------
+      ⚠️ Crash (HARD). Versuch 3/3...
+      ❌ Zu viele Abstürze (3). Skippe.

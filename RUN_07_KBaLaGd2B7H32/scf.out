@@ -1,10 +1,11 @@
 
-     Program PWSCF v.6.7MaX starts on  4Apr2026 at  8:17:49 
+     Program PWSCF v.7.5 starts on  5Apr2026 at 18: 6:30 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
          "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
          "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+         "P. Giannozzi et al., J. Chem. Phys. 152 154105 (2020);
           URL http://www.quantum-espresso.org", 
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
@@ -12,15 +13,20 @@
      Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
+     6565 MiB available memory on the printing compute node when the environment starts
+
      Waiting for input...
      Reading input from standard input
 
      Current dimensions of program PWSCF are:
      Max number of different atomic species (ntypx) = 10
      Max number of k-points (npk) =  40000
-     Max angular momentum in pseudopotentials (lmaxx) =  3
+     Max angular momentum in pseudopotentials (lmaxx) =  4
      file Gd.UPF: wavefunction(s)  5S 4D 5D 4F renormalized
      file H.UPF: wavefunction(s)  1S renormalized
+
+     Exact exchange band parallelism type set to band_pairs
+
 
      Subspace diagonalization in iterative solution of the eigenvalue problem:
      a serial algorithm will be used
@@ -29,7 +35,9 @@
      G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Sum        6369    3187    891               352327   124605   18513
+     Sum        7973    3979   1101               492539   174003   25399
+
+     Using Slab Decomposition
 
 
 
@@ -40,11 +48,11 @@
      number of atomic types    =            6
      number of electrons       =       131.00
      number of Kohn-Sham states=           79
-     kinetic-energy cutoff     =      40.0000  Ry
-     charge density cutoff     =     320.0000  Ry
+     kinetic-energy cutoff     =      50.0000  Ry
+     charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            4  plain     mixing
+     number of iterations used =            2  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -151,12 +159,12 @@
                                                        1.200   1.200
 
      atomic species   valence    mass     pseudopotential
-        B              3.00     1.00000     B ( 1.00)
-        Ba            10.00     1.00000     Ba( 1.00)
-        Gd            28.00     1.00000     Gd( 1.00)
-        H              1.00     1.00000     H ( 1.00)
-        K              1.00     1.00000     K ( 1.00)
-        La            11.00     1.00000     La( 1.00)
+     B                 3.00     1.00000     B ( 1.00)
+     Ba               10.00     1.00000     Ba( 1.00)
+     Gd               28.00     1.00000     Gd( 1.00)
+     H                 1.00     1.00000     H ( 1.00)
+     K                 1.00     1.00000     K ( 1.00)
+     La               11.00     1.00000     La( 1.00)
 
      No symmetry found
 
@@ -165,50 +173,50 @@
    Cartesian axes
 
      site n.     atom                  positions (alat units)
-         1           K   tau(   1) = (   0.4747805   0.4433560  -0.0660315  )
-         2           Ba  tau(   2) = (   0.5114161   0.0176216   0.4521256  )
-         3           Gd  tau(   3) = (  -0.0088301  -0.0092193   0.0010846  )
-         4           Gd  tau(   4) = (  -0.0065680   0.5333077   0.4780423  )
-         5           B   tau(   5) = (   0.8542330   0.7364633   0.6500091  )
-         6           B   tau(   6) = (   0.1154454   0.2596024   0.6424114  )
-         7           B   tau(   7) = (   0.1040776   0.2811053   0.1723099  )
-         8           B   tau(   8) = (   0.8453770   0.7643821   0.1820676  )
-         9           B   tau(   9) = (   0.6740511   0.3831189   0.3010171  )
-        10           La  tau(  10) = (   0.3765465   0.9135742   0.0034902  )
-        11           B   tau(  11) = (   0.3085215   0.6342539   0.5301537  )
-        12           B   tau(  12) = (   0.6933857   0.0914742   0.7551702  )
-        13           H   tau(  13) = (   0.8638313   0.7335370   0.7997036  )
-        14           H   tau(  14) = (   0.1100508   0.2639828   0.4922838  )
-        15           H   tau(  15) = (   0.1034562   0.2809873   0.0233591  )
-        16           H   tau(  16) = (   0.8563114   0.7605330   0.3320144  )
-        17           H   tau(  17) = (   0.9425505   0.8433172   0.5959002  )
-        18           H   tau(  18) = (   0.0294377   0.3685247   0.7019246  )
-        19           H   tau(  19) = (   0.0089935   0.1768071   0.2239558  )
-        20           H   tau(  20) = (   0.9410510   0.6657419   0.1202914  )
-        21           H   tau(  21) = (   0.9072747   0.6047180   0.6008724  )
-        22           H   tau(  22) = (   0.0495917   0.1299519   0.6786922  )
-        23           H   tau(  23) = (   0.0522764   0.4142134   0.2169028  )
-        24           H   tau(  24) = (   0.8875602   0.9028488   0.1493247  )
-        25           H   tau(  25) = (   0.7153585   0.7616067   0.6090003  )
-        26           H   tau(  26) = (   0.2559982   0.2729126   0.6841659  )
-        27           H   tau(  27) = (   0.2398035   0.2592060   0.2220737  )
-        28           H   tau(  28) = (   0.7084061   0.7360828   0.1402551  )
-        29           H   tau(  29) = (   0.5842136   0.2664259   0.2984438  )
-        30           H   tau(  30) = (   0.4226756   0.6934418   0.1000636  )
-        31           H   tau(  31) = (   0.3961178   0.7534152   0.5307039  )
-        32           H   tau(  32) = (   0.6047545   0.2059455   0.7355519  )
-        33           H   tau(  33) = (   0.5952054   0.5012550   0.2690133  )
-        34           H   tau(  34) = (   0.4235230   1.0843136   0.1759160  )
-        35           H   tau(  35) = (   0.3878060   0.5145895   0.5601698  )
-        36           H   tau(  36) = (   0.6119202  -0.0339404   0.7361338  )
-        37           H   tau(  37) = (   0.7316198   0.3990003   0.4385699  )
-        38           H   tau(  38) = (   0.1884947   0.9851032   0.8244521  )
-        39           H   tau(  39) = (   0.2523816   0.6167752   0.3923029  )
-        40           H   tau(  40) = (   0.7274691   0.0699288  -0.0537572  )
-        41           H   tau(  41) = (   0.7816054   0.3616068   0.1956456  )
-        42           H   tau(  42) = (   0.1509043   0.9388040   0.1451963  )
-        43           H   tau(  43) = (   0.1988086   0.6494371   0.6340354  )
-        44           H   tau(  44) = (   0.7910841   0.0910357   0.6417289  )
+         1        K      tau(   1) = (   0.4747805   0.4433560  -0.0660315  )
+         2        Ba     tau(   2) = (   0.5114161   0.0176216   0.4521256  )
+         3        Gd     tau(   3) = (  -0.0088301  -0.0092193   0.0010846  )
+         4        Gd     tau(   4) = (  -0.0065680   0.5333077   0.4780423  )
+         5        B      tau(   5) = (   0.8542330   0.7364633   0.6500091  )
+         6        B      tau(   6) = (   0.1154454   0.2596024   0.6424114  )
+         7        B      tau(   7) = (   0.1040776   0.2811053   0.1723099  )
+         8        B      tau(   8) = (   0.8453770   0.7643821   0.1820676  )
+         9        B      tau(   9) = (   0.6740511   0.3831189   0.3010171  )
+        10        La     tau(  10) = (   0.3765465   0.9135742   0.0034902  )
+        11        B      tau(  11) = (   0.3085215   0.6342539   0.5301537  )
+        12        B      tau(  12) = (   0.6933857   0.0914742   0.7551702  )
+        13        H      tau(  13) = (   0.8638313   0.7335370   0.7997036  )
+        14        H      tau(  14) = (   0.1100508   0.2639828   0.4922838  )
+        15        H      tau(  15) = (   0.1034562   0.2809873   0.0233591  )
+        16        H      tau(  16) = (   0.8563114   0.7605330   0.3320144  )
+        17        H      tau(  17) = (   0.9425505   0.8433172   0.5959002  )
+        18        H      tau(  18) = (   0.0294377   0.3685247   0.7019246  )
+        19        H      tau(  19) = (   0.0089935   0.1768071   0.2239558  )
+        20        H      tau(  20) = (   0.9410510   0.6657419   0.1202914  )
+        21        H      tau(  21) = (   0.9072747   0.6047180   0.6008724  )
+        22        H      tau(  22) = (   0.0495917   0.1299519   0.6786922  )
+        23        H      tau(  23) = (   0.0522764   0.4142134   0.2169028  )
+        24        H      tau(  24) = (   0.8875602   0.9028488   0.1493247  )
+        25        H      tau(  25) = (   0.7153585   0.7616067   0.6090003  )
+        26        H      tau(  26) = (   0.2559982   0.2729126   0.6841659  )
+        27        H      tau(  27) = (   0.2398035   0.2592060   0.2220737  )
+        28        H      tau(  28) = (   0.7084061   0.7360828   0.1402551  )
+        29        H      tau(  29) = (   0.5842136   0.2664259   0.2984438  )
+        30        H      tau(  30) = (   0.4226756   0.6934418   0.1000636  )
+        31        H      tau(  31) = (   0.3961178   0.7534152   0.5307039  )
+        32        H      tau(  32) = (   0.6047545   0.2059455   0.7355519  )
+        33        H      tau(  33) = (   0.5952054   0.5012550   0.2690133  )
+        34        H      tau(  34) = (   0.4235230   1.0843136   0.1759160  )
+        35        H      tau(  35) = (   0.3878060   0.5145895   0.5601698  )
+        36        H      tau(  36) = (   0.6119202  -0.0339404   0.7361338  )
+        37        H      tau(  37) = (   0.7316198   0.3990003   0.4385699  )
+        38        H      tau(  38) = (   0.1884947   0.9851032   0.8244521  )
+        39        H      tau(  39) = (   0.2523816   0.6167752   0.3923029  )
+        40        H      tau(  40) = (   0.7274691   0.0699288  -0.0537572  )
+        41        H      tau(  41) = (   0.7816054   0.3616068   0.1956456  )
+        42        H      tau(  42) = (   0.1509043   0.9388040   0.1451963  )
+        43        H      tau(  43) = (   0.1988086   0.6494371   0.6340354  )
+        44        H      tau(  44) = (   0.7910841   0.0910357   0.6417289  )
 
      number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
                        cart. coord. in units 2pi/alat
@@ -221,23 +229,12 @@
         k(    7) = (  -0.5238072  -0.5040414   0.0268752), wk =   0.2500000
         k(    8) = (  -0.5984106  -0.4959076  -0.5013313), wk =   0.2500000
 
-     Dense  grid:   352327 G-vectors     FFT dimensions: (  90,  96,  90)
+     Dense  grid:   492539 G-vectors     FFT dimensions: ( 100, 108,  96)
 
-     Smooth grid:   124605 G-vectors     FFT dimensions: (  64,  72,  60)
+     Smooth grid:   174003 G-vectors     FFT dimensions: (  72,  75,  72)
 
-     Estimated max dynamical RAM per process >       3.87 GB
+     Estimated max dynamical RAM per process >       5.37 GB
 
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine aainit (14):
-     mx dimension too small
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Initial potential from superposition of free atoms
 
-     stopping ...
---------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
-with errorcode 14.
-
-NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
-You may or may not see output from other processes, depending on
-exactly when Open MPI kills them.
---------------------------------------------------------------------------
+     starting charge     130.9172, renormalised to     131.0000

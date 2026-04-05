@@ -381,3 +381,21 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       📉 RAM-Strategie, Stufe 4 (cg, mix=2, disk_io='low', 1 Core)
    1️⃣  SCF (1 Cores, OOM-Lvl 4)
       🆕 Kein Speicherstand -> From Scratch.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (from_scratch, 1 Cores)...
+      ⚠️ RAM NOT-AUS!
+      ⚠️ OOM-Limit. Eskaliere zu Level 5...
+      ❌ Hardware-Limit erreicht. Skippe.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   1eefa831..b107426b  main -> main
+⏩ Skip 04_Li5YTaBe5H18 (Isolator)
+⏩ Skip 04_LiMgAl2H92 (Isolator)
+⏩ Skip 05_HfTiBH42 (INSTABIL)
+⏩ Skip 05_K4MgB3H16 (Isolator)
+🔄 Reaktiviere 05_Rb4Y4ScB15H64 nach OOM Limit (Kompletter VM-Reset)...
+
+💎 Job, 05_Rb4Y4ScB15H64
+      📉 RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      🆕 Kein Speicherstand -> From Scratch.

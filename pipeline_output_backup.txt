@@ -1858,3 +1858,43 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
       ✅ System-RAM und Prozesse sind sauber.
       ⚙️ PWSCF (from_scratch, 2 Cores)...
+      💾 Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   193a2d9f..df2025bd  main -> main
+      --- QE ERROR LOG ---
+           smearing contrib. (-TS)   =      -0.00665922 Ry
+           internal energy E=F+TS    =    -119.05684159 Ry
+      
+           The total energy is F=E-TS. E is the sum of the following terms:
+           one-electron contribution =     -46.25303544 Ry
+           hartree contribution      =      27.02090448 Ry
+           xc contribution           =     -16.04771669 Ry
+           ewald contribution        =     -83.77671300 Ry
+           one-center paw contrib.   =      -0.00028095 Ry
+      
+           convergence has been achieved in   5 iterations
+      
+           Forces acting on atoms (cartesian axes, Ry/au):
+      
+           atom    1 type  2   force =    -0.00001230   -0.00000223   -0.00001372
+           atom    2 type  1   force =     0.00000375    0.00000470    0.00001597
+           atom    3 type  1   force =     0.00000855   -0.00000248   -0.00000224
+      
+           Total force =     0.000027     Total SCF correction =     0.000002
+      
+      
+           Computing stress (Cartesian axis) and pressure
+      
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
+      --------------------------------------------------------------------------
+      --------------------
+      ⚠️ Crash (HARD). Versuch 1/3...
+      📉 RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      ✅ Gültige XML gefunden -> Restart.

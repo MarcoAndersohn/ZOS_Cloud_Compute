@@ -1,5 +1,4 @@
 &CONTROL
- disk_io='low',
   calculation = 'vc-relax'
   prefix = 'ZrH6Pt'
   outdir = './tmp/'
@@ -20,7 +19,7 @@
 /
 &ELECTRONS
  electron_maxstep = 150,
- mixing_ndim = 2,
+ mixing_ndim = 4,
  diagonalization='cg',
   conv_thr = 1.0d-6
 /
@@ -51,4 +50,4 @@ CELL_PARAMETERS (angstrom)
   2.474294  4.285537  -0.000000
   0.000000  -0.000000  2.887813
 
-! SMART_OOM_LEVEL=4
+! SMART_OOM_LEVEL=1

@@ -1903,3 +1903,44 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       ⚙️ PWSCF (restart, 2 Cores)...
       💾 Erstelle Checkpoint...
       ✅ Checkpoint erstellt.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   df2025bd..24029b45  main -> main
+      --- QE ERROR LOG ---
+      
+           new trust radius        =       0.0071352578 bohr
+           new conv_thr            =       0.0000000100 Ry
+      
+           new unit-cell volume =    154.82602 a.u.^3 (    22.94285 Ang^3 )
+           density =      0.21713 g/cm^3
+      
+      CELL_PARAMETERS (angstrom)
+         2.763043808   0.000183535   1.595528849
+         0.921182043   2.604143843   1.595538547
+         0.000931719   0.000669978   3.189446708
+      
+      ATOMIC_POSITIONS (angstrom)
+      Ti              -0.0000551785       -0.0000256448       -0.0000652011
+      H                2.7638905103        1.9537646565        4.7854335230
+      H                0.9213212146        0.6512593672        1.5951447588
+      
+      
+      
+           Writing config-only to output data dir ./tmp/TiH2.save/ :
+           XML data file
+           NEW-OLD atomic charge density approx. for the potential
+           New effective cutoffs (rho, wfc):  380.11   47.17
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
+      --------------------------------------------------------------------------
+      --------------------
+      ⚠️ Crash (HARD). Versuch 2/3...
+      📉 RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (2 Cores, OOM-Lvl 0)
+      ✅ Gültige XML gefunden -> Restart.
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (restart, 2 Cores)...

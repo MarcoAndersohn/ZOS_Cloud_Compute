@@ -1,6 +1,5 @@
 &CONTROL
  disk_io='low',
- nstep = 100,
   calculation = 'vc-relax'
   prefix = 'LiScH6Pt'
   outdir = './tmp/'
@@ -14,17 +13,15 @@
   ibrav = 0
   nat = 9
   ntyp = 4
-  ecutwfc = 40.0
-  ecutrho = 320.0
+  ecutwfc = 50.0
+  ecutrho = 400.0
   occupations = 'smearing'
   smearing = 'methfessel-paxton'
   degauss = 0.02
 /
 &ELECTRONS
- mixing_beta = 0.7,
  electron_maxstep = 150,
- mixing_mode='plain',
- mixing_ndim = 2,
+ mixing_ndim = 3,
  diagonalization='cg',
   conv_thr = 1.0d-6
 /
@@ -57,4 +54,4 @@ CELL_PARAMETERS (angstrom)
   3.284290  0.000000  3.284291
   3.284290  3.284291  -0.000000
 
-! SMART_OOM_LEVEL=4
+! SMART_OOM_LEVEL=3

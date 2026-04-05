@@ -72,8 +72,10 @@ CSV_FILE    = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 TXT_LOG_FILE    = os.path.join(WORK_DIR, "pipeline_output.txt")
 BACKUP_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output_backup.txt")
 
-PW_EXE     = shutil.which("pw.x")     or "/usr/bin/pw.x"
-PH_EXE     = shutil.which("ph.x")     or "/usr/bin/ph.x"
+# PW_EXE     = shutil.which("pw.x")     or "/usr/bin/pw.x"
+# PH_EXE     = shutil.which("ph.x")     or "/usr/bin/ph.x"
+PW_EXE = "/home/marco/qe-source/bin/pw.x"
+PH_EXE = "/home/marco/qe-source/bin/ph.x"
 DOS_EXE    = shutil.which("dos.x")    or "/usr/bin/dos.x"
 Q2R_EXE    = shutil.which("q2r.x")    or "/usr/bin/q2r.x"
 MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"

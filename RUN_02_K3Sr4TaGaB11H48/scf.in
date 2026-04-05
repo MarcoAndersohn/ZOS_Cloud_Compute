@@ -20,11 +20,11 @@
   degauss = 0.02
 /
 &ELECTRONS
- mixing_beta = 0.05,
- electron_maxstep = 300,
+ mixing_beta = 0.7,
+ electron_maxstep = 150,
  mixing_mode='plain',
- mixing_ndim = 6,
- diagonalization='cg',
+ mixing_ndim = 8,
+ diagonalization='david',
   conv_thr = 1.0d-6
 /
 &IONS
@@ -117,4 +117,4 @@ CELL_PARAMETERS (angstrom)
   -0.053339  -8.282711  -0.446884
   -11.339638  -0.070693  0.485458
 
-! SMART_OOM_LEVEL=4
+! SMART_OOM_LEVEL=0

@@ -1,10 +1,11 @@
 
-     Program PWSCF v.6.7MaX starts on  4Apr2026 at  8:15:59 
+     Program PWSCF v.7.5 starts on  5Apr2026 at 18: 3:38 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
          "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
          "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+         "P. Giannozzi et al., J. Chem. Phys. 152 154105 (2020);
           URL http://www.quantum-espresso.org", 
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
@@ -12,26 +13,33 @@
      Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
+     6478 MiB available memory on the printing compute node when the environment starts
+
      Waiting for input...
      Reading input from standard input
 
      Current dimensions of program PWSCF are:
      Max number of different atomic species (ntypx) = 10
      Max number of k-points (npk) =  40000
-     Max angular momentum in pseudopotentials (lmaxx) =  3
+     Max angular momentum in pseudopotentials (lmaxx) =  4
      file H.UPF: wavefunction(s)  1S renormalized
      file Pt.UPF: wavefunction(s)  6S 5D renormalized
 
-     Subspace diagonalization in iterative solution of the eigenvalue problem:
-     a serial algorithm will be used
+     Exact exchange band parallelism type set to band_pairs
 
      Message from routine setup:
      using ibrav=0 with symmetry is DISCOURAGED, use correct ibrav instead
 
+     Subspace diagonalization in iterative solution of the eigenvalue problem:
+     a serial algorithm will be used
+
+
      G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Sum        1921     955    313                39955    14079    2665
+     Sum        2407    1201    379                55925    19741    3499
+
+     Using Slab Decomposition
 
 
 
@@ -42,11 +50,11 @@
      number of atomic types    =            3
      number of electrons       =        28.00
      number of Kohn-Sham states=           18
-     kinetic-energy cutoff     =      40.0000  Ry
-     charge density cutoff     =     320.0000  Ry
+     kinetic-energy cutoff     =      50.0000  Ry
+     charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            8  plain     mixing
+     number of iterations used =            2  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -113,9 +121,9 @@
                                                        1.200   1.200
 
      atomic species   valence    mass     pseudopotential
-        H              1.00     1.00000     H ( 1.00)
-        Pt            10.00     1.00000     Pt( 1.00)
-        Zr            12.00     1.00000     Zr( 1.00)
+     H                 1.00     1.00000     H ( 1.00)
+     Pt               10.00     1.00000     Pt( 1.00)
+     Zr               12.00     1.00000     Zr( 1.00)
 
       2 Sym. Ops. (no inversion) found ( 1 have fractional translation)
 
@@ -124,14 +132,14 @@
    Cartesian axes
 
      site n.     atom                  positions (alat units)
-         1           H   tau(   1) = (   0.2792296   0.1612107   0.1458922  )
-         2           H   tau(   2) = (   0.7207814   0.1612101   0.1458922  )
-         3           H   tau(   3) = (   0.5000052   0.5436023   0.1458922  )
-         4           H   tau(   4) = (   0.7277552  -0.1571883   0.4376769  )
-         5           H   tau(   5) = (   0.2722567  -0.1571881   0.4376769  )
-         6           H   tau(   6) = (   0.5000062  -0.5516520   0.4376769  )
-         7           Pt  tau(   7) = (   0.5000058   0.2886754   0.4376769  )
-         8           Zr  tau(   8) = (   0.5000060  -0.2886732   0.1458922  )
+         1        H      tau(   1) = (   0.2792296   0.1612107   0.1458922  )
+         2        H      tau(   2) = (   0.7207814   0.1612101   0.1458922  )
+         3        H      tau(   3) = (   0.5000052   0.5436023   0.1458922  )
+         4        H      tau(   4) = (   0.7277552  -0.1571883   0.4376769  )
+         5        H      tau(   5) = (   0.2722567  -0.1571881   0.4376769  )
+         6        H      tau(   6) = (   0.5000062  -0.5516520   0.4376769  )
+         7        Pt     tau(   7) = (   0.5000058   0.2886754   0.4376769  )
+         8        Zr     tau(   8) = (   0.5000060  -0.2886732   0.1458922  )
 
      number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
                        cart. coord. in units 2pi/alat
@@ -144,23 +152,26 @@
         k(    7) = (  -0.9999884  -0.0000007   0.0000000), wk =   0.2500000
         k(    8) = (  -0.9999884  -0.0000007  -0.8567966), wk =   0.2500000
 
-     Dense  grid:    39955 G-vectors     FFT dimensions: (  54,  54,  32)
+     Dense  grid:    55925 G-vectors     FFT dimensions: (  60,  60,  36)
 
-     Smooth grid:    14079 G-vectors     FFT dimensions: (  40,  40,  24)
+     Smooth grid:    19741 G-vectors     FFT dimensions: (  45,  45,  30)
 
-     Estimated max dynamical RAM per process >     163.02 MB
+     Estimated max dynamical RAM per process >     215.41 MB
 
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine aainit (14):
-     mx dimension too small
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Initial potential from superposition of free atoms
 
-     stopping ...
---------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
-with errorcode 14.
+     starting charge      27.9976, renormalised to      28.0000
 
-NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
-You may or may not see output from other processes, depending on
-exactly when Open MPI kills them.
---------------------------------------------------------------------------
+     negative rho (up, down):  6.022E-02 0.000E+00
+     Starting wfcs are   28 randomized atomic wfcs
+     Checking if some PAW data can be deallocated... 
+
+     total cpu time spent up to now is        2.9 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    50.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  1.00E-02,  avg # of iterations =  2.5
+
+     negative rho (up, down):  6.072E-02 0.000E+00

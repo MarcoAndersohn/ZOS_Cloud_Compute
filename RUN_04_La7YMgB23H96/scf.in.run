@@ -1,6 +1,7 @@
 &CONTROL
  restart_mode='from_scratch',
  wf_collect=.true.,
+ disk_io='low',
   calculation = 'vc-relax'
   prefix = 'La7YMgB23H96'
   outdir = './tmp/'
@@ -21,8 +22,8 @@
 /
 &ELECTRONS
  electron_maxstep = 150,
- mixing_ndim = 8,
- diagonalization='david',
+ mixing_ndim = 2,
+ diagonalization='cg',
   conv_thr = 1.0d-6
 /
 &IONS
@@ -174,4 +175,4 @@ CELL_PARAMETERS (angstrom)
   -0.019168  11.416433  0.011637
   0.046140  0.011637  11.408660
 
-! SMART_OOM_LEVEL=0
+! SMART_OOM_LEVEL=4

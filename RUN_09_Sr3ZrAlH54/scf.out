@@ -1,5 +1,5 @@
 
-     Program PWSCF v.7.5 starts on  5Apr2026 at 18:15:17 
+     Program PWSCF v.7.5 starts on  5Apr2026 at 18:15:51 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -10,10 +10,10 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     2 processors
+     Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     6528 MiB available memory on the printing compute node when the environment starts
+     6493 MiB available memory on the printing compute node when the environment starts
 
      Waiting for input...
      Reading input from standard input
@@ -28,16 +28,13 @@
      Exact exchange band parallelism type set to band_pairs
 
 
-     R & G space division:  proc/nbgrp/npool/nimage =       2
      Subspace diagonalization in iterative solution of the eigenvalue problem:
      a serial algorithm will be used
 
 
-     Parallelization info
+     G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min        1283     643    186               125413    44376    6851
-     Max        1284     644    187               125416    44383    6854
      Sum        2567    1287    373               250829    88759   13705
 
      Using Slab Decomposition
@@ -55,7 +52,7 @@
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            3  plain     mixing
+     number of iterations used =            2  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -193,12 +190,17 @@
 
      Smooth grid:    88759 G-vectors     FFT dimensions: (  40,  45, 108)
 
-     Estimated max dynamical RAM per process >     593.54 MB
-
-     Estimated total dynamical RAM >       1.16 GB
+     Estimated max dynamical RAM per process >       1.14 GB
 
      Initial potential from superposition of free atoms
 
      starting charge      73.8876, renormalised to      74.0000
 
      negative rho (up, down):  6.038E-02 0.000E+00
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
+--------------------------------------------------------------------------

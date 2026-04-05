@@ -1,5 +1,5 @@
 
-     Program PWSCF v.7.5 starts on  5Apr2026 at 18:17:54 
+     Program PWSCF v.7.5 starts on  5Apr2026 at 18:18:16 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -10,10 +10,10 @@
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     2 processors
+     Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     6463 MiB available memory on the printing compute node when the environment starts
+     6533 MiB available memory on the printing compute node when the environment starts
 
      Waiting for input...
      Reading input from standard input
@@ -29,16 +29,13 @@
      Exact exchange band parallelism type set to band_pairs
 
 
-     R & G space division:  proc/nbgrp/npool/nimage =       2
      Subspace diagonalization in iterative solution of the eigenvalue problem:
      a serial algorithm will be used
 
 
-     Parallelization info
+     G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Min        1893     945    278               151607    53642    8421
-     Max        1894     946    279               151610    53647    8422
      Sum        3787    1891    557               303217   107289   16843
 
      Using Slab Decomposition
@@ -56,7 +53,7 @@
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            3  plain     mixing
+     number of iterations used =            2  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -207,12 +204,4 @@
 
      Smooth grid:   107289 G-vectors     FFT dimensions: (  54,  54,  90)
 
-     Estimated max dynamical RAM per process >       1.65 GB
-
-     Estimated total dynamical RAM >       3.31 GB
-
-     Check: negative core charge=   -0.000002
-
-     Initial potential from superposition of free atoms
-
-     starting charge     183.9746, renormalised to     192.0000
+     Estimated max dynamical RAM per process >       3.27 GB

@@ -1,5 +1,4 @@
 &CONTROL
- nstep = 100,
   calculation = 'vc-relax'
   prefix = 'TaTiH6Ru'
   outdir = './tmp/'
@@ -21,8 +20,8 @@
 &ELECTRONS
  electron_maxstep = 150,
  mixing_beta = 0.4,
- diago_david_ndim = 4,
  mixing_mode='local-TF',
+ diago_david_ndim = 4,
  mixing_ndim = 6,
  diagonalization='david',
   conv_thr = 1.0d-6

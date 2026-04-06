@@ -816,6 +816,12 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             crash_counter = 0
             print(f"      ⚠️ OOM-Limit. Eskaliere zu Level {oom_level}...")
             
+            # --- NEU: Alte Checkpoints löschen, da sich das mixing_ndim beim OOM Levelup ändert ---
+            tmp_p = os.path.join(work_dir, "tmp")
+            chkpt_p = os.path.join(work_dir, "tmp_SAFE_CHECKPOINT")
+            if os.path.exists(tmp_p): shutil.rmtree(tmp_p, ignore_errors=True)
+            if os.path.exists(chkpt_p): shutil.rmtree(chkpt_p, ignore_errors=True)
+            
             labels = {1: "Retrying (OOM Lvl 1, CG)",
                       2: "Retrying (OOM Lvl 2, DiskIO)",
                       3: "Retrying (OOM Lvl 3, Mix3)",
@@ -840,20 +846,29 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             # RETTUNG: aainit schaltet ebenfalls wieder zurück auf 1 Core
             if reason == "AAINIT_ERROR":
                 if current_cores > 1:
-                    print("      🔩 aainit-Fehler -> LÖSCHE tmp und wechsle auf 1 Core.")
+                    print("      🔩 aainit-Fehler -> LÖSCHE tmp und Checkpoints, wechsle auf 1 Core.")
                     current_cores = 1
                     crash_counter = 0
                     tmp_path = os.path.join(work_dir, "tmp")
+                    chkpt_path = os.path.join(work_dir, "tmp_SAFE_CHECKPOINT")
+                    
                     if os.path.exists(tmp_path): shutil.rmtree(tmp_path, ignore_errors=True)
+                    if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
+                    
                     update_csv(name, "Retrying (aainit -> 1 Core)")
                     continue
                 else:
                     if not aainit_ecut_reduced:
                         aainit_ecut_reduced = True
                         apply_aainit_workaround(scf_in)
+                        
+                        # --- NEU: Hier ebenfalls tmp UND Checkpoint löschen ---
                         tmp_p = os.path.join(work_dir, "tmp")
+                        chkpt_p = os.path.join(work_dir, "tmp_SAFE_CHECKPOINT")
                         if os.path.exists(tmp_p): shutil.rmtree(tmp_p, ignore_errors=True)
-                        print("      🔧 aainit auf 1 Core -> reduziere ecutwfc und lösche altes tmp.")
+                        if os.path.exists(chkpt_p): shutil.rmtree(chkpt_p, ignore_errors=True)
+                        
+                        print("      🔧 aainit auf 1 Core -> reduziere ecutwfc und lösche alte Speicherstände.")
                         update_csv(name, "Retrying (aainit -> ecutwfc=40)")
                         continue
                     print("      ❌ aainit-Fehler unlösbar. System zu komplex. Skippe.")

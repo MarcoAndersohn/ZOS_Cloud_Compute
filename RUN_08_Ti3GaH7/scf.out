@@ -1,5 +1,5 @@
 
-     Program PWSCF v.7.5 starts on  5Apr2026 at 18:12:59 
+     Program PWSCF v.7.5 starts on  6Apr2026 at  3:31:22 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -13,7 +13,7 @@
      Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     6505 MiB available memory on the printing compute node when the environment starts
+     7054 MiB available memory on the printing compute node when the environment starts
 
      Waiting for input...
      Reading input from standard input
@@ -38,7 +38,7 @@ NOTICE: Bravais lattice has wrong number ( 3) of symmetries - symmetries are dis
      G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Sum        2181    1089    325                76145    26943    4391
+     Sum        1741     869    265                54447    19267    3215
 
      Using Slab Decomposition
 
@@ -51,11 +51,11 @@ NOTICE: Bravais lattice has wrong number ( 3) of symmetries - symmetries are dis
      number of atomic types    =            3
      number of electrons       =        56.00
      number of Kohn-Sham states=           34
-     kinetic-energy cutoff     =      50.0000  Ry
-     charge density cutoff     =     400.0000  Ry
+     kinetic-energy cutoff     =      40.0000  Ry
+     charge density cutoff     =     320.0000  Ry
      scf convergence threshold =      1.0E-06
-     mixing beta               =       0.7000
-     number of iterations used =            2  plain     mixing
+     mixing beta               =       0.4000
+     number of iterations used =            6  local-TF  mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -156,29 +156,23 @@ NOTICE: Bravais lattice has wrong number ( 3) of symmetries - symmetries are dis
         k(    7) = (  -0.4967181  -0.4967185  -0.0000001), wk =   0.2500000
         k(    8) = (  -0.4933697  -0.5000670  -0.5000676), wk =   0.2500000
 
-     Dense  grid:    76145 G-vectors     FFT dimensions: (  54,  54,  54)
+     Dense  grid:    54447 G-vectors     FFT dimensions: (  48,  48,  48)
 
-     Smooth grid:    26943 G-vectors     FFT dimensions: (  40,  40,  40)
+     Smooth grid:    19267 G-vectors     FFT dimensions: (  36,  36,  36)
 
-     Estimated max dynamical RAM per process >     301.34 MB
+     Estimated max dynamical RAM per process >     223.73 MB
 
-     Initial potential from superposition of free atoms
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine aainit (18):
+     mx dimension too small
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-     starting charge      52.9968, renormalised to      56.0000
-     Starting wfcs are   46 randomized atomic wfcs
-     Checking if some PAW data can be deallocated... 
-
-     total cpu time spent up to now is        3.1 secs
-
-     Self-consistent Calculation
-
-     iteration #  1     ecut=    50.00 Ry     beta= 0.70
-     CG style diagonalization
-     ethr =  1.00E-02,  avg # of iterations =  2.8
+     stopping ...
 --------------------------------------------------------------------------
-Primary job  terminated normally, but 1 process returned
-a non-zero exit code. Per user-direction, the job has been aborted.
---------------------------------------------------------------------------
---------------------------------------------------------------------------
-mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 18.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
 --------------------------------------------------------------------------

@@ -58,3 +58,49 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       ⚙️ PWSCF (restart, 2 Cores)...
       💾 Erstelle Checkpoint...
       ✅ Checkpoint erstellt.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   6c1f46e0..a5f89586  main -> main
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).
+      --- QE ERROR LOG ---
+              11        H      tau(  11) = (   0.6337889   0.8150602   0.0826010  )
+              12        H      tau(  12) = (   0.3288195   0.4572402   0.3654926  )
+      
+           number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (   0.0138096   0.0138096  -0.5011002), wk =   0.2500000
+              k(    3) = (  -0.0138096  -0.5011002   0.0138096), wk =   0.2500000
+              k(    4) = (   0.0000000  -0.4872905  -0.4872906), wk =   0.2500000
+              k(    5) = (  -0.5011002  -0.0138096   0.0138096), wk =   0.2500000
+              k(    6) = (  -0.4872906   0.0000000  -0.4872906), wk =   0.2500000
+              k(    7) = (  -0.5149099  -0.5149098   0.0276192), wk =   0.2500000
+              k(    8) = (  -0.5011002  -0.5011002  -0.4734810), wk =   0.2500000
+      
+           Dense  grid:   125541 G-vectors     FFT dimensions: (  64,  64,  64)
+      
+           Smooth grid:    44317 G-vectors     FFT dimensions: (  45,  45,  45)
+      
+           Estimated max dynamical RAM per process >     257.92 MB
+      
+           Estimated total dynamical RAM >     515.84 MB
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (18):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      [Supraleiter-HPC-Knoten:01001] [[30687,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 513
+      [Supraleiter-HPC-Knoten:01001] [[30687,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 501
+      --------------------
+      🔩 aainit-Fehler -> LÖSCHE tmp und wechsle auf 1 Core.
+      📉 RAM-Strategie, Standard (david, mix=6)
+   1️⃣  SCF (1 Cores, OOM-Lvl 0)
+      🛡️ tmp defekt! Lade Safe-Checkpoint...
+      ✅ Checkpoint geladen!
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ PWSCF (restart, 1 Cores)...
+      💾 Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.

@@ -1,5 +1,5 @@
 &CONTROL
- restart_mode='from_scratch',
+ restart_mode='restart',
  wf_collect=.true.,
  nstep = 100,
   calculation = 'vc-relax'
@@ -21,10 +21,10 @@
   degauss = 0.02
 /
 &ELECTRONS
- electron_maxstep = 300,
+ electron_maxstep = 150,
  mixing_beta = 0.4,
- diago_david_ndim = 2,
- mixing_mode = 'local-TF',
+ diago_david_ndim = 4,
+ mixing_mode='local-TF',
  mixing_ndim = 6,
  diagonalization='david',
   conv_thr = 1.0d-6
@@ -57,3 +57,5 @@ CELL_PARAMETERS (angstrom)
   3.205063  3.205063  -0.000000
   0.000000  3.205063  3.205062
   3.205063  0.000000  3.205062
+
+! SMART_OOM_LEVEL=0

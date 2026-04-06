@@ -1,5 +1,5 @@
 
-     Program PWSCF v.7.5 starts on  5Apr2026 at 18:17:48 
+     Program PWSCF v.7.5 starts on  6Apr2026 at  3:30:37 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -13,7 +13,7 @@
      Parallel version (MPI), running on     1 processors
 
      MPI processes distributed on     1 nodes
-     6481 MiB available memory on the printing compute node when the environment starts
+     7070 MiB available memory on the printing compute node when the environment starts
 
      Waiting for input...
      Reading input from standard input
@@ -35,7 +35,7 @@
      G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
-     Sum        7973    3979   1101               492539   174003   25399
+     Sum        6369    3187    891               352327   124605   18513
 
      Using Slab Decomposition
 
@@ -48,11 +48,11 @@
      number of atomic types    =            6
      number of electrons       =       131.00
      number of Kohn-Sham states=           79
-     kinetic-energy cutoff     =      50.0000  Ry
-     charge density cutoff     =     400.0000  Ry
+     kinetic-energy cutoff     =      40.0000  Ry
+     charge density cutoff     =     320.0000  Ry
      scf convergence threshold =      1.0E-06
-     mixing beta               =       0.7000
-     number of iterations used =            2  plain     mixing
+     mixing beta               =       0.4000
+     number of iterations used =            6  local-TF  mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -229,19 +229,23 @@
         k(    7) = (  -0.5238072  -0.5040414   0.0268752), wk =   0.2500000
         k(    8) = (  -0.5984106  -0.4959076  -0.5013313), wk =   0.2500000
 
-     Dense  grid:   492539 G-vectors     FFT dimensions: ( 100, 108,  96)
+     Dense  grid:   352327 G-vectors     FFT dimensions: (  90,  96,  90)
 
-     Smooth grid:   174003 G-vectors     FFT dimensions: (  72,  75,  72)
+     Smooth grid:   124605 G-vectors     FFT dimensions: (  64,  72,  60)
 
-     Estimated max dynamical RAM per process >       5.37 GB
+     Estimated max dynamical RAM per process >       3.89 GB
 
-     Initial potential from superposition of free atoms
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine aainit (18):
+     mx dimension too small
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-     starting charge     130.9172, renormalised to     131.0000
+     stopping ...
 --------------------------------------------------------------------------
-Primary job  terminated normally, but 1 process returned
-a non-zero exit code. Per user-direction, the job has been aborted.
---------------------------------------------------------------------------
---------------------------------------------------------------------------
-mpirun noticed that process rank 0 with PID 0 on node Supraleiter-HPC-Knoten exited on signal 9 (Killed).
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 18.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
 --------------------------------------------------------------------------

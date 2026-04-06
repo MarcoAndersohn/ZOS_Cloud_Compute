@@ -1,5 +1,4 @@
 &CONTROL
- disk_io='low',
   calculation = 'vc-relax'
   prefix = 'KBaLaGd2B7H32'
   outdir = './tmp/'
@@ -12,16 +11,19 @@
   ibrav = 0
   nat = 44
   ntyp = 6
-  ecutwfc = 50.0
-  ecutrho = 400.0
+  ecutwfc = 40.0
+  ecutrho = 320.0
   occupations = 'smearing'
   smearing = 'methfessel-paxton'
   degauss = 0.02
 /
 &ELECTRONS
  electron_maxstep = 150,
- mixing_ndim = 2,
- diagonalization='cg',
+ mixing_beta = 0.4,
+ mixing_mode='local-TF',
+ diago_david_ndim = 4,
+ mixing_ndim = 6,
+ diagonalization='david',
   conv_thr = 1.0d-6
 /
 &IONS
@@ -90,4 +92,4 @@ CELL_PARAMETERS (angstrom)
   -0.351574  8.537030  0.181116
   0.230474  0.174179  7.758736
 
-! SMART_OOM_LEVEL=4
+! SMART_OOM_LEVEL=0

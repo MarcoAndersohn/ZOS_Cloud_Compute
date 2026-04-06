@@ -261,14 +261,6 @@ def print_error_log(output_file, label="QE ERROR LOG"):
 # =============================================================================
 
 def analyze_crash_reason(output_file):
-    """
-    Gibt zurück:
-      DONE | NON_CONVERGED | RESTART_NEEDED | XML_ERROR | SYMMETRY_ERROR |
-      FFT_SYMMETRY_ERROR | DAVCIO_ERROR | AAINIT_ERROR | LIKELY_OOM | HARD | SOFT | NONE
-
-    FIX: aainit wird VOR dem generischen HARD-Check geprüft, damit es
-         nie fälschlicherweise als HARD klassifiziert wird.
-    """
     if not os.path.exists(output_file): return "NONE"
     try:
         with open(output_file, 'rb') as f:
@@ -286,6 +278,17 @@ def analyze_crash_reason(output_file):
             print("      🧨 XML-Struktur zerstört (Corruption).")
             return "XML_ERROR"
 
+        # NEU: Wellenfunktionen fehlen (nach SCF_RESET oder OOM-Kill während Schreiben)
+        if "Wavefunctions in collected format not available" in lines:
+            print("      ⚠️ Wellenfunktionen fehlen (wf_collect Error).")
+            return "WF_COLLECT_ERROR"
+
+        # NEU: Korrupte Phonon-Dateien (I/O past end, End of file in elphon/write_rec)
+        if "I/O past end of record" in lines or (
+                "End of file" in lines and ("elphon.f90" in lines or "write_rec.f90" in lines)):
+            print("      ⚠️ Korrupte Lese-/Schreibdatei (I/O Error).")
+            return "CORRUPT_FILE_ERROR"
+
         if "not orthogonal" in lines and "D_S" in lines:
             print("      🧩 Symmetrie-Fehler (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
@@ -298,11 +301,6 @@ def analyze_crash_reason(output_file):
             print("      🤕 Fragmentierungsfehler (davcio).")
             return "DAVCIO_ERROR"
 
-        # ---------------------------------------------------------------
-        # FIX: aainit MUSS vor dem generischen HARD-Check stehen, da
-        # "stopping" und "Error" ebenfalls im aainit-Output enthalten sind
-        # und sonst den HARD-Zweig triggern würden.
-        # ---------------------------------------------------------------
         if "aainit" in lines and "mx dimension too small" in lines:
             print("      🔩 aainit-Fehler erkannt (MPI-Bug oder RAM).")
             return "AAINIT_ERROR"
@@ -324,7 +322,7 @@ def analyze_crash_reason(output_file):
 
         return "SOFT"
     except: return "HARD"
-
+    
 def is_xml_valid(xml_path):
     if not os.path.exists(xml_path): return False
     try:
@@ -416,8 +414,9 @@ def detect_oom_level(input_file):
 
 def apply_oom_settings(input_file, level, force_cg=False):
     with open(input_file, 'r') as f: content = f.read()
-    diag = 'david'; mix = 8; disk = None 
-    msg = "Standard (david, mix=8)"
+    # FIX: Level 0 startet jetzt mit mix=6 (nicht 8) — spart RAM von Anfang an
+    diag = 'david'; mix = 6; disk = None
+    msg = "Standard (david, mix=6)"
 
     if level >= 1 or force_cg: diag = 'cg'; mix = 4; msg = "Stufe 1 (cg, mix=4)"
     if level >= 2: disk = 'low'; msg = "Stufe 2 (cg, mix=4, disk_io='low')"
@@ -435,6 +434,13 @@ def apply_oom_settings(input_file, level, force_cg=False):
         content = re.sub(r"mixing_ndim\s*=\s*\d+", f"mixing_ndim = {mix}", content)
     else:
         content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_ndim = {mix},")
+
+    # FIX: diago_david_ndim explizit setzen — neues QE braucht das
+    ndim = 4 if level == 0 else 2
+    if "diago_david_ndim" in content:
+        content = re.sub(r"diago_david_ndim\s*=\s*\d+", f"diago_david_ndim = {ndim}", content)
+    else:
+        content = content.replace("&ELECTRONS", f"&ELECTRONS\n diago_david_ndim = {ndim},")
 
     if disk == 'low':
         if "disk_io" in content:
@@ -460,14 +466,22 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    target_beta = 0.7
-    if iteration_count >= 30: target_beta = 0.4
-    if iteration_count >= 60: target_beta = 0.25
-    if iteration_count >= 90: target_beta = 0.15
+    # FIX: local-TF spart bei Metallen signifikant RAM
+    if "mixing_mode" in content:
+        content = re.sub(r"mixing_mode\s*=\s*['\"][a-zA-Z\-]+['\"]", "mixing_mode='local-TF'", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_mode='local-TF',")
+
+    target_beta = 0.4
+    if iteration_count >= 30: target_beta = 0.25
+    if iteration_count >= 60: target_beta = 0.15
+    if iteration_count >= 90: target_beta = 0.10
 
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
-    
+    else:
+        content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_beta = {target_beta},")
+
     if "electron_maxstep" in content:
         content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 150", content)
     else:
@@ -870,7 +884,6 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
         nq1, nq2, nq3 = nq.split(",")
         sym_line = " search_sym=.false.,\n" if not search_sym else ""
         elph_lines = " fildvscf='dvscf',\n electron_phonon='interpolated',\n" if elph else ""
-        
         with open(fname, "w") as f:
             f.write(
                 f"Phonons\n&INPUTPH\n"
@@ -886,17 +899,14 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
             )
 
     def execute_ph_phase(is_elph_phase=False):
-        # 💡 HIER IST DIE MAGIE: Wir lesen aus, was pw.x verwendet hat!
         ph_cores = get_scf_cores(scf_out, DEFAULT_CORES)
         print(f"      🧠 Erbe Kernanzahl von SCF: Starte mit {ph_cores} Core(s).")
-        
         phonon_attempts = 0
         aainit_1core_done = False
 
         while phonon_attempts < 3:
             phonon_attempts += 1
             ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
-            
             if ph_res == "DONE": return "DONE"
 
             phase_name = "El-Ph" if is_elph_phase else "Stabilität"
@@ -909,37 +919,45 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
                     print("      🔩 aainit-Fehler auf 2 Cores -> LÖSCHE _ph0 und wechsle auf 1 Core.")
                     ph_cores = 1
                     aainit_1core_done = True
-                    
-                    ph0_path = os.path.join(work_dir, "tmp", "_ph0")
-                    if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
-                    chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
-                    if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
-                    
+                    for p in [os.path.join(work_dir, "tmp", "_ph0"),
+                               os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                        if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
                     if os.path.exists(ph_out): os.remove(ph_out)
                     phonon_attempts -= 1
                     continue
                 else:
-                    print("      🔩 aainit-Fehler unlösbar -> System-Komplexität zu hoch. Skippe.")
+                    print("      🔩 aainit-Fehler unlösbar -> Skippe.")
                     update_csv(name, f"SKIPPED (Phonon OOM, Phase {phase_name})")
                     git_sync(f"Phonon OOM, {name}")
                     return "CRASH"
 
-            if crash_reason == "HARD":
-                if os.path.exists(ph_out):
-                    try:
-                        ph_content_check = open(ph_out, errors='ignore').read()
-                        if "bad line in namelist" in ph_content_check:
-                            print("      📝 Namelist-Fehler -> schreibe ph.in komplett neu.")
-                            nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", ph_content_check, re.DOTALL)
-                            nq = "2,2,2"
-                            if nq_match: nq = f"{nq_match.group(1)},{nq_match.group(2)},{nq_match.group(3)}"
-                            write_ph_input(ph_in, tr2="1.0d-14", nq=nq, elph=is_elph_phase)
-                            if os.path.exists(ph_out): os.remove(ph_out)
-                            phonon_attempts -= 1
-                            continue
-                    except: pass
+            # NEU: Korrupte Phonon-Datei (_ph0/recover/a2Fsave) -> nur _ph0 löschen, nicht SCF
+            if crash_reason == "CORRUPT_FILE_ERROR":
+                print("      🧨 Defekte Phonon-Datei -> Lösche _ph0 und starte Phonon-Phase neu...")
+                for p in [os.path.join(work_dir, "tmp", "_ph0"),
+                           os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                    if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
+                if os.path.exists(ph_out): os.remove(ph_out)
+                phonon_attempts -= 1  # nicht zählen
+                continue
 
-            if crash_reason == "XML_ERROR":
+            # NEU: Wellenfunktionen fehlen -> erst collect-SCF, dann ggf. Reset
+            if crash_reason == "WF_COLLECT_ERROR":
+                print("      🌊 Wellenfunktionen fehlen -> starte Collect-SCF (nstep=0)...")
+                if run_cleanup_scf(scf_in, work_dir, ph_cores):
+                    print("      ✅ Collect-SCF OK -> Phononen neu starten.")
+                    if os.path.exists(ph_out): os.remove(ph_out)
+                    phonon_attempts -= 1
+                    continue
+                else:
+                    print("      ❌ Collect-SCF fehlgeschlagen -> vollständiger SCF-Reset.")
+                    tmp_save = os.path.join(work_dir, "tmp")
+                    if os.path.exists(tmp_save): shutil.rmtree(tmp_save, ignore_errors=True)
+                    if os.path.exists(scf_out): os.remove(scf_out)
+                    update_csv(name, "SCF_RESET (WF_Collect)")
+                    return "SCF_RESET"
+
+            if crash_reason in ["XML_ERROR"]:
                 print("      🧨 XML korrupt -> SCF-Reset.")
                 tmp_save = os.path.join(work_dir, "tmp")
                 if os.path.exists(tmp_save): shutil.rmtree(tmp_save, ignore_errors=True)
@@ -967,6 +985,22 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
                     continue
                 print("      👎 Recovery fehlgeschlagen.")
 
+            if crash_reason == "HARD":
+                if os.path.exists(ph_out):
+                    try:
+                        ph_content_check = open(ph_out, errors='ignore').read()
+                        if "bad line in namelist" in ph_content_check:
+                            print("      📝 Namelist-Fehler -> schreibe ph.in komplett neu.")
+                            nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)",
+                                                 ph_content_check, re.DOTALL)
+                            nq = "2,2,2"
+                            if nq_match: nq = f"{nq_match.group(1)},{nq_match.group(2)},{nq_match.group(3)}"
+                            write_ph_input(ph_in, tr2="1.0d-14", nq=nq, elph=is_elph_phase)
+                            if os.path.exists(ph_out): os.remove(ph_out)
+                            phonon_attempts -= 1
+                            continue
+                    except: pass
+
             print(f"      🛡️ Phonon-Recovery, Versuch {phonon_attempts}/3")
 
             if phonon_attempts == 1:
@@ -980,9 +1014,9 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
             elif phonon_attempts == 2:
                 print("      🚨 NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, tr2_ph=1.0d-10")
                 write_ph_input(ph_in, tr2="1.0d-10", nq="1,1,1", search_sym=False, elph=is_elph_phase)
-                
-                for cleanup_path in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
-                    if os.path.exists(cleanup_path): shutil.rmtree(cleanup_path, ignore_errors=True)
+                for p in [os.path.join(work_dir, "tmp", "_ph0"),
+                           os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                    if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
                 if os.path.exists(ph_out): os.remove(ph_out)
                 continue
 
@@ -991,38 +1025,26 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
         git_sync(f"Phonon Crash, {name}")
         return "CRASH"
 
-    # -------------------------------------------------------------
-    # INIT: Lese aktuelles Grid aus bestehender ph.in (falls existent)
-    # -------------------------------------------------------------
+    # --- INIT ---
     current_nq = "2,2,2"
-    is_phase2 = False
-    
     if os.path.exists(ph_in):
         with open(ph_in, 'r') as f:
-            content = f.read()
-            if "electron_phonon" in content: is_phase2 = True
-            nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", content, re.DOTALL)
+            nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", f.read(), re.DOTALL)
             if nq_match: current_nq = f"{nq_match.group(1)},{nq_match.group(2)},{nq_match.group(3)}"
 
     row_data = get_csv_full_info(name)
     already_stable = (row_data.get('Stabilität', '') == 'STABIL')
 
-    # -------------------------------------------------------------
-    # PHASE 1: Reine Stabilitätsanalyse (Kein dvscf, kein el-ph)
-    # -------------------------------------------------------------
     if not already_stable:
         print(f"   🔍 PHASE 1: Stabilitätsanalyse für {name}...")
-        
         write_ph_input(ph_in, nq=current_nq, elph=False)
         if os.path.exists(ph_out): os.remove(ph_out)
-        
         phase1_res = execute_ph_phase(is_elph_phase=False)
         if phase1_res != "DONE": return phase1_res
 
         min_f, stab = "-", "Unbekannt"
         with open(ph_out, 'r') as f:
-            content = f.read()
-            freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
+            freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", f.read())
             if freqs:
                 min_f = min(float(x) for x in freqs)
                 stab  = "STABIL" if min_f > -0.05 else "INSTABIL"
@@ -1030,30 +1052,209 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
         if stab == "INSTABIL":
             print(f"   🛑 Material ist INSTABIL (Min Freq, {min_f} THz). Überspringe El-Ph.")
             return "DONE"
-            
         print(f"   ✅ Material ist STABIL (Min Freq, {min_f} THz). Gehe zu Phase 2...")
         update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
 
-    # -------------------------------------------------------------
-    # PHASE 2: Elektron-Phonon-Kopplung (Nur für stabile Materialien)
-    # -------------------------------------------------------------
+    # --- PHASE 2 VORBEREITUNG ---
     print(f"   ⚛️ PHASE 2 Vorbereitung für {name}: Lösche alle alten Dateien...")
     tmp_path = os.path.join(work_dir, "tmp")
-    
-    ph0_path = os.path.join(tmp_path, "_ph0")
-    if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
-    
-    chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
-    if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
-    
-    for f in glob.glob(os.path.join(tmp_path, "*.a2Fsave*")): os.remove(f)
-    for f in glob.glob(os.path.join(tmp_path, "*.dvscf*")): os.remove(f)
-
+    for p in [os.path.join(tmp_path, "_ph0"),
+               os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+        if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
+    for f in glob.glob(os.path.join(tmp_path, "*.a2Fsave*")): 
+        try: os.remove(f)
+        except: pass
+    for f in glob.glob(os.path.join(tmp_path, "*.dvscf*")):
+        try: os.remove(f)
+        except: pass
     if os.path.exists(ph_out): os.remove(ph_out)
-    
+
     write_ph_input(ph_in, nq=current_nq, elph=True)
     print("   ⚛️ PHASE 2: Berechne Elektron-Phonon-Kopplung...")
     return execute_ph_phase(is_elph_phase=True)
+
+    def execute_ph_phase(is_elph_phase=False):
+        ph_cores = get_scf_cores(scf_out, DEFAULT_CORES)
+        print(f"      🧠 Erbe Kernanzahl von SCF: Starte mit {ph_cores} Core(s).")
+        
+        phonon_attempts = 0
+        aainit_1core_done = False
+    
+        while phonon_attempts < 3:
+            phonon_attempts += 1
+            ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+            
+            if ph_res == "DONE": return "DONE"
+    
+            phase_name = "El-Ph" if is_elph_phase else "Stabilität"
+            print(f"      ⚠️ Phonon Crash/OOM! (Phase: {phase_name})")
+            crash_reason = analyze_crash_reason(ph_out)
+            print_error_log(ph_out, "PHONON ERROR LOG")
+    
+            # NEU: Wellenfunktionen fehlen — erst collect-SCF versuchen
+            if crash_reason == "WFC_MISSING":
+                print("      🌊 Wellenfunktionen fehlen -> starte Collect-SCF (nstep=0)...")
+                if run_cleanup_scf(scf_in, work_dir, ph_cores):
+                    print("      ✅ Collect-SCF OK -> Phononen neu starten.")
+                    if os.path.exists(ph_out): os.remove(ph_out)
+                    phonon_attempts -= 1  # nicht zählen
+                    continue
+                else:
+                    print("      ❌ Collect-SCF fehlgeschlagen -> vollständiger SCF-Reset.")
+                    tmp_save = os.path.join(work_dir, "tmp")
+                    if os.path.exists(tmp_save): shutil.rmtree(tmp_save, ignore_errors=True)
+                    if os.path.exists(scf_out): os.remove(scf_out)
+                    update_csv(name, "SCF_RESET (WFC Missing)")
+                    return "SCF_RESET"
+    
+            if crash_reason == "AAINIT_ERROR":
+                if ph_cores > 1 and not aainit_1core_done:
+                    print("      🔩 aainit-Fehler auf 2 Cores -> LÖSCHE _ph0 und wechsle auf 1 Core.")
+                    ph_cores = 1
+                    aainit_1core_done = True
+                    ph0_path = os.path.join(work_dir, "tmp", "_ph0")
+                    if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
+                    chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
+                    if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
+                    if os.path.exists(ph_out): os.remove(ph_out)
+                    phonon_attempts -= 1
+                    continue
+                else:
+                    print("      🔩 aainit-Fehler unlösbar -> System-Komplexität zu hoch. Skippe.")
+                    update_csv(name, f"SKIPPED (Phonon OOM, Phase {phase_name})")
+                    git_sync(f"Phonon OOM, {name}")
+                    return "CRASH"
+    
+            if crash_reason == "HARD":
+                if os.path.exists(ph_out):
+                    try:
+                        ph_content_check = open(ph_out, errors='ignore').read()
+                        if "bad line in namelist" in ph_content_check:
+                            print("      📝 Namelist-Fehler -> schreibe ph.in komplett neu.")
+                            nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", ph_content_check, re.DOTALL)
+                            nq = "2,2,2"
+                            if nq_match: nq = f"{nq_match.group(1)},{nq_match.group(2)},{nq_match.group(3)}"
+                            write_ph_input(ph_in, tr2="1.0d-14", nq=nq, elph=is_elph_phase)
+                            if os.path.exists(ph_out): os.remove(ph_out)
+                            phonon_attempts -= 1
+                            continue
+                    except: pass
+    
+            if crash_reason == "XML_ERROR":
+                print("      🧨 XML korrupt -> SCF-Reset.")
+                tmp_save = os.path.join(work_dir, "tmp")
+                if os.path.exists(tmp_save): shutil.rmtree(tmp_save, ignore_errors=True)
+                if os.path.exists(scf_out):  os.remove(scf_out)
+                update_csv(name, "SCF_RESET (XML Error)")
+                return "SCF_RESET"
+    
+            if crash_reason in ["SYMMETRY_ERROR", "FFT_SYMMETRY_ERROR"]:
+                print("      🧩 Symmetrie-Problem -> nosym injizieren + SCF-Reset.")
+                source_in = os.path.join(INPUTS_DIR, f"{name}.in")
+                if os.path.exists(source_in):
+                    with open(source_in, 'r') as f: c = f.read()
+                    if "nosym" not in c:
+                        c = c.replace("&SYSTEM", "&SYSTEM\n nosym=.true.,")
+                        with open(source_in, 'w') as f: f.write(c)
+                if os.path.exists(work_dir): shutil.rmtree(work_dir, ignore_errors=True)
+                update_csv(name, "SCF_RESET (Sym Error)")
+                return "SCF_RESET"
+    
+            if crash_reason == "DAVCIO_ERROR" or is_recoverable_fragmentation_error(ph_out):
+                print("      🤕 Fragmentierung -> 'Collect-Recovery'...")
+                if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
+                    print("      👍 Recovery OK -> Phononen neu starten.")
+                    if os.path.exists(ph_out): os.remove(ph_out)
+                    continue
+                print("      👎 Recovery fehlgeschlagen.")
+    
+            print(f"      🛡️ Phonon-Recovery, Versuch {phonon_attempts}/3")
+    
+            if phonon_attempts == 1:
+                print("      📉 tr2_ph=1.0d-12")
+                with open(ph_in, 'r') as f: c = f.read()
+                c = re.sub(r"tr2_ph\s*=\s*[0-9\.dD\-]+", "tr2_ph=1.0d-12", c)
+                with open(ph_in, 'w') as f: f.write(c)
+                if os.path.exists(ph_out): os.remove(ph_out)
+                continue
+    
+            elif phonon_attempts == 2:
+                print("      🚨 NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, tr2_ph=1.0d-10")
+                write_ph_input(ph_in, tr2="1.0d-10", nq="1,1,1", search_sym=False, elph=is_elph_phase)
+                for cleanup_path in [os.path.join(work_dir, "tmp", "_ph0"),
+                                      os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                    if os.path.exists(cleanup_path): shutil.rmtree(cleanup_path, ignore_errors=True)
+                if os.path.exists(ph_out): os.remove(ph_out)
+                continue
+    
+        print("      ❌ Phononen endgültig fehlgeschlagen.")
+        update_csv(name, "SKIPPED (Phonon Crash)")
+        git_sync(f"Phonon Crash, {name}")
+        return "CRASH"
+    
+        # -------------------------------------------------------------
+        # INIT: Lese aktuelles Grid aus bestehender ph.in (falls existent)
+        # -------------------------------------------------------------
+        current_nq = "2,2,2"
+        is_phase2 = False
+        
+        if os.path.exists(ph_in):
+            with open(ph_in, 'r') as f:
+                content = f.read()
+                if "electron_phonon" in content: is_phase2 = True
+                nq_match = re.search(r"nq1\s*=\s*(\d+).*?nq2\s*=\s*(\d+).*?nq3\s*=\s*(\d+)", content, re.DOTALL)
+                if nq_match: current_nq = f"{nq_match.group(1)},{nq_match.group(2)},{nq_match.group(3)}"
+    
+        row_data = get_csv_full_info(name)
+        already_stable = (row_data.get('Stabilität', '') == 'STABIL')
+    
+        # -------------------------------------------------------------
+        # PHASE 1: Reine Stabilitätsanalyse (Kein dvscf, kein el-ph)
+        # -------------------------------------------------------------
+        if not already_stable:
+            print(f"   🔍 PHASE 1: Stabilitätsanalyse für {name}...")
+            
+            write_ph_input(ph_in, nq=current_nq, elph=False)
+            if os.path.exists(ph_out): os.remove(ph_out)
+            
+            phase1_res = execute_ph_phase(is_elph_phase=False)
+            if phase1_res != "DONE": return phase1_res
+    
+            min_f, stab = "-", "Unbekannt"
+            with open(ph_out, 'r') as f:
+                content = f.read()
+                freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
+                if freqs:
+                    min_f = min(float(x) for x in freqs)
+                    stab  = "STABIL" if min_f > -0.05 else "INSTABIL"
+    
+            if stab == "INSTABIL":
+                print(f"   🛑 Material ist INSTABIL (Min Freq, {min_f} THz). Überspringe El-Ph.")
+                return "DONE"
+                
+            print(f"   ✅ Material ist STABIL (Min Freq, {min_f} THz). Gehe zu Phase 2...")
+            update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+    
+        # -------------------------------------------------------------
+        # PHASE 2: Elektron-Phonon-Kopplung (Nur für stabile Materialien)
+        # -------------------------------------------------------------
+        print(f"   ⚛️ PHASE 2 Vorbereitung für {name}: Lösche alle alten Dateien...")
+        tmp_path = os.path.join(work_dir, "tmp")
+        
+        ph0_path = os.path.join(tmp_path, "_ph0")
+        if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
+        
+        chkpt_path = os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")
+        if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
+        
+        for f in glob.glob(os.path.join(tmp_path, "*.a2Fsave*")): os.remove(f)
+        for f in glob.glob(os.path.join(tmp_path, "*.dvscf*")): os.remove(f)
+    
+        if os.path.exists(ph_out): os.remove(ph_out)
+        
+        write_ph_input(ph_in, nq=current_nq, elph=True)
+        print("   ⚛️ PHASE 2: Berechne Elektron-Phonon-Kopplung...")
+        return execute_ph_phase(is_elph_phase=True)
 
 def cleanup_system_memory():
     """Tötet hängengebliebene QE-Prozesse und leert das Shared Memory."""

@@ -1,43 +1,39 @@
 
-     Program PWSCF v.7.5 starts on  6Apr2026 at  3:45:48 
+     Program PWSCF v.6.7MaX starts on  6Apr2026 at  6:23:36 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
          "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
          "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
-         "P. Giannozzi et al., J. Chem. Phys. 152 154105 (2020);
           URL http://www.quantum-espresso.org", 
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     1 processors
+     Parallel version (MPI), running on     2 processors
 
      MPI processes distributed on     1 nodes
-     7064 MiB available memory on the printing compute node when the environment starts
-
+     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
      Current dimensions of program PWSCF are:
      Max number of different atomic species (ntypx) = 10
      Max number of k-points (npk) =  40000
-     Max angular momentum in pseudopotentials (lmaxx) =  4
-read_pp_mesh; mismatch in mesh size, discarding the one in header
+     Max angular momentum in pseudopotentials (lmaxx) =  3
+     Message from routine read_pp_mesh:
+     mismatch in mesh size, discarding the one in header
      file H.UPF: wavefunction(s)  1S renormalized
-
-     Exact exchange band parallelism type set to band_pairs
-
 
      Subspace diagonalization in iterative solution of the eigenvalue problem:
      a serial algorithm will be used
 
 
-     G-vector sticks info
+     Parallelization info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        1213     605    180                44969    15877    2569
+     Max        1214     606    181                44972    15878    2572
      Sum        2427    1211    361                89941    31755    5141
-
-     Using Slab Decomposition
 
 
 
@@ -51,8 +47,8 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
      kinetic-energy cutoff     =      40.0000  Ry
      charge density cutoff     =     320.0000  Ry
      scf convergence threshold =      1.0E-06
-     mixing beta               =       0.4000
-     number of iterations used =            6  local-TF  mixing
+     mixing beta               =       0.7000
+     number of iterations used =            8  local-TF  mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -119,9 +115,9 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
 
 
      atomic species   valence    mass     pseudopotential
-     Ba               10.00     1.00000     Ba( 1.00)
-     H                 1.00     1.00000     H ( 1.00)
-     Mg               10.00     1.00000     Mg( 1.00)
+        Ba            10.00     1.00000     Ba( 1.00)
+        H              1.00     1.00000     H ( 1.00)
+        Mg            10.00     1.00000     Mg( 1.00)
 
      No symmetry found
 
@@ -130,18 +126,18 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
    Cartesian axes
 
      site n.     atom                  positions (alat units)
-         1        Mg     tau(   1) = (   0.4862405   0.4862407   0.0268002  )
-         2        Ba     tau(   2) = (   0.5130410   0.0000000   0.5130408  )
-         3        Mg     tau(   3) = (   0.0000000   0.5130410   0.5130408  )
-         4        Mg     tau(   4) = (  -0.0000000   0.0000000  -0.0000000  )
-         5        H      tau(   5) = (   0.0290008   0.8517333   0.3556197  )
-         6        H      tau(   6) = (   0.8201434   0.3071027   0.2059383  )
-         7        H      tau(   7) = (   0.3654928   0.1842215   0.9702809  )
-         8        H      tau(   8) = (   0.6704622   0.5420417   0.6873891  )
-         9        H      tau(   9) = (   0.9702809   0.1475482   0.6972622  )
-        10        H      tau(  10) = (   0.1791381   0.6921790   0.8469436  )
-        11        H      tau(  11) = (   0.6337889   0.8150602   0.0826010  )
-        12        H      tau(  12) = (   0.3288195   0.4572402   0.3654926  )
+         1           Mg  tau(   1) = (   0.4862405   0.4862407   0.0268002  )
+         2           Ba  tau(   2) = (   0.5130410   0.0000000   0.5130408  )
+         3           Mg  tau(   3) = (   0.0000000   0.5130410   0.5130408  )
+         4           Mg  tau(   4) = (  -0.0000000   0.0000000  -0.0000000  )
+         5           H   tau(   5) = (   0.0290008   0.8517333   0.3556197  )
+         6           H   tau(   6) = (   0.8201434   0.3071027   0.2059383  )
+         7           H   tau(   7) = (   0.3654928   0.1842215   0.9702809  )
+         8           H   tau(   8) = (   0.6704622   0.5420417   0.6873891  )
+         9           H   tau(   9) = (   0.9702809   0.1475482   0.6972622  )
+        10           H   tau(  10) = (   0.1791381   0.6921790   0.8469436  )
+        11           H   tau(  11) = (   0.6337889   0.8150602   0.0826010  )
+        12           H   tau(  12) = (   0.3288195   0.4572402   0.3654926  )
 
      number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
                        cart. coord. in units 2pi/alat
@@ -158,17 +154,20 @@ read_pp_mesh; mismatch in mesh size, discarding the one in header
 
      Smooth grid:    31755 G-vectors     FFT dimensions: (  40,  40,  40)
 
-     Estimated max dynamical RAM per process >     366.27 MB
+     Estimated max dynamical RAM per process >     190.21 MB
+
+     Estimated total dynamical RAM >     380.42 MB
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine aainit (18):
+     Error in routine aainit (14):
      mx dimension too small
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      stopping ...
+[Supraleiter-HPC-Knoten:01033] [[28735,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 513
 --------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
-with errorcode 18.
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 14.
 
 NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
 You may or may not see output from other processes, depending on

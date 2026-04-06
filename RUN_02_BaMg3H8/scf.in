@@ -1,6 +1,4 @@
 &CONTROL
- disk_io='low',
- nstep = 100,
   calculation = 'vc-relax'
   prefix = 'BaMg3H8'
   outdir = './tmp/'
@@ -21,11 +19,12 @@
   degauss = 0.02
 /
 &ELECTRONS
- mixing_beta = 0.7,
  electron_maxstep = 150,
- mixing_mode='plain',
- mixing_ndim = 2,
- diagonalization='cg',
+ mixing_beta = 0.4,
+ mixing_mode='local-TF',
+ diago_david_ndim = 4,
+ mixing_ndim = 6,
+ diagonalization='david',
   conv_thr = 1.0d-6
 /
 &IONS
@@ -59,4 +58,4 @@ CELL_PARAMETERS (angstrom)
   -0.138620  5.168630  0.138620
   0.138620  0.138620  5.168629
 
-! SMART_OOM_LEVEL=4
+! SMART_OOM_LEVEL=0

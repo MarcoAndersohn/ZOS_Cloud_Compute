@@ -1,44 +1,39 @@
 
-     Program PWSCF v.7.5 starts on  6Apr2026 at  3:49:51 
+     Program PWSCF v.6.7MaX starts on  6Apr2026 at  5:57:25 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
          "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
          "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
-         "P. Giannozzi et al., J. Chem. Phys. 152 154105 (2020);
           URL http://www.quantum-espresso.org", 
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
-     Parallel version (MPI), running on     1 processors
+     Parallel version (MPI), running on     2 processors
 
      MPI processes distributed on     1 nodes
-     6895 MiB available memory on the printing compute node when the environment starts
-
+     R & G space division:  proc/nbgrp/npool/nimage =       2
      Waiting for input...
      Reading input from standard input
 
      Current dimensions of program PWSCF are:
      Max number of different atomic species (ntypx) = 10
      Max number of k-points (npk) =  40000
-     Max angular momentum in pseudopotentials (lmaxx) =  4
+     Max angular momentum in pseudopotentials (lmaxx) =  3
      file H.UPF: wavefunction(s)  1S renormalized
-
-     Exact exchange band parallelism type set to band_pairs
-
-     Message from routine setup:
-     using ibrav=0 with symmetry is DISCOURAGED, use correct ibrav instead
 
      Subspace diagonalization in iterative solution of the eigenvalue problem:
      a serial algorithm will be used
 
+     Message from routine setup:
+     using ibrav=0 with symmetry is DISCOURAGED, use correct ibrav instead
 
-     G-vector sticks info
+     Parallelization info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min         813     402    120                21571     7543    1210
+     Max         814     403    121                21572     7546    1211
      Sum        1627     805    241                43143    15089    2421
-
-     Using Slab Decomposition
 
 
 
@@ -52,8 +47,8 @@
      kinetic-energy cutoff     =      40.0000  Ry
      charge density cutoff     =     320.0000  Ry
      scf convergence threshold =      1.0E-06
-     mixing beta               =       0.4000
-     number of iterations used =            6  local-TF  mixing
+     mixing beta               =       0.7000
+     number of iterations used =            8  local-TF  mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -132,10 +127,10 @@
                                                        1.000   1.000
 
      atomic species   valence    mass     pseudopotential
-     H                 1.00     1.00000     H ( 1.00)
-     Ru                8.00     1.00000     Ru( 1.00)
-     Ta               13.00     1.00000     Ta( 1.00)
-     Ti               12.00     1.00000     Ti( 1.00)
+        H              1.00     1.00000     H ( 1.00)
+        Ru             8.00     1.00000     Ru( 1.00)
+        Ta            13.00     1.00000     Ta( 1.00)
+        Ti            12.00     1.00000     Ti( 1.00)
 
      24 Sym. Ops. (no inversion) found
 
@@ -144,15 +139,15 @@
    Cartesian axes
 
      site n.     atom                  positions (alat units)
-         1        Ta     tau(   1) = (   1.0606603   1.0606603   1.0606596  )
-         2        Ti     tau(   2) = (   0.3535535   0.3535535   0.3535533  )
-         3        H      tau(   3) = (   0.7071068   0.7071068   1.0345462  )
-         4        H      tau(   4) = (   0.7071068   0.3796672   0.7071066  )
-         5        H      tau(   5) = (   0.3796670   0.7071068   0.7071066  )
-         6        H      tau(   6) = (   0.7071068   0.7071070   0.3796667  )
-         7        H      tau(   7) = (   0.7071068   1.0345466   0.7071063  )
-         8        H      tau(   8) = (   1.0345466   0.7071068   0.7071066  )
-         9        Ru     tau(   9) = (  -0.0000000   0.0000000  -0.0000000  )
+         1           Ta  tau(   1) = (   1.0606603   1.0606603   1.0606596  )
+         2           Ti  tau(   2) = (   0.3535535   0.3535535   0.3535533  )
+         3           H   tau(   3) = (   0.7071068   0.7071068   1.0345462  )
+         4           H   tau(   4) = (   0.7071068   0.3796672   0.7071066  )
+         5           H   tau(   5) = (   0.3796670   0.7071068   0.7071066  )
+         6           H   tau(   6) = (   0.7071068   0.7071070   0.3796667  )
+         7           H   tau(   7) = (   0.7071068   1.0345466   0.7071063  )
+         8           H   tau(   8) = (   1.0345466   0.7071068   0.7071066  )
+         9           Ru  tau(   9) = (  -0.0000000   0.0000000  -0.0000000  )
 
      number of k points=     3  Methfessel-Paxton smearing, width (Ry)=  0.0200
                        cart. coord. in units 2pi/alat
@@ -164,12 +159,22 @@
 
      Smooth grid:    15089 G-vectors     FFT dimensions: (  36,  36,  36)
 
-     Estimated max dynamical RAM per process >     176.96 MB
+     Estimated max dynamical RAM per process >      95.55 MB
+
+     Estimated total dynamical RAM >     191.10 MB
 
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     Error in routine aainit (18):
+     Error in routine aainit (14):
      mx dimension too small
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      stopping ...
-[Supraleiter-HPC-Knoten:01915] [[29517,0],0] ORTE_ERROR_LOG: Data unpack had inadequate space in file ../../../orte/util/show_help.c at line 513
+[Supraleiter-HPC-Knoten:03496] [[31134,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 507
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 14.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------

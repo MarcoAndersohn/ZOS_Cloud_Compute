@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on 15May2026 at 11: 7:56 
+     Program PWSCF v.6.7MaX starts on 15May2026 at 11:28:23 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -51,7 +51,7 @@ NOTICE: Bravais lattice has wrong number ( 3) of symmetries - symmetries are dis
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            3  plain     mixing
+     number of iterations used =            4  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -156,14 +156,23 @@ NOTICE: Bravais lattice has wrong number ( 3) of symmetries - symmetries are dis
 
      Smooth grid:    26943 G-vectors     FFT dimensions: (  40,  40,  40)
 
-     Estimated max dynamical RAM per process >      83.26 MB
+     Estimated max dynamical RAM per process >      83.84 MB
 
-     Estimated total dynamical RAM >     333.03 MB
+     Estimated total dynamical RAM >     335.35 MB
 
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+with errorcode 14.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      Error in routine aainit (14):
      mx dimension too small
  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
      stopping ...
-[Supraleiter-HPC-Knoten:03510] [[31104,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+[Supraleiter-HPC-Knoten:02165] 1 more process has sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:02165] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages

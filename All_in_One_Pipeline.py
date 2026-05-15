@@ -258,12 +258,12 @@ def detect_oom_level(input_file):
 
 def apply_oom_settings(input_file, level):
     with open(input_file, 'r') as f: content = f.read()
-    diag = 'david'; mix = 8; disk = None 
-    msg = "Standard (david, mix=8)"
+    diag = 'cg'; mix = 4; disk = None 
+    msg = "Standard (cg, mix=4)"
 
-    if level >= 1: diag = 'cg'; mix = 4; msg = "Stufe 1 (cg, mix=4)"
-    if level >= 2: disk = 'low'; msg = "Stufe 2 (cg, mix=4, disk_io='low')"
-    if level >= 3: mix = 3; msg = "Stufe 3 (cg, mix=3, disk_io='low')"
+    if level >= 1: disk = 'low'; msg = "Stufe 1 (cg, mix=4, disk_io='low')"
+    if level >= 2: mix = 3; msg = "Stufe 2 (cg, mix=3, disk_io='low')"
+    if level >= 3: mix = 2; msg = "Stufe 3 (cg, mix=2, disk_io='low')"
     if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
 
     print(f"      📉 Setze RAM-Strategie, {msg}")
@@ -289,7 +289,6 @@ def apply_oom_settings(input_file, level):
 
     with open(input_file, 'w') as f: f.write(content)
     return True
-
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
@@ -496,6 +495,14 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         except: pass
         
         return "CRASH"
+
+def deallocate_vm():
+    if not shutil.which("az"): return
+    try:
+        subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten", "--no-wait"], capture_output=True, timeout=30)
+    except: pass
+
+
 
 # =============================================================================
 # 4. HAUPTPROGRAMM
@@ -768,9 +775,16 @@ def main():
                 continue 
 
         send_notification("🎉 Alle Jobs erledigt.")
-        git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")
-        set_logic_app_state("Disabled") 
+        
+        # 1. Datei erstellen, BEVOR synchronisiert wird
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status, Fertig\nTimestamp, {time.ctime()}")
+        
+        # 2. Jetzt erst den Git Sync ausführen
+        git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")
+        
+        # 3. VM deallokieren und herunterfahren
+        set_logic_app_state("Disabled")
+        deallocate_vm() 
         if os.name != 'nt': os.system("sudo shutdown -h now")
 
     except Exception as e:

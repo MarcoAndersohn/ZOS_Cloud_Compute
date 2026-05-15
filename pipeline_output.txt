@@ -135,3 +135,62 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 🚀 NEUSTART SMART-PIPELINE, 2026-05-15 11,05
 ========================================
 
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   0a38dad6..f4fc71a7  main -> main
+⏩ Überspringe 01_HfH3_Top1 (Ist ein Isolator)
+⏩ Überspringe 01_LiTaH6Ru (Ist ein Isolator)
+⏩ Überspringe 01_SrMgGaB3H16 (Ist ein Isolator)
+🔄 ERZWUNGENER NEUSTART für 02_BaMg3H8 (Lösche korrupten RUN-Ordner)...
+
+💎 Job, 02_BaMg3H8
+      📉 Setze RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (4 Cores, OOM-Lvl 0)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      📉 Setze RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (4 Cores, OOM-Lvl 0)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      📉 Setze RAM-Strategie, Standard (david, mix=8)
+   1️⃣  SCF (4 Cores, OOM-Lvl 0)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      💀 Logfile endet abrupt (Silent Death) -> OOM.
+      ⚠️ OOM Fehler erkannt. Eskaliere zu Level 1...
+      📉 Setze RAM-Strategie, Stufe 1 (cg, mix=4)
+   1️⃣  SCF (4 Cores, OOM-Lvl 1)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      📉 Setze RAM-Strategie, Stufe 1 (cg, mix=4)
+   1️⃣  SCF (4 Cores, OOM-Lvl 1)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      💀 Logfile endet abrupt (Silent Death) -> OOM.
+      ⚠️ OOM Fehler erkannt. Eskaliere zu Level 2...
+      📉 Setze RAM-Strategie, Stufe 2 (cg, mix=4, disk_io='low')
+   1️⃣  SCF (4 Cores, OOM-Lvl 2)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      📉 Setze RAM-Strategie, Stufe 2 (cg, mix=4, disk_io='low')
+   1️⃣  SCF (4 Cores, OOM-Lvl 2)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      📉 Setze RAM-Strategie, Stufe 2 (cg, mix=4, disk_io='low')
+   1️⃣  SCF (4 Cores, OOM-Lvl 2)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      💀 Logfile endet abrupt (Silent Death) -> OOM.
+      ⚠️ OOM Fehler erkannt. Eskaliere zu Level 3...
+      📉 Setze RAM-Strategie, Stufe 3 (cg, mix=3, disk_io='low')
+   1️⃣  SCF (4 Cores, OOM-Lvl 3)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      📉 Setze RAM-Strategie, Stufe 3 (cg, mix=3, disk_io='low')
+   1️⃣  SCF (4 Cores, OOM-Lvl 3)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      📉 Setze RAM-Strategie, Stufe 3 (cg, mix=3, disk_io='low')
+   1️⃣  SCF (4 Cores, OOM-Lvl 3)
+      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
+      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
+      ❌ Zu viele unlösbare Abstürze (3). Skippe Job.

@@ -213,7 +213,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                     print("      ✅ Checkpoint erfolgreich geladen!")
                 else:
                     print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
-            except Exception as e: print(f"      ❌ Fehler beim Laden des Checkpoints, {e}")
+            except Exception as e: print(f"      ❌ Fehler beim Laden des Checkpoints: {e}")
         else:
             print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
 
@@ -232,8 +232,8 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         file_mode = 'a' if mode == 'restart' else 'w'
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-            # FIX: '--oversubscribe' entfernt. '-ndiag 1' beibehalten!
-            cmd = ["mpirun", "-np", str(active_cores), PW_EXE, "-ndiag", "1"]
+            # FIX: '--oversubscribe' ist wieder drin. '-ndiag 1' bleibt!
+            cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE, "-ndiag", "1"]
             print(f"      ⚙️ Starte PWSCF ({mode}, {active_cores} Cores, -ndiag 1)...")
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
@@ -251,7 +251,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                                 print("      ✅ Checkpoint erstellt.")
                                 git_sync("Checkpoint & Log Update")
                                 last_git_sync = time.time() 
-                            except Exception as e: print(f"      ⚠️ Checkpoint fail, {e}")
+                            except Exception as e: print(f"      ⚠️ Checkpoint fail: {e}")
 
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
@@ -474,8 +474,8 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
     file_mode = 'a' if "recover=.true." in content else 'w'
 
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-        # FIX: '--oversubscribe' entfernt.
-        cmd = ["mpirun", "-np", str(active_cores), PH_EXE]
+        # FIX: '--oversubscribe' ist wieder drin.
+        cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
         print(f"      ⚙️ Starte PHONONEN (Cores: {active_cores})...")
         process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
         
@@ -517,10 +517,18 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         return "CRASH"
     
 def deallocate_vm():
-    if not shutil.which("az"): return
+    if not shutil.which("az"): 
+        print("🛑 Azure CLI nicht gefunden. Verlasse mich auf lokalen Shutdown.")
+        return
     try:
-        subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten", "--no-wait"], capture_output=True, timeout=30)
-    except: pass
+        # --no-wait entfernt, damit Python kurz wartet, ob der Befehl akzeptiert wurde
+        result = subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], capture_output=True, text=True, timeout=60)
+        if result.returncode != 0:
+            print(f"⚠️ Azure CLI Deallocate Fehler: {result.stderr}")
+        else:
+            print("✅ VM erfolgreich deallokiert.")
+    except Exception as e: 
+        print(f"⚠️ Fehler beim Aufruf der Azure CLI: {e}")
 
 
 

@@ -1,5 +1,5 @@
 
-     Program PWSCF v.6.7MaX starts on 15May2026 at 11:27:57 
+     Program PWSCF v.6.7MaX starts on 18May2026 at 11:19:28 
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
@@ -25,8 +25,7 @@
      file H.UPF: wavefunction(s)  1S renormalized
 
      Subspace diagonalization in iterative solution of the eigenvalue problem:
-     one sub-group per band group will be used
-     scalapack distributed-memory algorithm (size of sub-group:  2*  2 procs)
+     a serial algorithm will be used
 
 
      Parallelization info
@@ -49,7 +48,7 @@
      charge density cutoff     =     400.0000  Ry
      scf convergence threshold =      1.0E-06
      mixing beta               =       0.7000
-     number of iterations used =            3  plain     mixing
+     number of iterations used =            4  plain     mixing
      energy convergence thresh.=      1.0E-04
      force convergence thresh. =      1.0E-03
      press convergence thresh. =      5.0E-01
@@ -155,14 +154,23 @@
 
      Smooth grid:    44317 G-vectors     FFT dimensions: (  45,  45,  45)
 
-     Estimated max dynamical RAM per process >     130.92 MB
+     Estimated max dynamical RAM per process >     131.87 MB
 
-     Estimated total dynamical RAM >     523.67 MB
+     Estimated total dynamical RAM >     527.50 MB
 --------------------------------------------------------------------------
-MPI_ABORT was invoked on rank 3 in communicator MPI_COMM_WORLD
+MPI_ABORT was invoked on rank 2 in communicator MPI_COMM_WORLD
 with errorcode 14.
 
 NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
 You may or may not see output from other processes, depending on
 exactly when Open MPI kills them.
 --------------------------------------------------------------------------
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine aainit (14):
+     mx dimension too small
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     stopping ...
+[Supraleiter-HPC-Knoten:01133] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01133] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages

@@ -146,32 +146,156 @@ def analyze_crash_reason(output_file):
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
         
-        if "fatal error reading xml" in lines or "reading output_obj of xsd" in lines or "wrong number of occurrences" in lines:
+        # Konvertiere alles in Kleinbuchstaben für eine absolut sichere Suche
+        lines_lower = lines.lower()
+        
+        if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower:
             print("      🧨 XML-Struktur zerstört (Corruption).")
             return "XML_ERROR"
 
-        if "not orthogonal" in lines and "D_S" in lines:
+        if "not orthogonal" in lines_lower and "d_s" in lines_lower:
             print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
 
-        ram_match = re.search(r"Estimated total dynamical RAM\s*>\s*([0-9\.]+)\s*GB", lines)
+        # Regex erweitert, um MB und GB zu erkennen
+        ram_match = re.search(r"estimated total dynamical ram\s*>\s*([0-9\.]+)\s*(mb|gb)", lines_lower)
+
+        # Alle Error-Keywords konsequent in Kleinbuchstaben
+        error_keywords = ["error", "mpi_abort", "segmentation fault", "stopping", "fatal", "diagonalization failed"]
+        has_error_msg = any(key in lines_lower for key in error_keywords)
+
+        if has_error_msg: 
+            return "HARD"
+
         if ram_match:
-            if "Self-consistent Calculation" not in lines and "iteration #" not in lines:
+            if "self-consistent calculation" not in lines_lower and "iteration #" not in lines_lower:
                 return "LIKELY_OOM"
 
-        if "iteration #" in lines or "diagonalization" in lines:
-            error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "fatal"]
-            has_error_msg = any(key in lines for key in error_keywords)
+        if "iteration #" in lines_lower or "diagonalization" in lines_lower:
             if not has_error_msg:
                 return "LIKELY_OOM"
-
-        error_keywords = ["Error", "error", "Mpi_Abort", "segmentation fault", "stopping", "diagonalization failed"]
-        for key in error_keywords:
-            if key in lines: return "HARD"
-            
+        
         return "SOFT"
     except: return "HARD"
 
+
+def run_monitored_pw(input_file, output_file, cwd, active_cores):
+    fix_input_file(input_file, 0)
+    last_git_sync = time.time()
+    last_checkpoint_time = 0 
+
+    while True:
+        with open(input_file, 'r') as f: content = f.read()
+        tmp_dir = os.path.join(cwd, "tmp") 
+        checkpoint_dir = os.path.join(cwd, "tmp_SAFE_CHECKPOINT") 
+
+        if "wf_collect" in content:
+            content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
+        else:
+            content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
+
+        prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
+        current_prefix = prefix_match.group(1) if prefix_match else "calc"
+        xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")
+        
+        mode = 'from_scratch'
+        if os.path.exists(output_file) and is_xml_valid(xml_path):
+            mode = 'restart'
+            print("      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.")
+        elif os.path.exists(output_file) and os.path.exists(checkpoint_dir):
+            print("      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...")
+            try:
+                if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir)
+                shutil.copytree(checkpoint_dir, tmp_dir)
+                if is_xml_valid(xml_path):
+                    mode = 'restart'
+                    print("      ✅ Checkpoint erfolgreich geladen!")
+                else:
+                    print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
+            except Exception as e: print(f"      ❌ Fehler beim Laden des Checkpoints, {e}")
+        else:
+            print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
+
+        if mode == 'from_scratch':
+            if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir, ignore_errors=True)
+            if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir, ignore_errors=True)
+
+        if "restart_mode" in content:
+            content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
+        else:
+            content = content.replace("&CONTROL", f"&CONTROL\n restart_mode='{mode}',")
+        
+        run_input = input_file + ".run"
+        with open(run_input, 'w') as f: f.write(content)
+
+        file_mode = 'a' if mode == 'restart' else 'w'
+        
+        with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
+            # HIER IST DER FIX -ndiag 1 um ScaLAPACK Abstürze zu verhindern
+            cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE, "-ndiag", "1"]
+            print(f"      ⚙️ Starte PWSCF ({mode}, {active_cores} Cores, -ndiag 1)...")
+            process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
+            
+            try:
+                while process.poll() is None:
+                    time.sleep(5)
+                    
+                    if time.time() - last_checkpoint_time > 900: 
+                        if is_xml_valid(xml_path):
+                            print("      💾 XML valide -> Erstelle Checkpoint...")
+                            try:
+                                if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
+                                shutil.copytree(tmp_dir, checkpoint_dir)
+                                last_checkpoint_time = time.time()
+                                print("      ✅ Checkpoint erstellt.")
+                                print("      ☁️ Trigger Git Sync (wegen Checkpoint)...")
+                                git_sync("Checkpoint & Log Update")
+                                last_git_sync = time.time() 
+                            except Exception as e: print(f"      ⚠️ Checkpoint fail, {e}")
+
+                    if time.time() - last_git_sync > 3600:
+                        print("      ❤️ Git Heartbeat...")
+                        git_sync("Log Update (Heartbeat)")
+                        last_git_sync = time.time()
+
+                    try:
+                        mem_usage = psutil.virtual_memory().percent
+                        if mem_usage > MEMORY_LIMIT_PERCENT:
+                            print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
+                            process.kill()
+                            return "OOM" 
+                    except: pass
+
+                    cur_iter = get_last_iteration(output_file)
+                    if cur_iter >= MAX_BFGS_STEPS:
+                        print(f"      🛑 Limit erreicht ({cur_iter}/{MAX_BFGS_STEPS} BFGS Schritte). Breche ab.")
+                        process.kill()
+                        return "MAX_STEPS"
+                    
+                    if cur_iter > 30: fix_input_file(input_file, cur_iter)
+
+            except: process.kill(); return "CRASH"
+            
+            # WICHTIG Kurze Pause, damit der Puffer bei einem harten Crash auf die Festplatte geschrieben wird
+            time.sleep(1.5)
+            
+            if process.returncode == -9:
+                print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
+                return "OOM"
+
+            if process.returncode != 0:
+                reason = analyze_crash_reason(output_file)
+                if reason == "LIKELY_OOM":
+                    print("      💀 Logfile endet abrupt (Silent Death) -> OOM.")
+                    return "OOM"
+                return "CRASH"
+
+            final_reason = analyze_crash_reason(output_file)
+            if final_reason == "DONE": return "DONE"
+            elif final_reason == "LIKELY_OOM": return "OOM"
+            
+            return "CRASH"
+        
 def is_xml_valid(xml_path):
     if not os.path.exists(xml_path): return False
     try:
@@ -328,119 +452,6 @@ def get_last_iteration(output_file):
         return val
     except: return 0
 
-# --- ROBUSTE PWSCF WRAPPER ---
-def run_monitored_pw(input_file, output_file, cwd, active_cores):
-    fix_input_file(input_file, 0)
-    last_git_sync = time.time()
-    last_checkpoint_time = 0 
-
-    while True:
-        with open(input_file, 'r') as f: content = f.read()
-        tmp_dir = os.path.join(cwd, "tmp") 
-        checkpoint_dir = os.path.join(cwd, "tmp_SAFE_CHECKPOINT") 
-
-        if "wf_collect" in content:
-            content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
-        else:
-            content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
-
-        prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
-        current_prefix = prefix_match.group(1) if prefix_match else "calc"
-        xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")
-        
-        mode = 'from_scratch'
-        if os.path.exists(output_file) and is_xml_valid(xml_path):
-            mode = 'restart'
-            print("      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.")
-        elif os.path.exists(output_file) and os.path.exists(checkpoint_dir):
-            print("      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...")
-            try:
-                if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir)
-                shutil.copytree(checkpoint_dir, tmp_dir)
-                if is_xml_valid(xml_path):
-                    mode = 'restart'
-                    print("      ✅ Checkpoint erfolgreich geladen!")
-                else:
-                    print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
-            except Exception as e: print(f"      ❌ Fehler beim Laden des Checkpoints, {e}")
-        else:
-            print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
-
-        if mode == 'from_scratch':
-            if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir, ignore_errors=True)
-            if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir, ignore_errors=True)
-
-        if "restart_mode" in content:
-            content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
-        else:
-            content = content.replace("&CONTROL", f"&CONTROL\n restart_mode='{mode}',")
-        
-        run_input = input_file + ".run"
-        with open(run_input, 'w') as f: f.write(content)
-
-        file_mode = 'a' if mode == 'restart' else 'w'
-        
-        with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-            cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE]
-            print(f"      ⚙️ Starte PWSCF ({mode}, {active_cores} Cores)...")
-            process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
-            
-            try:
-                while process.poll() is None:
-                    time.sleep(5)
-                    
-                    if time.time() - last_checkpoint_time > 900: 
-                        if is_xml_valid(xml_path):
-                            print("      💾 XML valide -> Erstelle Checkpoint...")
-                            try:
-                                if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
-                                shutil.copytree(tmp_dir, checkpoint_dir)
-                                last_checkpoint_time = time.time()
-                                print("      ✅ Checkpoint erstellt.")
-                                print("      ☁️ Trigger Git Sync (wegen Checkpoint)...")
-                                git_sync("Checkpoint & Log Update")
-                                last_git_sync = time.time() 
-                            except Exception as e: print(f"      ⚠️ Checkpoint fail, {e}")
-
-                    if time.time() - last_git_sync > 3600:
-                        print("      ❤️ Git Heartbeat...")
-                        git_sync("Log Update (Heartbeat)")
-                        last_git_sync = time.time()
-
-                    try:
-                        mem_usage = psutil.virtual_memory().percent
-                        if mem_usage > MEMORY_LIMIT_PERCENT:
-                            print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
-                            process.kill()
-                            return "OOM" 
-                    except: pass
-
-                    cur_iter = get_last_iteration(output_file)
-                    if cur_iter >= MAX_BFGS_STEPS:
-                        print(f"      🛑 Limit erreicht ({cur_iter}/{MAX_BFGS_STEPS} BFGS Schritte). Breche ab.")
-                        process.kill()
-                        return "MAX_STEPS"
-                    
-                    if cur_iter > 30: fix_input_file(input_file, cur_iter)
-
-            except: process.kill(); return "CRASH"
-            
-            if process.returncode == -9:
-                print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
-                return "OOM"
-
-            if process.returncode != 0:
-                reason = analyze_crash_reason(output_file)
-                if reason == "LIKELY_OOM":
-                    print("      💀 Logfile endet abrupt (Silent Death) -> OOM.")
-                    return "OOM"
-                return "CRASH"
-
-            final_reason = analyze_crash_reason(output_file)
-            if final_reason == "DONE": return "DONE"
-            elif final_reason == "LIKELY_OOM": return "OOM"
-            
-            return "CRASH"
 
 # --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):

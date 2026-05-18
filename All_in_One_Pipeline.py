@@ -146,7 +146,6 @@ def analyze_crash_reason(output_file):
         if "JOB DONE" in lines: return "DONE"
         if "convergence NOT achieved" in lines: return "NON_CONVERGED"
         
-        # Konvertiere alles in Kleinbuchstaben für eine absolut sichere Suche
         lines_lower = lines.lower()
         
         if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower:
@@ -157,10 +156,13 @@ def analyze_crash_reason(output_file):
             print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
 
-        # Regex erweitert, um MB und GB zu erkennen
+        # Der neue Check für das Pseudopotential-Limit
+        if "mx dimension too small" in lines_lower:
+            print("      🧨 FATAL, Pseudopotential übersteigt QE-Limit. Neues Pseudo (PAW) benötigt!")
+            return "PSEUDO_ERROR"
+
         ram_match = re.search(r"estimated total dynamical ram\s*>\s*([0-9\.]+)\s*(mb|gb)", lines_lower)
 
-        # Alle Error-Keywords konsequent in Kleinbuchstaben
         error_keywords = ["error", "mpi_abort", "segmentation fault", "stopping", "fatal", "diagonalization failed"]
         has_error_msg = any(key in lines_lower for key in error_keywords)
 
@@ -177,7 +179,7 @@ def analyze_crash_reason(output_file):
         
         return "SOFT"
     except: return "HARD"
-
+    
 
 def run_monitored_pw(input_file, output_file, cwd, active_cores):
     fix_input_file(input_file, 0)

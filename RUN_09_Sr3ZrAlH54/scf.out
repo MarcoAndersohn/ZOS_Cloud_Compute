@@ -10972,3 +10972,374 @@ H             4.4460164985        3.3523603776        5.9159094927
 
 
      negative rho (up, down):  2.592E-01 0.000E+00
+          total   stress  (Ry/bohr**3)                   (kbar)     P=        0.03
+  -0.00000041   0.00000027  -0.00000219           -0.06        0.04       -0.32
+   0.00000027   0.00000060   0.00000114            0.04        0.09        0.17
+  -0.00000219   0.00000114   0.00000048           -0.32        0.17        0.07
+
+     Energy error            =      2.3E-05
+     Gradient error          =      6.5E-04
+     Cell gradient error     =      2.2E-06
+
+
+     bfgs converged in  35 scf cycles and  34 bfgs steps
+     (criteria: energy <  1.0E-04 Ry, force <  1.0E-03Ry/Bohr, cell <  5.0E-01kbar)
+
+     End of BFGS Geometry Optimization
+
+     Final enthalpy =    -491.3556131453 Ry
+
+     File ./tmp/Sr3ZrAlH54.bfgs deleted, as requested
+Begin final coordinates
+     new unit-cell volume =   1885.76761 a.u.^3 (   279.44193 Ang^3 )
+     density =      0.16639 g/cm^3
+
+CELL_PARAMETERS (angstrom)
+   4.508584678   0.047961152  -0.036459964
+   0.049583034   5.112378981   0.052805492
+  -0.097364247   0.131137568  12.126921927
+
+ATOMIC_POSITIONS (angstrom)
+Sr            1.2197797438        0.8313235352        8.0123442011
+Sr            3.3825817861        1.9192532365        4.0251586607
+Zr            0.7595000654        4.4782636384        2.0108643482
+Sr            3.2153060926        3.4130332995       10.2953384595
+Al            1.4081398702        0.7531638085       11.2926964285
+Al            3.7955269234        2.0668742529        1.1817085049
+Al            0.8164793396        4.5030365898        4.9109403712
+Al            3.0671822948        3.3500866499        7.0583216189
+H             2.3549677644        2.0846360889        6.2021006597
+H             0.1360609337        0.6510064950        5.7777901714
+H             4.4668623071        3.4155905961        0.3406544234
+H             1.9670025471        4.5934738024       12.3654989008
+H             0.7519569523        4.7286942567       10.2264384859
+H             2.5088412225        3.0675412135        1.9618865790
+H             1.4476526366        0.4402454859        3.6537944804
+H             3.7605933678        2.2499106309        8.1763664047
+H             0.8315206882        2.0591392274       10.3441520380
+H             3.2434524973        0.5673802559        1.9349258209
+H             1.2756295231        3.2263188140        3.8673339627
+H             3.6315837472        4.7043441046        7.9294277574
+H             2.7251133396        0.7084288605       10.1331709784
+H             0.6960357539        1.8542890970        2.1739978121
+H             3.9813600651        4.5342767418        3.7377166238
+H             1.7059670880        3.3852640939        8.1509094141
+H             0.1490641172        0.6436850194        0.2858053725
+H             2.4925582181        1.9804835911       12.0618491139
+H             2.2145130175        4.5185819581        5.9786522696
+H             4.4460164985        3.3523603776        5.9159094927
+End final coordinates
+
+
+
+     Writing output data file ./tmp/Sr3ZrAlH54.save/
+
+     Final scf calculation at the relaxed structure.
+     The G-vectors are recalculated for the final unit cell
+     Results may differ from those at the preceding step.
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        1311     527    146               180184    45596    6719
+     Max        1312     528    147               180187    45599    6720
+     Sum        5245    2109    585               720741   182389   26877
+
+
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =       8.5662  a.u.
+     unit-cell volume          =    1885.7676 (a.u.)^3
+     number of atoms/cell      =           28
+     number of atomic types    =            4
+     number of electrons       =        74.00
+     number of Kohn-Sham states=           44
+     kinetic-energy cutoff     =      80.0000  Ry
+     charge density cutoff     =     800.0000  Ry
+     scf convergence threshold =      1.0E-08
+     mixing beta               =       0.7000
+     number of iterations used =            4  plain     mixing
+     press convergence thresh. =      5.0E-01
+     Exchange-correlation= SLA  PW   PBE  PBE
+                           (   1   4   3   4   0   0   0)
+
+     celldm(1)=   8.566167  celldm(2)=   0.000000  celldm(3)=   0.000000
+     celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (   0.994609   0.010580  -0.008043 )  
+               a(2) = (   0.010938   1.127808   0.011649 )  
+               a(3) = (  -0.021479   0.028929   2.675241 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = (  1.005591 -0.009837  0.008180 )  
+               b(2) = ( -0.009512  0.886867 -0.009667 )  
+               b(3) = (  0.003065 -0.003891  0.373865 )  
+
+
+     PseudoPot. # 1 for Al read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Al.UPF
+     MD5 check sum: cfc449ca30b5f3223ec38ddd88ac046d
+     Pseudo is Projector augmented-wave + core cor, Zval =  3.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1135 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for H  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/H.UPF
+     MD5 check sum: f52b6d4d1c606e5624b1dc7b2218f220
+     Pseudo is Ultrasoft, Zval =  1.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1
+     Using radial grid of  929 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for Sr read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Sr.UPF
+     MD5 check sum: 6b418c05fbe9db5448babca5e47b7a5b
+     Pseudo is Ultrasoft + core correction, Zval = 10.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  883 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  6 coefficients,  rinner =    1.400   1.400   1.400
+                                                       1.400   1.400
+
+     PseudoPot. # 4 for Zr read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Zr.UPF
+     MD5 check sum: 5db81b1e868ab7776c4564c113de050b
+     Pseudo is Ultrasoft + core correction, Zval = 12.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  887 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  6 coefficients,  rinner =    1.200   1.200   1.200
+                                                       1.200   1.200
+
+     atomic species   valence    mass     pseudopotential
+        Al             3.00     1.00000     Al( 1.00)
+        H              1.00     1.00000     H ( 1.00)
+        Sr            10.00     1.00000     Sr( 1.00)
+        Zr            12.00     1.00000     Zr( 1.00)
+
+     No symmetry found
+
+
+
+   Cartesian axes
+
+     site n.     atom                  positions (alat units)
+         1           Sr  tau(   1) = (   0.2690876   0.1833928   1.7675508  )
+         2           Sr  tau(   2) = (   0.7462092   0.4233939   0.8879639  )
+         3           Zr  tau(   3) = (   0.1675483   0.9879204   0.4436036  )
+         4           Sr  tau(   4) = (   0.7093076   0.7529269   2.2711873  )
+         5           Al  tau(   5) = (   0.3106405   0.1661505   2.4912079  )
+         6           Al  tau(   6) = (   0.8373064   0.4559596   0.2606890  )
+         7           Al  tau(   7) = (   0.1801182   0.9933854   1.0833704  )
+         8           Al  tau(   8) = (   0.6766310   0.7390407   1.5570902  )
+         9           H   tau(   9) = (   0.5195140   0.4598779   1.3682049  )
+        10           H   tau(  10) = (   0.0300155   0.1436143   1.2746005  )
+        11           H   tau(  11) = (   0.9854053   0.7534911   0.0751495  )
+        12           H   tau(  12) = (   0.4339276   1.0133362   2.7278718  )
+        13           H   tau(  13) = (   0.1658843   1.0431663   2.2559877  )
+        14           H   tau(  14) = (   0.5534590   0.6767102   0.4327990  )
+        15           H   tau(  15) = (   0.3193572   0.0971197   0.8060397  )
+        16           H   tau(  16) = (   0.8295999   0.4963381   1.8037347  )
+        17           H   tau(  17) = (   0.1834363   0.4542532   2.2819557  )
+        18           H   tau(  18) = (   0.7155168   0.1251660   0.4268513  )
+        19           H   tau(  19) = (   0.2814083   0.7117371   0.8531472  )
+        20           H   tau(  20) = (   0.8011399   1.0377946   1.7492592  )
+        21           H   tau(  21) = (   0.6011694   0.1562819   2.2354126  )
+        22           H   tau(  22) = (   0.1535479   0.4090626   0.4795914  )
+        23           H   tau(  23) = (   0.8783018   1.0002771   0.8245532  )
+        24           H   tau(  24) = (   0.3763422   0.7468010   1.7981188  )
+        25           H   tau(  25) = (   0.0328841   0.1419991   0.0630497  )
+        26           H   tau(  26) = (   0.5498670   0.4369015   2.6608856  )
+        27           H   tau(  27) = (   0.4885292   0.9968148   1.3189114  )
+        28           H   tau(  28) = (   0.9808066   0.7395423   1.3050701  )
+
+     number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+        k(    2) = (  -0.0015324   0.0019457  -0.1869324), wk =   0.2500000
+        k(    3) = (   0.0047562  -0.4434337   0.0048334), wk =   0.2500000
+        k(    4) = (   0.0032238  -0.4414881  -0.1820990), wk =   0.2500000
+        k(    5) = (  -0.5027953   0.0049187  -0.0040900), wk =   0.2500000
+        k(    6) = (  -0.5043277   0.0068643  -0.1910224), wk =   0.2500000
+        k(    7) = (  -0.4980391  -0.4385151   0.0007434), wk =   0.2500000
+        k(    8) = (  -0.4995715  -0.4365694  -0.1861890), wk =   0.2500000
+
+     Dense  grid:   720741 G-vectors     FFT dimensions: (  80,  90, 216)
+
+     Smooth grid:   182389 G-vectors     FFT dimensions: (  50,  60, 135)
+
+     Estimated max dynamical RAM per process >     841.38 MB
+
+     Estimated total dynamical RAM >       3.29 GB
+
+     Atomic positions and unit cell read from directory:
+     ./tmp/Sr3ZrAlH54.save/
+
+
+     Initial potential from superposition of free atoms
+
+     starting charge   73.88754, renormalised to   74.00000
+
+     negative rho (up, down):  2.514E-01 0.000E+00
+     Starting wfcs are   88 randomized atomic wfcs
+     Checking if some PAW data can be deallocated... 
+
+     total cpu time spent up to now is     2823.0 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     c_bands:  3 eigenvalues not converged
+     c_bands:  3 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  3 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     ethr =  1.00E-06,  avg # of iterations = 18.4
+
+     negative rho (up, down):  2.535E-01 0.000E+00
+
+     total cpu time spent up to now is     3055.5 secs
+
+     total energy              =    -491.14275439 Ry
+     estimated scf accuracy    <       1.41837162 Ry
+
+     iteration #  2     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  1.92E-03,  avg # of iterations =  3.4
+
+     negative rho (up, down):  2.579E-01 0.000E+00
+
+     total cpu time spent up to now is     3099.0 secs
+
+     total energy              =    -491.31448092 Ry
+     estimated scf accuracy    <       0.08462401 Ry
+
+     iteration #  3     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  1.14E-04,  avg # of iterations =  4.6
+
+     negative rho (up, down):  2.590E-01 0.000E+00
+
+     total cpu time spent up to now is     3156.3 secs
+
+     total energy              =    -491.34083208 Ry
+     estimated scf accuracy    <       0.05215056 Ry
+
+     iteration #  4     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     c_bands:  1 eigenvalues not converged
+     ethr =  7.05E-05,  avg # of iterations =  4.1
+
+     negative rho (up, down):  2.595E-01 0.000E+00
+
+     total cpu time spent up to now is     3209.4 secs
+
+     total energy              =    -491.34942786 Ry
+     estimated scf accuracy    <       0.02004319 Ry
+
+     iteration #  5     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  2.71E-05,  avg # of iterations =  3.7
+
+     negative rho (up, down):  2.599E-01 0.000E+00
+
+     total cpu time spent up to now is     3257.4 secs
+
+     total energy              =    -491.35483977 Ry
+     estimated scf accuracy    <       0.00205896 Ry
+
+     iteration #  6     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  2.78E-06,  avg # of iterations =  4.7
+
+     negative rho (up, down):  2.598E-01 0.000E+00
+
+     total cpu time spent up to now is     3320.2 secs
+
+     total energy              =    -491.35533880 Ry
+     estimated scf accuracy    <       0.00075030 Ry
+
+     iteration #  7     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     c_bands:  1 eigenvalues not converged
+     ethr =  1.01E-06,  avg # of iterations =  3.9
+
+     negative rho (up, down):  2.597E-01 0.000E+00
+
+     total cpu time spent up to now is     3371.1 secs
+
+     total energy              =    -491.35553247 Ry
+     estimated scf accuracy    <       0.00015828 Ry
+
+     iteration #  8     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  2.14E-07,  avg # of iterations =  3.6
+
+     negative rho (up, down):  2.596E-01 0.000E+00
+
+     total cpu time spent up to now is     3418.3 secs
+
+     total energy              =    -491.35560275 Ry
+     estimated scf accuracy    <       0.00000615 Ry
+
+     iteration #  9     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  8.31E-09,  avg # of iterations =  5.2
+
+     negative rho (up, down):  2.594E-01 0.000E+00
+
+     total cpu time spent up to now is     3484.5 secs
+
+     total energy              =    -491.35561384 Ry
+     estimated scf accuracy    <       0.00000249 Ry
+
+     iteration # 10     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  3.37E-09,  avg # of iterations =  3.7
+
+     negative rho (up, down):  2.593E-01 0.000E+00
+
+     total cpu time spent up to now is     3532.5 secs
+
+     total energy              =    -491.35562139 Ry
+     estimated scf accuracy    <       0.00000034 Ry
+
+     iteration # 11     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  4.56E-10,  avg # of iterations =  4.5
+
+     negative rho (up, down):  2.593E-01 0.000E+00
+
+     total cpu time spent up to now is     3591.1 secs
+
+     total energy              =    -491.35562117 Ry
+     estimated scf accuracy    <       0.00000029 Ry
+
+     iteration # 12     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization

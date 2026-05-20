@@ -34,7 +34,7 @@ MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
 
-FORCE_RETRY_LIST = ["09_Sr3ZrAlH54"]
+FORCE_RETRY_LIST = []
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")

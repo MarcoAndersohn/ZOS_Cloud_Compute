@@ -1,0 +1,363 @@
+
+     Program PHONON v.6.7MaX starts on 20May2026 at  9:13:41 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on     4 processors
+
+     MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       4
+     Waiting for input...
+     Reading input from standard input
+
+     Reading xml data from directory:
+
+     ./tmp/Sr3ZrAlH54.save/
+     file Al.UPF: wavefunction(s)  3S 3P renormalized
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        1311     527    146               180184    45596    6719
+     Max        1312     528    147               180187    45599    6720
+     Sum        5245    2109    585               720741   182389   26877
+
+
+     negative rho (up, down):  2.592E-01 0.000E+00
+     Reading collected, re-writing distributed wavefunctions
+
+
+     Dynamical matrices for ( 2, 2, 2)  uniform grid of q-points
+     (   8 q-points):
+       N         xq(1)         xq(2)         xq(3) 
+       1   0.000000000   0.000000000   0.000000000
+       2  -0.001532380   0.001945677  -0.186932399
+       3   0.004756219  -0.443433736   0.004833371
+       4   0.003223839  -0.441488060  -0.182099028
+       5  -0.502795322   0.004918668  -0.004090016
+       6  -0.504327702   0.006864344  -0.191022415
+       7  -0.498039103  -0.438515069   0.000743354
+       8  -0.499571483  -0.436569392  -0.186189045
+
+     Calculation of q =    0.0000000   0.0000000   0.0000000
+
+     Phonons                                                                    
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =       8.5662  a.u.
+     unit-cell volume          =    1885.7676 (a.u.)^3
+     number of atoms/cell      =           28
+     number of atomic types    =            4
+     kinetic-energy cut-off    =      80.0000  Ry
+     charge density cut-off    =     800.0000  Ry
+     convergence threshold     =      1.0E-14
+     beta                      =       0.7000
+     number of iterations used =            4
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+
+
+     celldm(1)=    8.56617  celldm(2)=    0.00000  celldm(3)=    0.00000
+     celldm(4)=    0.00000  celldm(5)=    0.00000  celldm(6)=    0.00000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (  0.9946  0.0106 -0.0080 )  
+               a(2) = (  0.0109  1.1278  0.0116 )  
+               a(3) = ( -0.0215  0.0289  2.6752 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = (  1.0056 -0.0098  0.0082 )  
+               b(2) = ( -0.0095  0.8869 -0.0097 )  
+               b(3) = (  0.0031 -0.0039  0.3739 )  
+
+
+     Atoms inside the unit cell: 
+
+     Cartesian axes
+
+     site n.  atom      mass           positions (alat units)
+        1     Sr   1.0000   tau(    1) = (    0.26909    0.18339    1.76755  )
+        2     Sr   1.0000   tau(    2) = (    0.74621    0.42339    0.88796  )
+        3     Zr   1.0000   tau(    3) = (    0.16755    0.98792    0.44360  )
+        4     Sr   1.0000   tau(    4) = (    0.70931    0.75293    2.27119  )
+        5     Al   1.0000   tau(    5) = (    0.31064    0.16615    2.49121  )
+        6     Al   1.0000   tau(    6) = (    0.83731    0.45596    0.26069  )
+        7     Al   1.0000   tau(    7) = (    0.18012    0.99339    1.08337  )
+        8     Al   1.0000   tau(    8) = (    0.67663    0.73904    1.55709  )
+        9     H    1.0000   tau(    9) = (    0.51951    0.45988    1.36820  )
+       10     H    1.0000   tau(   10) = (    0.03002    0.14361    1.27460  )
+       11     H    1.0000   tau(   11) = (    0.98541    0.75349    0.07515  )
+       12     H    1.0000   tau(   12) = (    0.43393    1.01334    2.72787  )
+       13     H    1.0000   tau(   13) = (    0.16588    1.04317    2.25599  )
+       14     H    1.0000   tau(   14) = (    0.55346    0.67671    0.43280  )
+       15     H    1.0000   tau(   15) = (    0.31936    0.09712    0.80604  )
+       16     H    1.0000   tau(   16) = (    0.82960    0.49634    1.80373  )
+       17     H    1.0000   tau(   17) = (    0.18344    0.45425    2.28196  )
+       18     H    1.0000   tau(   18) = (    0.71552    0.12517    0.42685  )
+       19     H    1.0000   tau(   19) = (    0.28141    0.71174    0.85315  )
+       20     H    1.0000   tau(   20) = (    0.80114    1.03779    1.74926  )
+       21     H    1.0000   tau(   21) = (    0.60117    0.15628    2.23541  )
+       22     H    1.0000   tau(   22) = (    0.15355    0.40906    0.47959  )
+       23     H    1.0000   tau(   23) = (    0.87830    1.00028    0.82455  )
+       24     H    1.0000   tau(   24) = (    0.37634    0.74680    1.79812  )
+       25     H    1.0000   tau(   25) = (    0.03288    0.14200    0.06305  )
+       26     H    1.0000   tau(   26) = (    0.54987    0.43690    2.66089  )
+       27     H    1.0000   tau(   27) = (    0.48853    0.99681    1.31891  )
+       28     H    1.0000   tau(   28) = (    0.98081    0.73954    1.30507  )
+
+     Computing dynamical matrix for 
+                    q = (   0.0000000   0.0000000   0.0000000 )
+
+      2 Sym.Ops. (with q -> -q+G )
+
+
+     G cutoff = 1486.9739  ( 180185 G-vectors)     FFT grid: ( 80, 90,216)
+     G cutoff =  594.7896  (  45597 G-vectors)  smooth grid: ( 50, 60,135)
+
+     number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+
+     PseudoPot. # 1 for Al read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Al.UPF
+     MD5 check sum: cfc449ca30b5f3223ec38ddd88ac046d
+     Pseudo is Projector augmented-wave + core cor, Zval =  3.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1135 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for H  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/H.UPF
+     MD5 check sum: f52b6d4d1c606e5624b1dc7b2218f220
+     Pseudo is Ultrasoft, Zval =  1.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1
+     Using radial grid of  929 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for Sr read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Sr.UPF
+     MD5 check sum: 6b418c05fbe9db5448babca5e47b7a5b
+     Pseudo is Ultrasoft + core correction, Zval = 10.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  883 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  6 coefficients,  rinner =    1.400   1.400   1.400
+                                                       1.400   1.400
+
+     PseudoPot. # 4 for Zr read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Zr.UPF
+     MD5 check sum: 5db81b1e868ab7776c4564c113de050b
+     Pseudo is Ultrasoft + core correction, Zval = 12.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  887 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  6 coefficients,  rinner =    1.200   1.200   1.200
+                                                       1.200   1.200
+
+     Mode symmetry, C_1 (1)     point group:
+
+
+     Atomic displacements:
+     There are   84 irreducible representations
+
+     Representation     1      1 modes -  To be done
+
+     Representation     2      1 modes -  To be done
+
+     Representation     3      1 modes -  To be done
+
+     Representation     4      1 modes -  To be done
+
+     Representation     5      1 modes -  To be done
+
+     Representation     6      1 modes -  To be done
+
+     Representation     7      1 modes -  To be done
+
+     Representation     8      1 modes -  To be done
+
+     Representation     9      1 modes -  To be done
+
+     Representation    10      1 modes -  To be done
+
+     Representation    11      1 modes -  To be done
+
+     Representation    12      1 modes -  To be done
+
+     Representation    13      1 modes -  To be done
+
+     Representation    14      1 modes -  To be done
+
+     Representation    15      1 modes -  To be done
+
+     Representation    16      1 modes -  To be done
+
+     Representation    17      1 modes -  To be done
+
+     Representation    18      1 modes -  To be done
+
+     Representation    19      1 modes -  To be done
+
+     Representation    20      1 modes -  To be done
+
+     Representation    21      1 modes -  To be done
+
+     Representation    22      1 modes -  To be done
+
+     Representation    23      1 modes -  To be done
+
+     Representation    24      1 modes -  To be done
+
+     Representation    25      1 modes -  To be done
+
+     Representation    26      1 modes -  To be done
+
+     Representation    27      1 modes -  To be done
+
+     Representation    28      1 modes -  To be done
+
+     Representation    29      1 modes -  To be done
+
+     Representation    30      1 modes -  To be done
+
+     Representation    31      1 modes -  To be done
+
+     Representation    32      1 modes -  To be done
+
+     Representation    33      1 modes -  To be done
+
+     Representation    34      1 modes -  To be done
+
+     Representation    35      1 modes -  To be done
+
+     Representation    36      1 modes -  To be done
+
+     Representation    37      1 modes -  To be done
+
+     Representation    38      1 modes -  To be done
+
+     Representation    39      1 modes -  To be done
+
+     Representation    40      1 modes -  To be done
+
+     Representation    41      1 modes -  To be done
+
+     Representation    42      1 modes -  To be done
+
+     Representation    43      1 modes -  To be done
+
+     Representation    44      1 modes -  To be done
+
+     Representation    45      1 modes -  To be done
+
+     Representation    46      1 modes -  To be done
+
+     Representation    47      1 modes -  To be done
+
+     Representation    48      1 modes -  To be done
+
+     Representation    49      1 modes -  To be done
+
+     Representation    50      1 modes -  To be done
+
+     Representation    51      1 modes -  To be done
+
+     Representation    52      1 modes -  To be done
+
+     Representation    53      1 modes -  To be done
+
+     Representation    54      1 modes -  To be done
+
+     Representation    55      1 modes -  To be done
+
+     Representation    56      1 modes -  To be done
+
+     Representation    57      1 modes -  To be done
+
+     Representation    58      1 modes -  To be done
+
+     Representation    59      1 modes -  To be done
+
+     Representation    60      1 modes -  To be done
+
+     Representation    61      1 modes -  To be done
+
+     Representation    62      1 modes -  To be done
+
+     Representation    63      1 modes -  To be done
+
+     Representation    64      1 modes -  To be done
+
+     Representation    65      1 modes -  To be done
+
+     Representation    66      1 modes -  To be done
+
+     Representation    67      1 modes -  To be done
+
+     Representation    68      1 modes -  To be done
+
+     Representation    69      1 modes -  To be done
+
+     Representation    70      1 modes -  To be done
+
+     Representation    71      1 modes -  To be done
+
+     Representation    72      1 modes -  To be done
+
+     Representation    73      1 modes -  To be done
+
+     Representation    74      1 modes -  To be done
+
+     Representation    75      1 modes -  To be done
+
+     Representation    76      1 modes -  To be done
+
+     Representation    77      1 modes -  To be done
+
+     Representation    78      1 modes -  To be done
+
+     Representation    79      1 modes -  To be done
+
+     Representation    80      1 modes -  To be done
+
+     Representation    81      1 modes -  To be done
+
+     Representation    82      1 modes -  To be done
+
+     Representation    83      1 modes -  To be done
+
+     Representation    84      1 modes -  To be done
+
+

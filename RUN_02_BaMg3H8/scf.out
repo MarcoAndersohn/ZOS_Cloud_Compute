@@ -1430,3 +1430,173 @@ the job to be terminated. The first process to do so was:
      Estimated max dynamical RAM per process >     378.96 MB
 
      Estimated total dynamical RAM >       1.48 GB
+
+     Atomic positions and unit cell read from directory:
+     ./tmp/BaMg3H8.save/
+     Atomic positions from file used, from input discarded
+
+
+     The initial density is read from file :
+     ./tmp/BaMg3H8.save/charge-density
+
+     Cannot read wfcs: file not found
+     Starting wfcs are   25 randomized atomic wfcs
+     Checking if some PAW data can be deallocated... 
+
+     total cpu time spent up to now is       15.9 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     c_bands:  3 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     ethr =  1.00E-05,  avg # of iterations =  9.0
+
+     Threshold (ethr) on eigenvalues was too large:
+     Diagonalizing with lowered threshold
+
+     CG style diagonalization
+     c_bands:  4 eigenvalues not converged
+     c_bands:  5 eigenvalues not converged
+     c_bands:  4 eigenvalues not converged
+     c_bands:  5 eigenvalues not converged
+     c_bands:  4 eigenvalues not converged
+     c_bands:  4 eigenvalues not converged
+     c_bands:  5 eigenvalues not converged
+     ethr =  2.31E-08,  avg # of iterations = 14.4
+
+     total cpu time spent up to now is       57.0 secs
+
+     total energy              =    -546.59325861 Ry
+     estimated scf accuracy    <       0.00000206 Ry
+
+     iteration #  2     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     ethr =  8.57E-09,  avg # of iterations =  6.0
+
+     total cpu time spent up to now is       67.4 secs
+
+     End of self-consistent calculation
+
+          k = 0.0000 0.0000 0.0000 ( 11217 PWs)   bands (ev):
+
+   -23.4248  -8.7271  -8.6886  -8.6886  -3.3756   0.2077   0.2086   0.9182
+     0.9187   1.1870   1.8451   2.1107   6.4907   6.4909   7.0518   7.9036
+
+          k = 0.0180 0.0180-0.4983 ( 11236 PWs)   bands (ev):
+
+   -23.4219  -8.8597  -8.7024  -8.6703  -1.9971  -1.9160   0.5136   0.8640
+     1.1938   1.2886   1.8345   2.0823   6.2041   6.2954   7.3594   7.6491
+
+          k =-0.0180-0.4983 0.0180 ( 11236 PWs)   bands (ev):
+
+   -23.4219  -8.8596  -8.7025  -8.6703  -1.9971  -1.9160   0.5135   0.8639
+     1.1939   1.2886   1.8346   2.0824   6.2040   6.2954   7.3596   7.6489
+
+          k = 0.0000-0.4803-0.4803 ( 11272 PWs)   bands (ev):
+
+   -23.4192  -8.8339  -8.8244  -8.6708  -1.4310  -0.9576  -0.5797  -0.4915
+     1.0664   1.7684   1.8872   2.2540   6.5102   6.7024   6.9948   7.6686
+
+          k =-0.4983-0.0180 0.0180 ( 11236 PWs)   bands (ev):
+
+   -23.4219  -8.8594  -8.7027  -8.6703  -1.9972  -1.9160   0.5133   0.8642
+     1.1938   1.2882   1.8347   2.0827   6.2040   6.2954   7.3598   7.6489
+
+          k =-0.4803-0.0000-0.4803 ( 11272 PWs)   bands (ev):
+
+   -23.4192  -8.8337  -8.8244  -8.6710  -1.4311  -0.9575  -0.5793  -0.4923
+     1.0667   1.7689   1.8873   2.2536   6.5101   6.7024   6.9945   7.6691
+
+          k =-0.5163-0.5163 0.0360 ( 11272 PWs)   bands (ev):
+
+   -23.4192  -8.8337  -8.8244  -8.6711  -1.4312  -0.9574  -0.5793  -0.4924
+     1.0667   1.7691   1.8871   2.2538   6.5101   6.7024   6.9947   7.6688
+
+          k =-0.4983-0.4983-0.4623 ( 11200 PWs)   bands (ev):
+
+   -23.4166  -8.8196  -8.7924  -8.7923  -0.8795  -0.8794  -0.0096   0.0187
+     0.3890   0.3895   0.5017   3.3714   6.7865   7.8758   7.8764   9.0894
+
+     the Fermi energy is     6.0232 ev
+
+!    total energy              =    -546.59393374 Ry
+     estimated scf accuracy    <       0.00000095 Ry
+     smearing contrib. (-TS)   =       0.00149832 Ry
+     internal energy E=F+TS    =    -546.59543206 Ry
+
+     The total energy is F=E-TS. E is the sum of the following terms:
+     one-electron contribution =      -5.52597113 Ry
+     hartree contribution      =      11.29694803 Ry
+     xc contribution           =     -30.91410942 Ry
+     ewald contribution        =     -52.63992464 Ry
+     one-center paw contrib.   =    -468.81237491 Ry
+
+     convergence has been achieved in   2 iterations
+
+     Forces acting on atoms (cartesian axes, Ry/au):
+
+     atom    1 type  3   force =    -0.00005270   -0.00000529    0.00000844
+     atom    2 type  1   force =     0.00036135    0.00014262   -0.00005360
+     atom    3 type  3   force =    -0.00002134   -0.00000477    0.00001960
+     atom    4 type  3   force =    -0.00001993   -0.00003026   -0.00000593
+     atom    5 type  2   force =    -0.00241108    0.00006153    0.00030560
+     atom    6 type  2   force =    -0.00131123   -0.00129221    0.00129470
+     atom    7 type  2   force =     0.00003717   -0.00035643    0.00240222
+     atom    8 type  2   force =    -0.00031237   -0.00239092   -0.00010103
+     atom    9 type  2   force =     0.00231201   -0.00008242   -0.00030091
+     atom   10 type  2   force =     0.00124318    0.00127485   -0.00127667
+     atom   11 type  2   force =    -0.00009500    0.00031617   -0.00236505
+     atom   12 type  2   force =     0.00026994    0.00236712    0.00007263
+
+     Total force =     0.006670     Total SCF correction =     0.000591
+
+
+     Computing stress (Cartesian axis) and pressure
+
+          total   stress  (Ry/bohr**3)                   (kbar)     P=       -1.84
+  -0.00001239   0.00001130  -0.00001131           -1.82        1.66       -1.66
+   0.00001130  -0.00001252  -0.00001125            1.66       -1.84       -1.66
+  -0.00001131  -0.00001125  -0.00001263           -1.66       -1.66       -1.86
+
+At line 624 of file bfgs_module.f90 (unit = 30, file = './tmp/BaMg3H8.bfgs')
+Fortran runtime error: End of file
+
+Error termination. Backtrace:
+#0  0x7ed41e023960 in ???
+#1  0x7ed41e0244d9 in ???
+#2  0x7ed41e02510f in ???
+#3  0x7ed41e27817b in ???
+#4  0x7ed41e2715fd in ???
+#5  0x7ed41e2722aa in ???
+#6  0x7ed41e277b7a in ???
+#7  0x61cbf5493266 in ???
+#8  0x61cbf5430d71 in ???
+#9  0x61cbf5326202 in ???
+#10  0x61cbf52343e5 in ???
+#11  0x61cbf52340ce in ???
+#12  0x7ed41dc29d8f in ???
+#13  0x7ed41dc29e3f in ???
+#14  0x61cbf52340fd in ???
+#15  0xffffffffffffffff in ???
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[28831,1],0]
+  Exit code:    2
+--------------------------------------------------------------------------

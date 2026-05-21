@@ -1244,3 +1244,62 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 ⏩ Überspringe 08_Li5Al3H16 (Ist ein Isolator)
 ⏩ Überspringe 08_LiScH6Pt (Status: SKIPPED (Permanent Crash))
       🧹 Heavy Files & dvscf für 08_Ti3GaH7 bereinigt.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   0ec93184..20d12902  main -> main
+⏩ Überspringe 08_Ti3GaH7 (INSTABIL)
+⏩ Überspringe 08_YMg5TaReH14 (INSTABIL)
+⏩ Überspringe 09_Li2MgZrH6 (Ist ein Isolator)
+⏩ Überspringe 09_MgTiBH44 (INSTABIL)
+✅ 09_Sr3ZrAlH54 SCF ist fertig.
+
+💎 Job: 09_Sr3ZrAlH54
+   ⚡ Metall (DOS=0.900). Berechne Phononen...
+      🧠 Erbe Kernanzahl von SCF: Starte mit 4 Core(s).
+      🧹 Bereinige Zombie-Prozesse und /dev/shm...
+      ✅ System-RAM und Prozesse sauber.
+      ⚙️ Starte PHONONEN (Cores: 4)...
+      💾 Phonon-Checkpoint (_ph0)...
+      ✅ Phonon-Checkpoint gesichert.
+      ⚠️ Phonon Crash/OOM!
+      --- PHONON ERROR LOG ---
+      #6  0x56ff7821ffdc in ???
+      #7  0x56ff7820a59a in ???
+      #8  0x56ff781a7ba6 in ???
+      #9  0x56ff781a1191 in ???
+      #10  0x56ff781a0ffe in ???
+      #11  0x734589429d8f in ???
+      #12  0x734589429e3f in ???
+      #13  0x56ff781a102d in ???
+      #14  0xffffffffffffffff in ???
+      #5  0x6219eaf670a3 in ???
+      #6  0x6219eaf59fdc in ???
+      #7  0x6219eaf4459a in ???
+      #8  0x6219eaee1ba6 in ???
+      #9  0x6219eaedb191 in ???
+      #10  0x6219eaedaffe in ???
+      #11  0x792af6429d8f in ???
+      #12  0x792af6429e3f in ???
+      #13  0x6219eaedb02d in ???
+      #14  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28961,1],2]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      --------------------
+      🛡️ Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, SafeCores...
+      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.
+      🛡️ _ph0 fehlt! Lade Phonon-Checkpoint...
+      ✅ Phonon-Checkpoint geladen!
+      🧹 Bereinige Zombie-Prozesse und /dev/shm...
+      ✅ System-RAM und Prozesse sauber.
+      ⚙️ Starte PHONONEN (Cores: 2)...
+      💾 Phonon-Checkpoint (_ph0)...
+      ✅ Phonon-Checkpoint gesichert.
+      ❤️ Git Heartbeat (Phonon)...

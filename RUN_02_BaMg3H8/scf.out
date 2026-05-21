@@ -1117,3 +1117,316 @@ the job to be terminated. The first process to do so was:
      Estimated max dynamical RAM per process >     378.96 MB
 
      Estimated total dynamical RAM >       1.48 GB
+
+     Atomic positions and unit cell read from directory:
+     ./tmp/BaMg3H8.save/
+     Atomic positions from file used, from input discarded
+
+
+     The initial density is read from file :
+     ./tmp/BaMg3H8.save/charge-density
+
+     Cannot read wfcs: file not found
+     Starting wfcs are   25 randomized atomic wfcs
+     Checking if some PAW data can be deallocated... 
+
+     total cpu time spent up to now is       15.4 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     c_bands:  3 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  3 eigenvalues not converged
+     ethr =  1.00E-05,  avg # of iterations =  9.0
+
+     Threshold (ethr) on eigenvalues was too large:
+     Diagonalizing with lowered threshold
+
+     CG style diagonalization
+     c_bands:  3 eigenvalues not converged
+     c_bands:  4 eigenvalues not converged
+     c_bands:  5 eigenvalues not converged
+     c_bands:  5 eigenvalues not converged
+     c_bands:  4 eigenvalues not converged
+     c_bands:  5 eigenvalues not converged
+     ethr =  1.54E-08,  avg # of iterations = 15.3
+
+     total cpu time spent up to now is       58.0 secs
+
+     End of self-consistent calculation
+
+          k = 0.0000 0.0000 0.0000 ( 11217 PWs)   bands (ev):
+
+   -23.4259  -8.7277  -8.6898  -8.6895  -3.3756   0.2083   0.2083   0.9186
+     0.9186   1.1863   1.8454   2.1100   6.4909   6.4906   7.9027   7.9030
+
+          k = 0.0180 0.0180-0.4983 ( 11236 PWs)   bands (ev):
+
+   -23.4230  -8.8604  -8.7035  -8.6712  -1.9971  -1.9162   0.5136   0.8641
+     1.1934   1.2886   1.8341   2.0826   6.2042   6.2952   7.3596   7.6488
+
+          k =-0.0180-0.4983 0.0180 ( 11236 PWs)   bands (ev):
+
+   -23.4230  -8.8604  -8.7035  -8.6712  -1.9971  -1.9162   0.5136   0.8641
+     1.1934   1.2886   1.8341   2.0826   6.2042   6.2953   7.3594   7.6488
+
+          k = 0.0000-0.4803-0.4803 ( 11272 PWs)   bands (ev):
+
+   -23.4203  -8.8345  -8.8254  -8.6719  -1.4313  -0.9574  -0.5796  -0.4920
+     1.0663   1.7798   1.8808   2.2497   6.7020   6.5108   6.9943   7.6684
+
+          k =-0.4983-0.0180 0.0180 ( 11236 PWs)   bands (ev):
+
+   -23.4230  -8.8604  -8.7029  -8.6719  -1.9971  -1.9162   0.5136   0.8641
+     1.2696   1.2375   1.8301   2.0820   6.2042   6.2953   7.3599   7.6516
+
+          k =-0.4803-0.0000-0.4803 ( 11272 PWs)   bands (ev):
+
+   -23.4203  -8.8334  -8.8265  -8.6719  -1.4313  -0.9574  -0.5796  -0.4920
+     1.0663   1.7705   1.8871   2.2524   6.7024   6.5103   6.9944   7.6684
+
+          k =-0.5163-0.5163 0.0360 ( 11272 PWs)   bands (ev):
+
+   -23.4203  -8.8323  -8.8269  -8.6725  -1.4313  -0.9574  -0.5796  -0.4920
+     1.0663   1.7728   1.8869   2.2505   6.7023   6.5103   6.9943   7.6687
+
+          k =-0.4983-0.4983-0.4623 ( 11200 PWs)   bands (ev):
+
+   -23.4177  -8.8205  -8.7933  -8.7932  -0.8794  -0.8794   0.0184  -0.0101
+     0.3894   0.3894   0.5013   3.3715   6.7866   7.8763   7.8762   9.0888
+
+     the Fermi energy is     6.0233 ev
+
+!    total energy              =    -546.59351918 Ry
+     estimated scf accuracy    <       0.00000089 Ry
+     smearing contrib. (-TS)   =       0.00149748 Ry
+     internal energy E=F+TS    =    -546.59501666 Ry
+
+     The total energy is F=E-TS. E is the sum of the following terms:
+     one-electron contribution =      -5.52681097 Ry
+     hartree contribution      =      11.29793136 Ry
+     xc contribution           =     -30.91423817 Ry
+     ewald contribution        =     -52.63992464 Ry
+     one-center paw contrib.   =    -468.81197424 Ry
+
+     convergence has been achieved in   1 iterations
+
+     Forces acting on atoms (cartesian axes, Ry/au):
+
+     atom    1 type  3   force =    -0.00000002   -0.00007907   -0.00011137
+     atom    2 type  1   force =    -0.00047390   -0.00016468    0.00017795
+     atom    3 type  3   force =     0.00016041    0.00001809    0.00010124
+     atom    4 type  3   force =     0.00010629    0.00001095    0.00003329
+     atom    5 type  2   force =    -0.00232050    0.00006025    0.00018034
+     atom    6 type  2   force =    -0.00114393   -0.00134870    0.00113323
+     atom    7 type  2   force =    -0.00034618    0.00056711    0.00246806
+     atom    8 type  2   force =    -0.00020658   -0.00246570    0.00055076
+     atom    9 type  2   force =     0.00241110    0.00000304   -0.00040664
+     atom   10 type  2   force =     0.00136586    0.00133661   -0.00147625
+     atom   11 type  2   force =     0.00021728   -0.00025226   -0.00236435
+     atom   12 type  2   force =     0.00023016    0.00231437   -0.00028626
+
+     Total force =     0.006793     Total SCF correction =     0.000479
+
+
+     Computing stress (Cartesian axis) and pressure
+
+          total   stress  (Ry/bohr**3)                   (kbar)     P=       -1.85
+  -0.00001092   0.00001041  -0.00001142           -1.61        1.53       -1.68
+   0.00001041  -0.00001450  -0.00001115            1.53       -2.13       -1.64
+  -0.00001142  -0.00001115  -0.00001223           -1.68       -1.64       -1.80
+
+At line 624 of file bfgs_module.f90 (unit = 30, file = './tmp/BaMg3H8.bfgs')
+Fortran runtime error: End of file
+
+Error termination. Backtrace:
+#0  0x700742023960 in ???
+#1  0x7007420244d9 in ???
+#2  0x70074202510f in ???
+#3  0x70074227817b in ???
+#4  0x7007422715fd in ???
+#5  0x7007422722aa in ???
+#6  0x700742277b7a in ???
+#7  0x5b9a5f031266 in ???
+#8  0x5b9a5efced71 in ???
+#9  0x5b9a5eec4202 in ???
+#10  0x5b9a5edd23e5 in ???
+#11  0x5b9a5edd20ce in ???
+#12  0x700741c29d8f in ???
+#13  0x700741c29e3f in ???
+#14  0x5b9a5edd20fd in ???
+#15  0xffffffffffffffff in ???
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[28754,1],0]
+  Exit code:    2
+--------------------------------------------------------------------------
+
+     Program PWSCF v.6.7MaX starts on 21May2026 at 15:44:24 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on     4 processors
+
+     MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       4
+     Waiting for input...
+     Reading input from standard input
+
+     Current dimensions of program PWSCF are:
+     Max number of different atomic species (ntypx) = 10
+     Max number of k-points (npk) =  40000
+     Max angular momentum in pseudopotentials (lmaxx) =  3
+     file Ba.UPF: wavefunction(s)  5S 6S renormalized
+     file Mg.UPF: wavefunction(s)  3S renormalized
+
+     Subspace diagonalization in iterative solution of the eigenvalue problem:
+     a serial algorithm will be used
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        1515     606    170                88805    22483    3354
+     Max        1516     607    171                88807    22486    3358
+     Sum        6063    2427    681               355223    89941   13421
+
+
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =       9.7743  a.u.
+     unit-cell volume          =     929.7535 (a.u.)^3
+     number of atoms/cell      =           12
+     number of atomic types    =            3
+     number of electrons       =        24.00
+     number of Kohn-Sham states=           16
+     kinetic-energy cutoff     =      80.0000  Ry
+     charge density cutoff     =     800.0000  Ry
+     scf convergence threshold =      1.0E-06
+     mixing beta               =       0.7000
+     number of iterations used =            4  local-TF  mixing
+     energy convergence thresh.=      1.0E-04
+     force convergence thresh. =      1.0E-03
+     press convergence thresh. =      5.0E-01
+     Exchange-correlation= SLA  PW   PBX  PBC
+                           (   1   4   3   4   0   0   0)
+     nstep                     =           50
+
+
+     celldm(1)=   9.774316  celldm(2)=   0.000000  celldm(3)=   0.000000
+     celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (   0.999281  -0.026800   0.026800 )  
+               a(2) = (  -0.026800   0.999282   0.026800 )  
+               a(3) = (   0.026800   0.026800   0.999281 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = (  1.002200  0.027619 -0.027619 )  
+               b(2) = (  0.027619  1.002200 -0.027619 )  
+               b(3) = ( -0.027619 -0.027619  1.002200 )  
+
+
+     PseudoPot. # 1 for Ba read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Ba.UPF
+     MD5 check sum: c432291d3e53af55f19d5e8866385beb
+     Pseudo is Projector augmented-wave + core cor, Zval = 10.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1251 points,  7 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   0
+                l(4) =   1
+                l(5) =   1
+                l(6) =   2
+                l(7) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for H  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/H.UPF
+     MD5 check sum: f52b6d4d1c606e5624b1dc7b2218f220
+     Pseudo is Ultrasoft, Zval =  1.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1
+     Using radial grid of  929 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for Mg read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Mg.UPF
+     MD5 check sum: 24ecedc7f3e3cbe212e682f4413594e4
+     Pseudo is Projector augmented-wave + core cor, Zval =  2.0
+     Generated using "atomic" code by A. Dal Corso  v.5.0.99 svn rev. 10869
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1129 points,  4 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     atomic species   valence    mass     pseudopotential
+        Ba            10.00     1.00000     Ba( 1.00)
+        H              1.00     1.00000     H ( 1.00)
+        Mg             2.00     1.00000     Mg( 1.00)
+
+     No symmetry found
+
+
+
+   Cartesian axes
+
+     site n.     atom                  positions (alat units)
+         1           Mg  tau(   1) = (   0.4862405   0.4862407   0.0268002  )
+         2           Ba  tau(   2) = (   0.5130410   0.0000000   0.5130408  )
+         3           Mg  tau(   3) = (   0.0000000   0.5130410   0.5130408  )
+         4           Mg  tau(   4) = (  -0.0000000   0.0000000  -0.0000000  )
+         5           H   tau(   5) = (   0.0290008   0.8517333   0.3556197  )
+         6           H   tau(   6) = (   0.8201434   0.3071027   0.2059383  )
+         7           H   tau(   7) = (   0.3654928   0.1842215   0.9702809  )
+         8           H   tau(   8) = (   0.6704622   0.5420417   0.6873891  )
+         9           H   tau(   9) = (   0.9702809   0.1475482   0.6972622  )
+        10           H   tau(  10) = (   0.1791381   0.6921790   0.8469436  )
+        11           H   tau(  11) = (   0.6337889   0.8150602   0.0826010  )
+        12           H   tau(  12) = (   0.3288195   0.4572402   0.3654926  )
+
+     number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+        k(    2) = (   0.0138096   0.0138096  -0.5011002), wk =   0.2500000
+        k(    3) = (  -0.0138096  -0.5011002   0.0138096), wk =   0.2500000
+        k(    4) = (   0.0000000  -0.4872905  -0.4872906), wk =   0.2500000
+        k(    5) = (  -0.5011002  -0.0138096   0.0138096), wk =   0.2500000
+        k(    6) = (  -0.4872906   0.0000000  -0.4872906), wk =   0.2500000
+        k(    7) = (  -0.5149099  -0.5149098   0.0276192), wk =   0.2500000
+        k(    8) = (  -0.5011002  -0.5011002  -0.4734810), wk =   0.2500000
+
+     Dense  grid:   355223 G-vectors     FFT dimensions: (  90,  90,  90)
+
+     Smooth grid:    89941 G-vectors     FFT dimensions: (  60,  60,  60)
+
+     Estimated max dynamical RAM per process >     378.96 MB
+
+     Estimated total dynamical RAM >       1.48 GB

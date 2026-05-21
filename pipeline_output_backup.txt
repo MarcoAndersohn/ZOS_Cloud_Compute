@@ -1132,3 +1132,45 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       📉 Setze RAM-Strategie: Standard (cg, mix=4)
    1️⃣  SCF (4 Cores, OOM-Lvl 0)
       ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.
+      🧹 Bereinige Zombie-Prozesse und /dev/shm...
+      ✅ System-RAM und Prozesse sauber.
+      ⚙️ Starte PWSCF (restart, 4 Cores, -ndiag 1)...
+      💾 XML valide -> Erstelle Checkpoint...
+      ✅ Checkpoint erstellt.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   6cc70e48..cfd70b8f  main -> main
+      --- QE ERROR LOG ---
+      Fortran runtime error: End of file
+      
+      Error termination. Backtrace:
+      #0  0x700742023960 in ???
+      #1  0x7007420244d9 in ???
+      #2  0x70074202510f in ???
+      #3  0x70074227817b in ???
+      #4  0x7007422715fd in ???
+      #5  0x7007422722aa in ???
+      #6  0x700742277b7a in ???
+      #7  0x5b9a5f031266 in ???
+      #8  0x5b9a5efced71 in ???
+      #9  0x5b9a5eec4202 in ???
+      #10  0x5b9a5edd23e5 in ???
+      #11  0x5b9a5edd20ce in ???
+      #12  0x700741c29d8f in ???
+      #13  0x700741c29e3f in ???
+      #14  0x5b9a5edd20fd in ???
+      #15  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28754,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      --------------------
+      📉 Setze RAM-Strategie: Standard (cg, mix=4)
+   1️⃣  SCF (4 Cores, OOM-Lvl 0)
+      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.

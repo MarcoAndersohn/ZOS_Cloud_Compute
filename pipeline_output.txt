@@ -1722,3 +1722,48 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       💾 Phonon-Checkpoint (_ph0)...
       ✅ Phonon-Checkpoint gesichert.
       ❤️ Git Heartbeat (Phonon)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   f6855abb..d0b3eec6  main -> main
+      💾 Phonon-Checkpoint (_ph0)...
+      ✅ Phonon-Checkpoint gesichert.
+      ⚠️ Phonon Crash/OOM!
+      ⚠️ Korrupte Lese-/Schreibdatei (I/O Error).
+      --- PHONON ERROR LOG ---
+      
+      At line 806 of file elphon.f90 (unit = 40, file = './tmp/BaMg3H8.a2Fsave')
+      Fortran runtime error: End of file
+      
+      Error termination. Backtrace:
+      #0  0x720fbc623960 in ???
+      #1  0x720fbc6244d9 in ???
+      #2  0x720fbc62510f in ???
+      #3  0x720fbc87817b in ???
+      #4  0x720fbc871684 in ???
+      #5  0x720fbc8722aa in ???
+      #6  0x598616ba8a71 in ???
+      #7  0x598616b93c32 in ???
+      #8  0x598616b8d191 in ???
+      #9  0x598616b8cffe in ???
+      #10  0x720fbc229d8f in ???
+      #11  0x720fbc229e3f in ???
+      #12  0x598616b8d02d in ???
+      #13  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[29094,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      --------------------
+      🧨 Defekte Phonon-Datei -> lösche _ph0 und starte neu...
+      🧹 Bereinige Zombie-Prozesse und /dev/shm...
+      ✅ System-RAM und Prozesse sauber.
+      ⚙️ Starte PHONONEN (Cores: 4)...
+      💾 Phonon-Checkpoint (_ph0)...
+      ✅ Phonon-Checkpoint gesichert.
+      ❤️ Git Heartbeat (Phonon)...

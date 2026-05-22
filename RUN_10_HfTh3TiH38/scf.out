@@ -6794,3 +6794,140 @@ H             3.0808618967       -0.4562382006        1.5088479226
 
 
      negative rho (up, down):  7.173E-03 0.000E+00
+          total   stress  (Ry/bohr**3)                   (kbar)     P=       -0.18
+   0.00000121  -0.00000000   0.00000001            0.18       -0.00        0.00
+  -0.00000000   0.00000124   0.00000001           -0.00        0.18        0.00
+   0.00000001   0.00000001  -0.00000614            0.00        0.00       -0.90
+
+     Energy error            =      3.1E-05
+     Gradient error          =      1.5E-03
+     Cell gradient error     =      6.1E-06
+
+
+     number of scf cycles    =  16
+     number of bfgs steps    =  15
+
+     enthalpy old            =   -3994.1711032539 Ry
+     enthalpy new            =   -3994.1711338599 Ry
+
+     CASE: enthalpy_new < enthalpy_old
+
+     new trust radius        =       0.0040229254 bohr
+     new conv_thr            =       0.0000000100 Ry
+
+     new unit-cell volume =   2185.01525 a.u.^3 (   323.78585 Ang^3 )
+     density =      0.18463 g/cm^3
+
+CELL_PARAMETERS (angstrom)
+   3.080802198  -5.335807165   0.000024231
+   3.081021777   5.335933740  -0.000005268
+   0.000041513  -0.000036010   9.847892656
+
+ATOMIC_POSITIONS (angstrom)
+Hf            3.0810012504        1.7787342540        4.4408922354
+Th            3.0809430716       -1.7785005575        9.2604983180
+Th            3.0809462398       -1.7784646972        5.4691606397
+Th            3.0808618690        1.7785942911        0.6335239464
+Ti            1.5368946961        0.8873210782        7.3277697519
+Ti            3.0807342815       -3.5670798334        2.5351307271
+Ti            1.5318113728       -0.8845423064        2.5351161724
+Ti            4.6250872208        0.8874185485        7.3278329763
+Ti            3.0810763706        3.5614809863        7.3278298248
+Ti            4.6298978781       -0.8844060607        2.5351439466
+Ti            0.0000238026        0.0000073137        4.9437461343
+Ti           -0.0000276548       -0.0000059691        0.0392905995
+H             3.0809875531        3.5936698413        5.4737514547
+H             1.5090173142        0.8709685760        5.4736810073
+H             4.6528611456        0.8710625921        5.4737288416
+H             1.4383452589       -0.8298631141        0.6913415505
+H             4.7255516053       -0.8289979526        4.3132896352
+H             3.0810809003       -3.6752258096        0.6913143195
+H             4.7236148990       -0.8300502937        0.6913867181
+H             3.0808145002        3.6855814688        9.1674562554
+H             4.7323275499        0.8247257620        9.1674494167
+H             1.4363621052       -0.8290042426        4.3132608750
+H             3.0809753145       -3.6773849483        4.3132959573
+H             1.4293657116        0.8248374411        9.1673718446
+H             1.7049720168       -2.5729444172        3.5250078963
+H             3.0809575658        0.4214215111        8.3464454558
+H             1.9054052519        2.4573550626        8.3466168338
+H             4.4567364305       -2.5729061068        3.5248465224
+H             3.0808856153       -0.1900537878        3.5247223073
+H             4.2128878082        2.4321866958        6.2958659194
+H             3.0810043408        0.4723657289        6.2957919407
+H             4.2567027962        2.4574533855        8.3467496021
+H             1.9493489184        2.4320483273        6.2958085687
+H             4.2265221665       -2.4400319141        1.5077936694
+H             1.9348831222       -2.4402213072        1.5076994378
+H             3.0808807273       -0.4560209653        1.5078384388
+
+
+
+     Writing output data file ./tmp/HfTh3TiH38.save/
+     NEW-OLD atomic charge density approx. for the potential
+
+     negative rho (up, down):  7.175E-03 0.000E+00
+     extrapolated charge  167.97298, renormalised to  168.00000
+
+     total cpu time spent up to now is    14615.9 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  1.00E-06,  avg # of iterations =  2.7
+
+     Threshold (ethr) on eigenvalues was too large:
+     Diagonalizing with lowered threshold
+
+     CG style diagonalization
+     c_bands:  1 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     ethr =  3.74E-08,  avg # of iterations =  4.0
+
+     negative rho (up, down):  7.149E-03 0.000E+00
+
+     total cpu time spent up to now is    14951.2 secs
+
+     total energy              =   -3994.17107847 Ry
+     estimated scf accuracy    <       0.00016485 Ry
+
+     iteration #  2     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  9.81E-08,  avg # of iterations =  4.0
+
+     negative rho (up, down):  7.168E-03 0.000E+00
+
+     total cpu time spent up to now is    15113.6 secs
+
+     total energy              =   -3994.17114648 Ry
+     estimated scf accuracy    <       0.00021792 Ry
+
+     iteration #  3     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  9.81E-08,  avg # of iterations =  3.0
+
+     negative rho (up, down):  7.183E-03 0.000E+00
+
+     total cpu time spent up to now is    15229.1 secs
+
+     total energy              =   -3994.17113582 Ry
+     estimated scf accuracy    <       0.00007514 Ry
+
+     iteration #  4     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  4.47E-08,  avg # of iterations =  3.4
+
+     negative rho (up, down):  7.179E-03 0.000E+00
+
+     total cpu time spent up to now is    15361.8 secs
+
+     total energy              =   -3994.17114732 Ry
+     estimated scf accuracy    <       0.00000115 Ry
+
+     iteration #  5     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization

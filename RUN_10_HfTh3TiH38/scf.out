@@ -9367,3 +9367,264 @@ H             3.0821458196       -0.4553981694        1.5064657628
 
 
      negative rho (up, down):  7.185E-03 0.000E+00
+          total   stress  (Ry/bohr**3)                   (kbar)     P=       -0.32
+  -0.00000212  -0.00000004  -0.00000001           -0.31       -0.01       -0.00
+  -0.00000004  -0.00000193   0.00000003           -0.01       -0.28        0.00
+  -0.00000001   0.00000003  -0.00000249           -0.00        0.00       -0.37
+
+     Energy error            =      1.8E-06
+     Gradient error          =      4.5E-04
+     Cell gradient error     =      2.5E-06
+
+
+     bfgs converged in   2 scf cycles and   1 bfgs steps
+     (criteria: energy <  1.0E-04 Ry, force <  1.0E-03Ry/Bohr, cell <  5.0E-01kbar)
+
+     End of BFGS Geometry Optimization
+
+     Final enthalpy =   -3994.1711660657 Ry
+
+     File ./tmp/HfTh3TiH38.bfgs deleted, as requested
+Begin final coordinates
+     new unit-cell volume =   2186.17543 a.u.^3 (   323.95777 Ang^3 )
+     density =      0.18453 g/cm^3
+
+CELL_PARAMETERS (angstrom)
+   3.082070280  -5.338113217   0.000007128
+   3.082255143   5.338219773   0.000004691
+   0.000031993  -0.000012592   9.844886982
+
+ATOMIC_POSITIONS (angstrom)
+Hf            3.0822367286        1.7794886858        4.4401938426
+Th            3.0822060174       -1.7792233086        9.2576855171
+Th            3.0821999048       -1.7792096638        5.4656624620
+Th            3.0820753309        1.7793242402        0.6347218847
+Ti            1.5376234424        0.8878069739        7.3255297934
+Ti            3.0819935674       -3.5682493476        2.5347798257
+Ti            1.5327654820       -0.8851127638        2.5347933913
+Ti            4.6268421684        0.8878870086        7.3255716702
+Ti            3.0823125247        3.5628806536        7.3256205000
+Ti            4.6314419983       -0.8849870058        2.5348287439
+Ti            0.0000012795       -0.0000057550        4.9414880068
+Ti           -0.0000313538       -0.0000161281        0.0384622958
+H             3.0822269716        3.5959102256        5.4719668113
+H             1.5091178635        0.8710598820        5.4719388124
+H             4.6552980642        0.8711237757        5.4719678602
+H             1.4383013452       -0.8298058167        0.6913517202
+H             4.7272608295       -0.8294852265        4.3113582458
+H             3.0823719366       -3.6776227008        0.6912951228
+H             4.7261547967       -0.8300536193        0.6914071743
+H             3.0820320297        3.6876732282        9.1642259110
+H             4.7345884028        0.8248321083        9.1641787503
+H             1.4371228091       -0.8294655944        4.3113506811
+H             3.0822346313       -3.6787979741        4.3113995262
+H             1.4296057266        0.8249907294        9.1640878907
+H             1.7067748879       -2.5734064906        3.5255344714
+H             3.0821906857        0.4216121190        8.3442322435
+H             1.9061648808        2.4583899629        8.3444074943
+H             4.4574553674       -2.5733781004        3.5253925300
+H             3.0821362569       -0.1913789946        3.5252973782
+H             4.2137174985        2.4327146487        6.2937998136
+H             3.0822361662        0.4735195497        6.2937298498
+H             4.2583861367        2.4584751756        8.3445412038
+H             1.9509576494        2.4325875767        6.2937350732
+H             4.2289401993       -2.4414507634        1.5064153125
+H             1.9350109781       -2.4416310535        1.5063114277
+H             3.0821458196       -0.4553981694        1.5064657628
+End final coordinates
+
+
+
+     Writing output data file ./tmp/HfTh3TiH38.save/
+
+     Final scf calculation at the relaxed structure.
+     The G-vectors are recalculated for the final unit cell
+     Results may differ from those at the preceding step.
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        1870     750    211               208883    52834    7947
+     Max        1871     751    212               208886    52837    7952
+     Sum        7483    3001    847               835537   211341   31803
+
+
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =      11.6813  a.u.
+     unit-cell volume          =    2186.1754 (a.u.)^3
+     number of atoms/cell      =           36
+     number of atomic types    =            4
+     number of electrons       =       168.00
+     number of Kohn-Sham states=          101
+     kinetic-energy cutoff     =      80.0000  Ry
+     charge density cutoff     =     800.0000  Ry
+     scf convergence threshold =      1.0E-06
+     mixing beta               =       0.7000
+     number of iterations used =            4  local-TF  mixing
+     press convergence thresh. =      5.0E-01
+     Exchange-correlation=  SLA  PW   PBX  PBC
+                           (   1   4   3   4   0   0   0)
+
+     celldm(1)=  11.681339  celldm(2)=   0.000000  celldm(3)=   0.000000
+     celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (   0.498596  -0.863563   0.000001 )  
+               a(2) = (   0.498626   0.863580   0.000001 )  
+               a(3) = (   0.000005  -0.000002   1.592638 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = (  1.002796 -0.579008 -0.000004 )  
+               b(2) = (  1.002776  0.578973 -0.000003 )  
+               b(3) = ( -0.000001  0.000000  0.627889 )  
+
+
+     PseudoPot. # 1 for H  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/H.UPF
+     MD5 check sum: f52b6d4d1c606e5624b1dc7b2218f220
+     Pseudo is Ultrasoft, Zval =  1.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1
+     Using radial grid of  929 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for Hf read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Hf.UPF
+     MD5 check sum: 417ed15784afe83d2e06dacf143de3f8
+     Pseudo is Norm-conserving + core correction, Zval = 12.0
+     Generated using ONCVPSP code by D. R. Hamann
+     Using radial grid of 1656 points,  8 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+                l(7) =   3
+                l(8) =   3
+
+     PseudoPot. # 3 for Th read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Th.UPF
+     MD5 check sum: c778f5c1781d25750cbff4a0d60de988
+     Pseudo is Projector augmented-wave + core cor, Zval = 12.0
+     Generated using &quot;atomic&quot; code by A. Dal Corso  v.6.3MaX
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1289 points,  8 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+                l(7) =   3
+                l(8) =   3
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 4 for Ti read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Ti.UPF
+     MD5 check sum: 88a00a6731bd790ddea75d31a80cb452
+     Pseudo is Ultrasoft + core correction, Zval = 12.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  851 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  6 coefficients,  rinner =    1.000   1.000   1.000
+                                                       1.000   1.000
+
+     atomic species   valence    mass     pseudopotential
+        H              1.00     1.00000     H ( 1.00)
+        Hf            12.00     1.00000     Hf( 1.00)
+        Th            12.00     1.00000     Th( 1.00)
+        Ti            12.00     1.00000     Ti( 1.00)
+
+     No symmetry found
+
+
+
+   Cartesian axes
+
+     site n.     atom                  positions (alat units)
+         1           Hf  tau(   1) = (   0.4986229   0.2878734   0.7183038  )
+         2           Th  tau(   2) = (   0.4986180  -0.2878304   1.4976443  )
+         3           Th  tau(   3) = (   0.4986170  -0.2878282   0.8841970  )
+         4           Th  tau(   4) = (   0.4985968   0.2878468   0.1026809  )
+         5           Ti  tau(   5) = (   0.2487461   0.1436233   1.1850735  )
+         6           Ti  tau(   6) = (   0.4985836  -0.5772467   0.4100591  )
+         7           Ti  tau(   7) = (   0.2479602  -0.1431874   0.4100613  )
+         8           Ti  tau(   8) = (   0.7484985   0.1436362   1.1850803  )
+         9           Ti  tau(   9) = (   0.4986352   0.5763782   1.1850882  )
+        10           Ti  tau(  10) = (   0.7492426  -0.1431671   0.4100671  )
+        11           Ti  tau(  11) = (   0.0000002  -0.0000009   0.7993997  )
+        12           Ti  tau(  12) = (  -0.0000051  -0.0000026   0.0062222  )
+        13           H   tau(  13) = (   0.4986213   0.5817215   0.8852169  )
+        14           H   tau(  14) = (   0.2441346   0.1409140   0.8852124  )
+        15           H   tau(  15) = (   0.7531019   0.1409244   0.8852171  )
+        16           H   tau(  16) = (   0.2326784  -0.1342402   0.1118421  )
+        17           H   tau(  17) = (   0.7647435  -0.1341884   0.6974617  )
+        18           H   tau(  18) = (   0.4986448  -0.5949404   0.1118329  )
+        19           H   tau(  19) = (   0.7645646  -0.1342803   0.1118511  )
+        20           H   tau(  20) = (   0.4985898   0.5965663   1.4825250  )
+        21           H   tau(  21) = (   0.7659289   0.1334356   1.4825174  )
+        22           H   tau(  22) = (   0.2324878  -0.1341852   0.6974605  )
+        23           H   tau(  23) = (   0.4986226  -0.5951305   0.6974684  )
+        24           H   tau(  24) = (   0.2312717   0.1334613   1.4825027  )
+        25           H   tau(  25) = (   0.2761102  -0.4163079   0.5703366  )
+        26           H   tau(  26) = (   0.4986155   0.0682055   1.3498721  )
+        27           H   tau(  27) = (   0.3083662   0.3977013   1.3499005  )
+        28           H   tau(  28) = (   0.7210963  -0.4163033   0.5703136  )
+        29           H   tau(  29) = (   0.4986067  -0.0309600   0.5702982  )
+        30           H   tau(  30) = (   0.6816661   0.3935477   1.0181674  )
+        31           H   tau(  31) = (   0.4986228   0.0766027   1.0181561  )
+        32           H   tau(  32) = (   0.6888922   0.3977151   1.3499221  )
+        33           H   tau(  33) = (   0.3156124   0.3935272   1.0181569  )
+        34           H   tau(  34) = (   0.6841287  -0.3949610   0.2436974  )
+        35           H   tau(  35) = (   0.3130327  -0.3949902   0.2436806  )
+        36           H   tau(  36) = (   0.4986082  -0.0736712   0.2437056  )
+
+     number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+        k(    2) = (   0.0000006  -0.0000001  -0.3139446), wk =   0.2500000
+        k(    3) = (  -0.5013879  -0.2894867   0.0000013), wk =   0.2500000
+        k(    4) = (  -0.5013873  -0.2894868  -0.3139433), wk =   0.2500000
+        k(    5) = (  -0.5013979   0.2895041   0.0000020), wk =   0.2500000
+        k(    6) = (  -0.5013973   0.2895040  -0.3139426), wk =   0.2500000
+        k(    7) = (  -1.0027858   0.0000174   0.0000033), wk =   0.2500000
+        k(    8) = (  -1.0027852   0.0000173  -0.3139413), wk =   0.2500000
+
+     Dense  grid:   835537 G-vectors     FFT dimensions: ( 108, 108, 180)
+
+     Smooth grid:   211341 G-vectors     FFT dimensions: (  72,  72, 108)
+
+     Estimated max dynamical RAM per process >       2.23 GB
+
+     Estimated total dynamical RAM >       8.92 GB
+
+     Atomic positions and unit cell read from directory:
+     ./tmp/HfTh3TiH38.save/
+
+
+     Initial potential from superposition of free atoms
+
+     starting charge  159.98224, renormalised to  168.00000
+
+     negative rho (up, down):  1.194E-02 0.000E+00
+     Starting wfcs are  165 randomized atomic wfcs
+     Checking if some PAW data can be deallocated... 
+
+     total cpu time spent up to now is     5728.0 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     c_bands:  5 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged

@@ -1,0 +1,11 @@
+Phonons
+&INPUTPH
+ tr2_ph=1.0d-14,
+ prefix='HfTh3TiH38',
+ outdir='./tmp',
+ fildyn='10_HfTh3TiH38.dyn',
+ fildvscf='dvscf',
+ ldisp=.true.,
+ electron_phonon='interpolated',
+ nq1=2, nq2=2, nq3=2
+/

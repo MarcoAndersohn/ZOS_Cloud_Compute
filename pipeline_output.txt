@@ -2076,3 +2076,48 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       💾 Phonon-Checkpoint (_ph0)...
       ✅ Phonon-Checkpoint gesichert.
       ❤️ Git Heartbeat (Phonon)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   5664336c..a45d737a  main -> main
+      💾 Phonon-Checkpoint (_ph0)...
+      ✅ Phonon-Checkpoint gesichert.
+      ⚠️ Phonon Crash/OOM!
+      --- PHONON ERROR LOG ---
+      #6  0x5745a918ffdc in ???
+      #7  0x5745a917a59a in ???
+      #8  0x5745a9117ba6 in ???
+      #9  0x5745a9111191 in ???
+      #10  0x5745a9110ffe in ???
+      #11  0x7f0127429d8f in ???
+      #12  0x7f0127429e3f in ???
+      #13  0x5745a911102d in ???
+      #14  0xffffffffffffffff in ???
+      #5  0x64e5a55010a3 in ???
+      #6  0x64e5a54f3fdc in ???
+      #7  0x64e5a54de59a in ???
+      #8  0x64e5a547bba6 in ???
+      #9  0x64e5a5475191 in ???
+      #10  0x64e5a5474ffe in ???
+      #11  0x7f4815829d8f in ???
+      #12  0x7f4815829e3f in ???
+      #13  0x64e5a547502d in ???
+      #14  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28673,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      --------------------
+      🛡️ Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, SafeCores...
+      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.
+      🛡️ _ph0 fehlt! Lade Phonon-Checkpoint...
+      ✅ Phonon-Checkpoint geladen!
+      🧹 Bereinige Zombie-Prozesse und /dev/shm...
+      ✅ System-RAM und Prozesse sauber.
+      ⚙️ Starte PHONONEN (Cores: 2)...
+      ❌ Phononen endgültig fehlgeschlagen.

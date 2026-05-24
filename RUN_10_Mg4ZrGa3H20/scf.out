@@ -23854,3 +23854,191 @@ H             1.6484257256        4.4802294005        0.0942075198
      c_bands:  3 eigenvalues not converged
      c_bands:  2 eigenvalues not converged
      c_bands:  4 eigenvalues not converged
+
+     Program PWSCF v.6.7MaX starts on 24May2026 at 16:15:42 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on     4 processors
+
+     MPI processes distributed on     1 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =       4
+     Waiting for input...
+     Reading input from standard input
+
+     Current dimensions of program PWSCF are:
+     Max number of different atomic species (ntypx) = 10
+     Max number of k-points (npk) =  40000
+     Max angular momentum in pseudopotentials (lmaxx) =  3
+     file Ga.UPF: wavefunction(s)  4S renormalized
+     file Mg.UPF: wavefunction(s)  3S renormalized
+
+     Subspace diagonalization in iterative solution of the eigenvalue problem:
+     a serial algorithm will be used
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        2646    1054    289               230859    58389    8337
+     Max        2647    1055    290               230860    58390    8338
+     Sum       10587    4219   1157               923439   233559   33349
+
+
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =      14.0156  a.u.
+     unit-cell volume          =    2416.4048 (a.u.)^3
+     number of atoms/cell      =           28
+     number of atomic types    =            4
+     number of electrons       =        79.00
+     number of Kohn-Sham states=           48
+     kinetic-energy cutoff     =      80.0000  Ry
+     charge density cutoff     =     800.0000  Ry
+     scf convergence threshold =      1.0E-06
+     mixing beta               =       0.7000
+     number of iterations used =            4  local-TF  mixing
+     energy convergence thresh.=      1.0E-04
+     force convergence thresh. =      1.0E-03
+     press convergence thresh. =      5.0E-01
+     Exchange-correlation= SLA  PW   PBE  PBE
+                           (   1   4   3   4   0   0   0)
+     nstep                     =           50
+
+
+     celldm(1)=  14.015577  celldm(2)=   0.000000  celldm(3)=   0.000000
+     celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (   0.999362   0.034544  -0.009076 )  
+               a(2) = (   0.032663   0.846759   0.031288 )  
+               a(3) = (   0.022162   0.877761   1.071119 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = (  1.002092 -0.039072  0.011285 )  
+               b(2) = ( -0.051234  1.219847 -0.998581 )  
+               b(3) = (  0.009988 -0.035963  0.962868 )  
+
+
+     PseudoPot. # 1 for Ga read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Ga.UPF
+     MD5 check sum: a27b4342b1af7e5f338de752e9ed7044
+     Pseudo is Projector augmented-wave + core cor, Zval = 13.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1205 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for H  read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/H.UPF
+     MD5 check sum: f52b6d4d1c606e5624b1dc7b2218f220
+     Pseudo is Ultrasoft, Zval =  1.0
+     Generated using "atomic" code by A. Dal Corso  v.5.1
+     Using radial grid of  929 points,  2 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for Mg read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Mg.UPF
+     MD5 check sum: 24ecedc7f3e3cbe212e682f4413594e4
+     Pseudo is Projector augmented-wave + core cor, Zval =  2.0
+     Generated using "atomic" code by A. Dal Corso  v.5.0.99 svn rev. 10869
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1129 points,  4 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 4 for Zr read from file:
+     /home/marco/ZOS_Cloud_Compute/pseudo/Zr.UPF
+     MD5 check sum: 5db81b1e868ab7776c4564c113de050b
+     Pseudo is Ultrasoft + core correction, Zval = 12.0
+     Generated by new atomic code, or converted to UPF format
+     Using radial grid of  887 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with  6 coefficients,  rinner =    1.200   1.200   1.200
+                                                       1.200   1.200
+
+     atomic species   valence    mass     pseudopotential
+        Ga            13.00     1.00000     Ga( 1.00)
+        H              1.00     1.00000     H ( 1.00)
+        Mg             2.00     1.00000     Mg( 1.00)
+        Zr            12.00     1.00000     Zr( 1.00)
+
+     No symmetry found
+
+
+
+   Cartesian axes
+
+     site n.     atom                  positions (alat units)
+         1           Mg  tau(   1) = (   0.3824435   1.0990390   0.8228110  )
+         2           Mg  tau(   2) = (   0.6535306   0.6648810   0.2685353  )
+         3           Mg  tau(   3) = (   0.9083776   1.1034667   0.8131899  )
+         4           Mg  tau(   4) = (   0.1534594   0.6522818   0.2828181  )
+         5           Ga  tau(   5) = (   0.4309727   1.5080585   0.9767481  )
+         6           Zr  tau(   6) = (   0.6165249   0.2808327   0.0563486  )
+         7           Ga  tau(   7) = (   0.8845007   0.6916380   0.6533244  )
+         8           Ga  tau(   8) = (   0.1613397   1.0688085   0.4496255  )
+         9           H   tau(   9) = (   0.0784066   0.6655220   0.5554979  )
+        10           H   tau(  10) = (   0.9673977   1.0925927   0.5286628  )
+        11           H   tau(  11) = (   0.6214595   1.4739532   1.0752797  )
+        12           H   tau(  12) = (   0.3755779   0.2392750   0.0258652  )
+        13           H   tau(  13) = (   0.4097646   1.3647045   0.8160597  )
+        14           H   tau(  14) = (   0.6481250   0.4047211   0.2750797  )
+        15           H   tau(  15) = (   0.8845514   0.8438692   0.8041198  )
+        16           H   tau(  16) = (   0.1662388   0.9068006   0.2908915  )
+        17           H   tau(  17) = (   0.9201530   1.3676190   0.8099639  )
+        18           H   tau(  18) = (   0.1304677   0.4007706   0.2862007  )
+        19           H   tau(  19) = (   0.4157884   0.8340454   0.8187781  )
+        20           H   tau(  20) = (   0.6520849   0.9138620   0.2655922  )
+        21           H   tau(  21) = (   0.1505867   1.0792118   0.8516210  )
+        22           H   tau(  22) = (   0.8987729   0.6753801   0.2111806  )
+        23           H   tau(  23) = (   0.6498186   1.1114380   0.8537687  )
+        24           H   tau(  24) = (   0.4072907   0.6521863   0.3335878  )
+        25           H   tau(  25) = (   0.3598907   1.0798927   0.5499652  )
+        26           H   tau(  26) = (   0.7084037   0.6828488   0.5353345  )
+        27           H   tau(  27) = (   0.8993700   1.1285747   1.0789317  )
+        28           H   tau(  28) = (   0.2233285   0.6406246   0.0168440  )
+
+     number of k points=     8  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+        k(    2) = (  -0.0049938   0.0179815  -0.4814338), wk =   0.2500000
+        k(    3) = (   0.0256171  -0.6099235   0.4992904), wk =   0.2500000
+        k(    4) = (   0.0206233  -0.5919420   0.0178566), wk =   0.2500000
+        k(    5) = (  -0.5010458   0.0195362  -0.0056425), wk =   0.2500000
+        k(    6) = (  -0.5060396   0.0375177  -0.4870763), wk =   0.2500000
+        k(    7) = (  -0.4754286  -0.5903873   0.4936478), wk =   0.2500000
+        k(    8) = (  -0.4804224  -0.5724058   0.0122141), wk =   0.2500000
+
+     Dense  grid:   923439 G-vectors     FFT dimensions: ( 128, 108, 180)
+
+     Smooth grid:   233559 G-vectors     FFT dimensions: (  80,  72, 120)
+
+     Estimated max dynamical RAM per process >       1.05 GB
+
+     Estimated total dynamical RAM >       4.20 GB

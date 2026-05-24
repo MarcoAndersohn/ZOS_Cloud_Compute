@@ -2940,3 +2940,53 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    e351fea2..e79f875d  main -> main
       💾 XML valide -> Erstelle Checkpoint...
       ✅ Checkpoint erstellt.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   e79f875d..6d989f96  main -> main
+   ⚡ Metall (DOS=0.744). Berechne Phononen...
+      🧠 Erbe Kernanzahl von SCF: Starte mit 4 Core(s).
+      🛡️ _ph0 fehlt! Lade Phonon-Checkpoint...
+      ✅ Phonon-Checkpoint geladen!
+      🧹 Bereinige Zombie-Prozesse und /dev/shm...
+      ✅ System-RAM und Prozesse sauber.
+      ⚙️ Starte PHONONEN (Cores: 4)...
+      ⚠️ Phonon Crash/OOM!
+      --- PHONON ERROR LOG ---
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org", 
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine read_control_ph (1):
+           wrong elph
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 1.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      [Supraleiter-HPC-Knoten:01363] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+      [Supraleiter-HPC-Knoten:01363] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+      --------------------
+      🛡️ Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, SafeCores...
+      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.
+      🛡️ _ph0 fehlt! Lade Phonon-Checkpoint...
+      ✅ Phonon-Checkpoint geladen!
+      🧹 Bereinige Zombie-Prozesse und /dev/shm...
+      ✅ System-RAM und Prozesse sauber.
+      ⚙️ Starte PHONONEN (Cores: 2)...
+      ❌ Phononen endgültig fehlgeschlagen.

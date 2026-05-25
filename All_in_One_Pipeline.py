@@ -718,29 +718,22 @@ def get_last_iteration(output_file):
 # 4. PHONON WRAPPER
 # =============================================================================
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
+    """Phonon-Wrapper — bewährte Skript-1-Logik:
+       recover=.true. NUR wenn output_file bereits existiert.
+       _ph0-Checkpoint wird passiv gesichert, aber NIE automatisch
+       geladen (das war der Bug: falscher el-ph-Checkpoint → wrong elph)."""
     last_git_sync        = time.time()
     last_checkpoint_time = time.time()
-    tmp_dir        = os.path.join(cwd, "tmp")
-    ph0_dir        = os.path.join(tmp_dir, "_ph0")
+    ph0_dir        = os.path.join(cwd, "tmp", "_ph0")
     checkpoint_dir = os.path.join(cwd, "tmp_SAFE_PHONON_CHECKPOINT")
 
     with open(input_file, 'r') as f: content = f.read()
 
-    # Phonon-Checkpoint laden falls _ph0 fehlt (z.B. nach VM-Neustart)
-    if not os.path.exists(ph0_dir) and os.path.exists(checkpoint_dir):
-        print("      🛡️ _ph0 fehlt! Lade Phonon-Checkpoint...")
-        try:
-            shutil.copytree(checkpoint_dir, ph0_dir)
-            print("      ✅ Phonon-Checkpoint geladen!")
-        except Exception as e:
-            print(f"      ❌ Phonon-Checkpoint-Fehler: {e}")
-
-    if os.path.exists(ph0_dir):
+    # *** KERNPRINZIP (wie Skript 1): recover nur wenn output bereits existiert ***
+    # NICHT basierend auf _ph0-Existenz — _ph0 könnte von anderem Lauf-Typ stammen!
+    if os.path.exists(output_file):
         if "recover" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
-    else:
-        if os.path.exists(checkpoint_dir):
-            shutil.rmtree(checkpoint_dir, ignore_errors=True)
 
     run_input = input_file + ".run"
     with open(run_input, 'w') as f: f.write(content)
@@ -766,24 +759,20 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                     backup_log_file()
                     last_git_sync = current_time
 
-                # _ph0-Ordner alle 20 Minuten sichern
+                # Passiv: _ph0 sichern — nur schreiben, nie lesen/laden
                 if current_time - last_checkpoint_time > 1200:
                     if os.path.exists(ph0_dir):
-                        print("      💾 Phonon-Checkpoint (_ph0)...")
                         try:
                             if os.path.exists(checkpoint_dir):
                                 shutil.rmtree(checkpoint_dir)
                             shutil.copytree(ph0_dir, checkpoint_dir)
                             last_checkpoint_time = current_time
                             backup_log_file()
-                            print("      ✅ Phonon-Checkpoint gesichert.")
-                        except Exception as e:
-                            print(f"      ⚠️ Phonon-Checkpoint fail: {e}")
+                        except: pass
 
                 try:
-                    mem_usage = psutil.virtual_memory().percent
-                    if mem_usage > MEMORY_LIMIT_PERCENT:
-                        print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
+                    if psutil.virtual_memory().percent > MEMORY_LIMIT_PERCENT:
+                        print("      ⚠️ RAM NOT-AUS!")
                         try: os.killpg(os.getpgid(process.pid), signal.SIGKILL)
                         except: process.kill()
                         return "OOM"
@@ -794,27 +783,27 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
             except: process.kill()
             return "CRASH"
 
-        time.sleep(1.5)
+    time.sleep(1.5)
 
-        if process.returncode == -9:
-            print("      💀 Prozess vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
-            return "OOM"
+    if process.returncode == -9:
+        print("      💀 OS killed (-9) -> OOM.")
+        return "OOM"
 
-        if process.returncode != 0:
-            try:
-                with open(output_file, 'r', errors='ignore') as f:
-                    if "JOB DONE" in f.read():
-                        print("      ⚠️ MPI-Fehlalarm (JOB DONE gefunden).")
-                        return "DONE"
-            except: pass
-            return "CRASH"
-
+    if process.returncode != 0:
         try:
             with open(output_file, 'r', errors='ignore') as f:
-                if "JOB DONE" in f.read(): return "DONE"
+                if "JOB DONE" in f.read():
+                    print("      ⚠️ MPI-Fehlalarm (JOB DONE gefunden).")
+                    return "DONE"
         except: pass
-
         return "CRASH"
+
+    try:
+        with open(output_file, 'r', errors='ignore') as f:
+            if "JOB DONE" in f.read(): return "DONE"
+    except: pass
+
+    return "CRASH"
 
 # =============================================================================
 # 5. HAUPTPROGRAMM
@@ -1101,6 +1090,16 @@ def main():
                                     f" outdir='./tmp', fildyn='{name}.dyn',"
                                     f" ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
 
+                    # PFLICHT: Alten Phonon-State löschen wenn kein ph_out existiert.
+                    # Verhindert "wrong elph" wenn _ph0/Checkpoint von früherem
+                    # el-ph-Lauf stammt und run_monitored_ph recover setzen würde.
+                    if not os.path.exists(ph_out):
+                        for p in [os.path.join(work_dir, "tmp", "_ph0"),
+                                   os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                            if os.path.exists(p):
+                                shutil.rmtree(p, ignore_errors=True)
+                                print(f"      🧹 Alter Phonon-State gelöscht: {os.path.basename(p)}")
+
                     # Kernanzahl aus SCF erben (konsistenter Speicherbedarf)
                     ph_cores = get_scf_cores(scf_out, DEFAULT_CORES)
                     print(f"      🧠 Erbe Kernanzahl von SCF: Starte mit {ph_cores} Core(s).")
@@ -1157,10 +1156,10 @@ def main():
                         if ph_res != "DONE":
                             print("      🛡️ Aktiviere NOTFALL-MODUS: Grid=1x1x1, Sym=OFF, SafeCores...")
                             disable_symmetries_and_reduce_grid(ph_in)
-                            ph0_path = os.path.join(work_dir, "tmp", "_ph0")
-                            if os.path.exists(ph0_path):
-                                try: shutil.rmtree(ph0_path, ignore_errors=True)
-                                except: pass
+                            # _ph0 UND Checkpoint löschen — frischer Lauf, kein recover!
+                            for p in [os.path.join(work_dir, "tmp", "_ph0"),
+                                       os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                                if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
                             if os.path.exists(ph_out):
                                 try: os.remove(ph_out)
                                 except: pass

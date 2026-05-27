@@ -51,8 +51,8 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-DEFAULT_CORES = "2"
-SAFE_CORES = "1"
+DEFAULT_CORES = "4"
+SAFE_CORES = "2"
 MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100
 MAX_RETRIES_LEVEL = 3
@@ -473,7 +473,7 @@ def is_recoverable_fragmentation_error(ph_output_file):
     except:
         return False
 
-def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
+def run_cleanup_scf(scf_input_file, cwd, cores_to_use=4):
     print(f"      🚑 Starte RECOVERY-Modus (Collect Waves), Cores={cores_to_use}")
 
     with open(scf_input_file, 'r') as f: content = f.read()

@@ -667,14 +667,34 @@ def get_last_iteration(output_file):
     except:
         return 0
 
-# --- ROBUSTE PHONON WRAPPER ---
+# --- ROBUSTE PHONON WRAPPER MIT CHECKPOINTING ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
+    last_checkpoint_time = time.time()
 
     with open(input_file, 'r') as f: content = f.read()
-    if os.path.exists(output_file):
+    
+    tmp_dir = os.path.join(cwd, "tmp")
+    ph0_dir = os.path.join(tmp_dir, "_ph0")
+    checkpoint_dir = os.path.join(cwd, "tmp_SAFE_PHONON_CHECKPOINT")
+
+    # Wenn _ph0 fehlt, aber ein Checkpoint da ist -> wiederherstellen
+    if not os.path.exists(ph0_dir) and os.path.exists(checkpoint_dir):
+        print("      🛡️ _ph0 fehlt! Lade Phonon-Checkpoint...")
+        try:
+            shutil.copytree(checkpoint_dir, ph0_dir)
+            print("      ✅ Phonon-Checkpoint geladen!")
+        except Exception as e:
+            print(f"      ❌ Phonon-Checkpoint-Fehler, {e}")
+
+    # Wenn _ph0 (jetzt) existiert, aktiviere recover=.true.
+    if os.path.exists(ph0_dir):
         if "recover" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
+    else:
+        # Kein _ph0, also sicherheitshalber alten Checkpoint löschen
+        if os.path.exists(checkpoint_dir):
+            shutil.rmtree(checkpoint_dir, ignore_errors=True)
 
     run_input = input_file + ".run"
     with open(run_input, 'w') as f:
@@ -692,12 +712,27 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         try:
             while process.poll() is None:
                 time.sleep(5)
+                current_time = time.time()
 
-                if time.time() - last_git_sync > 1800:
+                if current_time - last_git_sync > 1800:
                     print("      ❤️ Git Heartbeat (Phonon)...")
                     git_sync("Log Update (Phonon Running)")
                     backup_log_file()
-                    last_git_sync = time.time()
+                    last_git_sync = current_time
+
+                # CHECKPOINT-LOGIK FÜR PHONONEN (alle 20 Minuten)
+                if current_time - last_checkpoint_time > 1200:
+                    if os.path.exists(ph0_dir):
+                        print("      💾 Phonon-Checkpoint...")
+                        try:
+                            if os.path.exists(checkpoint_dir):
+                                shutil.rmtree(checkpoint_dir)
+                            shutil.copytree(ph0_dir, checkpoint_dir)
+                            last_checkpoint_time = current_time
+                            backup_log_file()
+                            print("      ✅ Phonon-Checkpoint gesichert.")
+                        except Exception as e:
+                            print(f"      ⚠️ Phonon-Checkpoint fail, {e}")
 
                 try:
                     mem_usage = psutil.virtual_memory().percent
@@ -1197,29 +1232,23 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
 
-                # Prüfen, ob die Phononen inklusive el-ph bereits vollständig vorliegen
-                elph_files = (glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")) +
-                              glob.glob(os.path.join(work_dir, "a2Fq2r.*")))
-                phonon_already_done = (os.path.exists(ph_out) and "JOB DONE" in open(ph_out, errors='ignore').read())
-
-                if phonon_already_done and not elph_files and stability == "STABIL":
-                    print("      ⚠️ JOB DONE aber el-ph Dateien fehlen -> Neustart für El-Ph.")
-                    try: os.remove(ph_out)
-                    except: pass
-                    phonon_already_done = False
-
-                min_f, stab = "-", stability
-
-                if not phonon_already_done:
+                if not (os.path.exists(ph_out) and "JOB DONE" in open(ph_out, errors='ignore').read()):
                     ph_result = run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, dos_val)
                     if ph_result != "DONE":
                         continue
-                    
-                    row_data = get_csv_full_info(name)
-                    min_f = row_data.get('Min Freq (THz)', '-')
-                    stab = row_data.get('Stabilität', '-')
+
+                min_f, stab = "-", "Unbekannt"
+                if os.path.exists(ph_out):
+                      with open(ph_out, 'r') as f:
+                          content = f.read()
+                          if "JOB DONE" in content:
+                              freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
+                              if freqs:
+                                  min_f = min([float(f) for f in freqs])
+                                  stab = "STABIL" if min_f > -0.05 else "INSTABIL"
 
                 if stab == "INSTABIL":
+                    update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                     cleanup_heavy_files(work_dir, name)
                     git_sync(f"Fertig, {name} (INSTABIL)")
                     continue

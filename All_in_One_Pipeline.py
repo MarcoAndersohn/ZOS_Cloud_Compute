@@ -16,7 +16,7 @@ from datetime import datetime
 # 0. LIVE-LOGGING
 # =============================================================================
 sys.stdout.reconfigure(line_buffering=True)
-sys.stderr.reconfigure(linebuffering=True)
+sys.stderr.reconfigure(line_buffering=True)
 
 # =============================================================================
 # 1. KONFIGURATION

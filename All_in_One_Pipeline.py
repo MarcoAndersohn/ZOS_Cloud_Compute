@@ -28,7 +28,6 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-# Angepasst an Standard D4s v5
 DEFAULT_CORES = "4"
 SAFE_CORES = "2"
 MEMORY_LIMIT_PERCENT = 92.0
@@ -105,11 +104,18 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Lambda', 'Omega_log (K)', 'Tc (K)', 'Timestamp']
     rows = []
     if os.path.exists(CSV_FILE):
-        with open(CSV_FILE, 'r') as f: rows = list(csv.DictReader(f))
+        with open(CSV_FILE, 'r') as f:
+            reader = csv.DictReader(f)
+            if reader.fieldnames:
+                for ef in reader.fieldnames:
+                    if ef not in fieldnames:
+                        fieldnames.append(ef)
+            rows = list(reader)
+
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H,%M")})
+            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -120,8 +126,15 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             if tc != "-": row['Tc (K)'] = str(tc)
             found = True
             break
+
     if not found:
-        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H,%M")}
+        new_row = {
+            'Name': name, 'Status': status,
+            'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val),
+            'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f),
+            'Stabilität': str(stab),
+            'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
+        }
         if lam != "-": new_row['Lambda'] = str(lam)
         if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
         if tc != "-": new_row['Tc (K)'] = str(tc)
@@ -386,13 +399,9 @@ def disable_symmetries_and_reduce_grid(input_file):
     if "&INPUTPH" in content:
         if "search_sym" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
-    
-    content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
-    content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
-    content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
 
     with open(input_file, 'w') as f: f.write(content)
-    print(f"      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.")
+    print(f"      🛡️ Symmetrien deaktiviert.")
 
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
@@ -405,13 +414,13 @@ def detect_oom_level(input_file):
 
 def apply_oom_settings(input_file, level):
     with open(input_file, 'r') as f: content = f.read()
-    diag = 'cg'; mix = 4; disk = None 
-    msg = "Standard (cg, mix=4)"
+    diag = 'david'; mix = 6; disk = None 
+    msg = "Standard (david, mix=6, ndim=2)"
 
-    if level >= 1: disk = 'low'; msg = "Stufe 1 (cg, mix=4, disk_io='low')"
-    if level >= 2: mix = 3; msg = "Stufe 2 (cg, mix=3, disk_io='low')"
-    if level >= 3: mix = 2; msg = "Stufe 3 (cg, mix=2, disk_io='low')"
-    if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
+    if level >= 1: diag = 'cg'; mix = 4; msg = "Stufe 1 (cg, mix=4, disk_io='low')"
+    if level >= 2: mix = 3; disk = 'low'; msg = "Stufe 2 (cg, mix=3, disk_io='low')"
+    if level >= 3: mix = 2; disk = 'low'; msg = "Stufe 3 (cg, mix=2, disk_io='low')"
+    if level >= 4: mix = 2; disk = 'low'; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
 
     print(f"      📉 Setze RAM-Strategie, {msg}")
 
@@ -425,6 +434,11 @@ def apply_oom_settings(input_file, level):
     else:
         content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_ndim = {mix},")
 
+    if "diago_david_ndim" in content:
+        content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n diago_david_ndim = 2,")
+
     if disk == 'low':
         if "disk_io" in content:
             content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"]", "disk_io='low'", content)
@@ -436,6 +450,18 @@ def apply_oom_settings(input_file, level):
 
     with open(input_file, 'w') as f: f.write(content)
     return True
+
+def cleanup_heavy_files(work_dir, name):
+    deleted_something = False
+    for dvscf_file in glob.glob(os.path.join(work_dir, "*dvscf*")):
+        try: os.remove(dvscf_file); deleted_something = True
+        except: pass
+    for path in [os.path.join(work_dir, p) for p in ["tmp", "tmp_SAFE_CHECKPOINT", "tmp_SAFE_PHONON_CHECKPOINT"]]:
+        if os.path.exists(path):
+            try: shutil.rmtree(path, ignore_errors=True); deleted_something = True
+            except Exception as e: print(f"      ⚠️ Konnte {path} nicht löschen, {e}")
+    if deleted_something:
+        print(f"      🧹 Heavy Files & dvscf für {name} sicher bereinigt.")
 
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
@@ -551,6 +577,8 @@ def deallocate_vm():
     except Exception as e: 
         print(f"⚠️ Fehler beim Aufruf der Azure CLI, {e}")
 
+
+
 # =============================================================================
 # 4. HAUPTPROGRAMM
 # =============================================================================
@@ -617,10 +645,8 @@ def main():
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-                # --- HIER SIND DIE FEHLENDEN ZEILEN ---
                 result = "DONE"
                 crash_counter = 0
-                # --------------------------------------
 
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
                     update_csv(name, "Rechnet SCF...")
@@ -755,7 +781,25 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
-                if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
+                tmp_path = os.path.join(work_dir, "tmp")
+                ph0_path = os.path.join(tmp_path, "_ph0")
+
+                is_in_phase2 = False
+                if os.path.exists(ph_in):
+                    with open(ph_in, 'r') as f:
+                        if "electron_phonon" in f.read():
+                            is_in_phase2 = True
+
+                if (stab == "STABIL" or is_in_phase2) and not os.path.exists(ph0_path):
+                    print("   ⚠️ ABGEFANGEN, Der '_ph0' Ordner fehlt! El-Ph-Kopplung würde abstürzen.")
+                    print("   🔄 Setze Job zurück und berechne Phase 1 neu, um die Daten wiederherzustellen...")
+                    stab = "Unbekannt"
+                    is_in_phase2 = False
+                    if os.path.exists(ph_in): os.remove(ph_in)
+                    if os.path.exists(ph_out): os.remove(ph_out)
+                    update_csv(name, "Rechnet Phononen (Phase 1 Recovery)...", e_fermi, round(dos_val, 4), "JA", min_f="-", stab="-")
+
+                if not is_in_phase2 and (not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read()):
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
@@ -763,10 +807,14 @@ def main():
                     ph_cores = int(DEFAULT_CORES)
                     if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = 1
 
-                    ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
-                    
-                    if ph_res != "DONE":
-                        print("      ⚠️ Crash/OOM!")
+                    phonon_attempts = 0
+                    while phonon_attempts < 3:
+                        phonon_attempts += 1
+                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                        
+                        if ph_res == "DONE": break
+                        
+                        print(f"      ⚠️ Crash/OOM! (Versuch {phonon_attempts}/3)")
                         crash_reason = analyze_crash_reason(ph_out)
                         
                         if crash_reason == "XML_ERROR":
@@ -775,36 +823,43 @@ def main():
                             if os.path.exists(tmp_save_path): shutil.rmtree(tmp_save_path, ignore_errors=True)
                             if os.path.exists(scf_out): os.remove(scf_out)
                             update_csv(name, "SCF_RESET (XML Error)")
-                            continue
+                            break
 
                         if is_recoverable_fragmentation_error(ph_out):
                             print("      🤕 Diagnose, Fragmentierung erkannt. Starte 'Collect-Recovery'...")
                             if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
                                 print("      👍 Recovery erfolgreich.")
+                                if os.path.exists(ph_out): os.remove(ph_out)
+                                continue
                             else:
                                 print("      👎 Recovery fehlgeschlagen.")
                         
                         if crash_reason == "SYMMETRY_ERROR":
                              print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
 
-                        print("      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, 1 Core...")
-                        
-                        disable_symmetries_and_reduce_grid(ph_in)
-                        
-                        tmp_path = os.path.join(work_dir, "tmp")
-                        ph0_path = os.path.join(tmp_path, "_ph0")
-                        
-                        if os.path.exists(ph0_path):
-                            try:
-                                shutil.rmtree(ph0_path, ignore_errors=True)
-                                print("      🧹 Defekten Phononen-Cache (_ph0) gelöscht.")
-                            except: pass
-                        
-                        if os.path.exists(ph_out):
-                            try: os.remove(ph_out)
-                            except: pass
+                        if phonon_attempts == 1:
+                            print("      📉 Passe tr2_ph an für nächsten Versuch...")
+                            with open(ph_in, 'r') as f: c = f.read()
+                            c = re.sub(r"tr2_ph\s*=\s*[0-9\.dD\-]+", "tr2_ph=1.0d-12", c)
+                            with open(ph_in, 'w') as f: f.write(c)
+                            if os.path.exists(ph_out): os.remove(ph_out)
+                            continue
 
-                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
+                        elif phonon_attempts == 2:
+                            print("      🛡️ Aktiviere NOTFALL-MODUS, Sym=OFF, 1 Core...")
+                            disable_symmetries_and_reduce_grid(ph_in)
+                            
+                            if os.path.exists(ph0_path):
+                                try:
+                                    shutil.rmtree(ph0_path, ignore_errors=True)
+                                    print("      🧹 Defekten Phononen-Cache (_ph0) gelöscht.")
+                                except: pass
+                            
+                            if os.path.exists(ph_out):
+                                try: os.remove(ph_out)
+                                except: pass
+                            ph_cores = 1
+                            continue
                     
                     if ph_res != "DONE":
                          print("      ❌ Phononen endgültig fehlgeschlagen.")
@@ -824,10 +879,13 @@ def main():
 
                 if stab == "INSTABIL":
                     update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    print(f"   🧹 Material ist INSTABIL. Bereinige große temporäre Dateien...")
+                    cleanup_heavy_files(work_dir, name)
                     git_sync(f"Fertig, {name} (INSTABIL)")
                     continue
 
                 if stab == "STABIL":
+                    print(f"   ✅ Phase 1 (Stabilität) erfolgreich beendet.")
                     print(f"   ⚛️ PHASE 2 Vorbereitung für {name}...")
                     
                     is_resuming_phase2 = False
@@ -836,34 +894,32 @@ def main():
                             if "electron_phonon" in f.read():
                                 is_resuming_phase2 = True
 
-                    tmp_path = os.path.join(work_dir, "tmp")
+                    c_nq1, c_nq2, c_nq3 = "2", "2", "2"
+                    if os.path.exists(ph_in):
+                        with open(ph_in, 'r') as f:
+                            c = f.read()
+                            m1 = re.search(r"nq1\s*=\s*(\d+)", c)
+                            m2 = re.search(r"nq2\s*=\s*(\d+)", c)
+                            m3 = re.search(r"nq3\s*=\s*(\d+)", c)
+                            if m1: c_nq1 = m1.group(1)
+                            if m2: c_nq2 = m2.group(1)
+                            if m3: c_nq3 = m3.group(1)
+                    
+                    if c_nq1 == "1" and c_nq2 == "1" and c_nq3 == "1":
+                        print("   ⚠️ Phase 2 (El-Ph) benötigt ein Grid > 1x1x1 (Notfall-Modus erkannt).")
+                        print("   ⏭️ Überspringe El-Ph-Kopplung.")
+                        update_csv(name, "Fertig (Metall, 1x1x1)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                        git_sync(f"Fertig, {name} (Metall, 1x1x1)")
+                        continue
+
                     if not is_resuming_phase2:
-                        print("   🧹 Erster Start von Phase 2, Lösche alte Phase 1 Dateien...")
-                        ph0_path = os.path.join(tmp_path, "_ph0")
-                        if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
+                        print("   🧹 Erster Start von Phase 2, bewahre alte _ph0 Daten auf für El-Ph Interpolation...")
                         
                         for f in glob.glob(os.path.join(work_dir, "*.dyn*")):
                             try: os.remove(f)
                             except: pass
-                        for f in glob.glob(os.path.join(tmp_path, "*.a2Fsave*")):
-                            try: os.remove(f)
-                            except: pass
-                        for f in glob.glob(os.path.join(tmp_path, "*.dvscf*")):
-                            try: os.remove(f)
-                            except: pass
                         if os.path.exists(ph_out): os.remove(ph_out)
                         
-                        c_nq1, c_nq2, c_nq3 = "2", "2", "2"
-                        if os.path.exists(ph_in):
-                            with open(ph_in, 'r') as f:
-                                c = f.read()
-                                m1 = re.search(r"nq1\s*=\s*(\d+)", c)
-                                m2 = re.search(r"nq2\s*=\s*(\d+)", c)
-                                m3 = re.search(r"nq3\s*=\s*(\d+)", c)
-                                if m1: c_nq1 = m1.group(1)
-                                if m2: c_nq2 = m2.group(1)
-                                if m3: c_nq3 = m3.group(1)
-                                
                         with open(ph_in, "w") as f:
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3} /\n")
 

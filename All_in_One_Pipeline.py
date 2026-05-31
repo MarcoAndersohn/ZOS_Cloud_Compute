@@ -617,6 +617,11 @@ def main():
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
+                # --- HIER SIND DIE FEHLENDEN ZEILEN ---
+                result = "DONE"
+                crash_counter = 0
+                # --------------------------------------
+
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
                     update_csv(name, "Rechnet SCF...")
                     

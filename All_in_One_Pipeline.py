@@ -78,10 +78,17 @@ def initial_git_pull():
 def git_sync(message):
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
+    
+    # Erzwingt, dass Git den im System hinterlegten Credential-Helper nutzt
+    # Dadurch greift die VM automatisch auf deinen vorhin eingegebenen Fine-grained Token zu
     try:
+        subprocess.run(["git", "config", "credential.helper", "store"], cwd=WORK_DIR, env=env, timeout=10)
+        
         subprocess.run(["git", "add", "."], cwd=WORK_DIR, env=env, timeout=30)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, env=env, timeout=30)
         subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60, capture_output=True)
+        
+        # Der Push greift jetzt fehlerfrei auf deine ~/.git-credentials zu
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=60)
     except Exception as e:
         print(f"⚠️ Git Fehler, {e}")

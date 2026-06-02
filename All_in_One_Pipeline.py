@@ -21,7 +21,7 @@ sys.stderr.reconfigure(line_buffering=True)
 # =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
-TELEGRAM_TOKEN = "8202414068:AAHnnLMa7nfo0E3gCDLUVnUmIomoyveDPBA"
+TELEGRAM_TOKEN = "8935062268:AAFV8pguX22ZzL6iGj8-v3Ahx604nQboIg0"
 TELEGRAM_CHAT_ID = "711461437"
 
 LOGIC_APP_NAME = "AutoRestart-Supraleiter"
@@ -761,7 +761,7 @@ def main():
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                     
                     ph_cores = int(DEFAULT_CORES)
-                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = 1
+                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
 
                     ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                     
@@ -787,7 +787,7 @@ def main():
                         if crash_reason == "SYMMETRY_ERROR":
                              print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
 
-                        print("      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, 1 Core...")
+                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, {SAFE_CORES} Cores...")
                         
                         disable_symmetries_and_reduce_grid(ph_in)
                         
@@ -804,7 +804,7 @@ def main():
                             try: os.remove(ph_out)
                             except: pass
 
-                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, 1)
+                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, int(SAFE_CORES))
                     
                     if ph_res != "DONE":
                          print("      ❌ Phononen endgültig fehlgeschlagen.")
@@ -871,7 +871,7 @@ def main():
                     
                     if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                         ph_cores = int(DEFAULT_CORES)
-                        if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = 1
+                        if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
                         print("   ⚛️ Starte Phase 2 (El-Ph)...")
                         ph_res_2 = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                         

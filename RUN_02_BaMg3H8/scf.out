@@ -1986,38 +1986,28 @@ H             1.7202841536        2.4274738653        1.9335407243
      one-center paw contrib.   =    -468.81380659 Ry
 
      convergence has been achieved in   9 iterations
-ng if some PAW data can be deallocated... 
 
-     total cpu time spent up to now is       33.3 secs
+     Forces acting on atoms (cartesian axes, Ry/au):
 
-     Self-consistent Calculation
+     atom    1 type  3   force =     0.00000356    0.00000093   -0.00000230
+     atom    2 type  1   force =     0.00005341    0.00000739   -0.00000237
+     atom    3 type  3   force =    -0.00001748   -0.00000436    0.00000001
+     atom    4 type  3   force =    -0.00001494   -0.00000010    0.00000232
+     atom    5 type  2   force =    -0.00161715   -0.00013024   -0.00001332
+     atom    6 type  2   force =     0.00086394    0.00086869   -0.00086884
+     atom    7 type  2   force =    -0.00013021    0.00001145    0.00162108
+     atom    8 type  2   force =     0.00000634   -0.00161599    0.00012631
+     atom    9 type  2   force =     0.00161937    0.00012591    0.00000866
+     atom   10 type  2   force =    -0.00087564   -0.00087118    0.00086955
+     atom   11 type  2   force =     0.00012372   -0.00001134   -0.00161380
+     atom   12 type  2   force =    -0.00001490    0.00161885   -0.00012731
 
-     iteration #  1     ecut=    80.00 Ry     beta= 0.70
-     CG style diagonalization
-     c_bands:  2 eigenvalues not converged
-     c_bands:  2 eigenvalues not converged
-     c_bands:  2 eigenvalues not converged
-     c_bands:  2 eigenvalues not converged
-     c_bands:  2 eigenvalues not converged
-     c_bands:  2 eigenvalues not converged
-     c_bands:  3 eigenvalues not converged
-     ethr =  1.00E-05,  avg # of iterations =  8.9
+     Total force =     0.004510     Total SCF correction =     0.000011
 
-     Threshold (ethr) on eigenvalues was too large:
-     Diagonalizing with lowered threshold
 
-     CG style diagonalization
-     c_bands:  3 eigenvalues not converged
-     c_bands:  4 eigenvalues not converged
-     c_bands:  5 eigenvalues not converged
-     c_bands:  4 eigenvalues not converged
-     c_bands:  5 eigenvalues not converged
-     ethr =  1.64E-08,  avg # of iterations = 15.9
+     Computing stress (Cartesian axis) and pressure
 
-     total cpu time spent up to now is      130.0 secs
-
-     total energy              =    -546.59427049 Ry
-     estimated scf accuracy    <       0.00000245 Ry
+ccuracy    <       0.00000245 Ry
 
      iteration #  2     ecut=    80.00 Ry     beta= 0.70
      CG style diagonalization
@@ -2507,3 +2497,44 @@ H             1.7185337782        2.4160359098        1.9361035222
      Estimated max dynamical RAM per process >     373.54 MB
 
      Estimated total dynamical RAM >       1.46 GB
+     c_bands:  3 eigenvalues not converged
+     ethr =  1.00E-05,  avg # of iterations =  8.8
+
+     total cpu time spent up to now is      157.3 secs
+
+     total energy              =    -546.59420721 Ry
+     estimated scf accuracy    <       0.00225268 Ry
+
+     iteration #  2     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+
+     Atomic positions and unit cell read from directory:
+     ./tmp/BaMg3H8.save/
+     Atomic positions from file used, from input discarded
+
+     ethr =  9.39E-06,  avg # of iterations =  3.7
+     extrapolated charge   23.98388, renormalised to   24.00000
+
+     total cpu time spent up to now is      205.7 secs
+
+     total energy              =    -546.59450922 Ry
+     estimated scf accuracy    <       0.00010454 Ry
+
+     iteration #  3     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+
+     The initial density is read from file :
+     ./tmp/BaMg3H8.save/charge-density
+
+
+     starting charge   24.05029, renormalised to   24.00000
+
+     total cpu time spent up to now is      425.1 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    80.00 Ry     beta= 0.70
+     CG style diagonalization
+     c_bands:  1 eigenvalues not converged
+     Cannot read wfcs: file not found
+     Starting wfcs are   25 randomized atomic wfcs

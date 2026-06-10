@@ -1,0 +1,70 @@
+
+     Program PHONON v.7.5 starts on 10Jun2026 at 17:55: 7 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+         "P. Giannozzi et al., J. Chem. Phys. 152 154105 (2020);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI), running on     4 processors
+
+     MPI processes distributed on     1 nodes
+     15126 MiB available memory on the printing compute node when the environment starts
+
+     Waiting for input...
+     Reading input from standard input
+
+     Reading xml data from directory:
+
+     ./tmp/BaMg3H8.save/
+     Message from routine qes_read:control_variablesType:
+     fcp: wrong number of occurrences
+     Message from routine qes_read:control_variablesType:
+     rism: wrong number of occurrences
+     Message from routine qexsd_readschema :
+     input info not found or not readable in xml file
+
+     R & G space division:  proc/nbgrp/npool/nimage =       4
+     Subspace diagonalization in iterative solution of the eigenvalue problem:
+     a serial algorithm will be used
+
+     file Ba.UPF: wavefunction(s)  5S 6S renormalized
+     file Mg.UPF: wavefunction(s)  3S renormalized
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        1530     608    170                89573    22657    3382
+     Max        1531     609    171                89575    22658    3386
+     Sum        6121    2435    681               358295    90631   13533
+
+     Using Slab Decomposition
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine read_file_ph (1):
+      Wavefunctions in collected format not available
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     stopping ...
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 2 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01085] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01085] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages

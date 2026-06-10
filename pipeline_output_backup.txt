@@ -60,20 +60,3 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       📉 Setze RAM-Strategie, Standard (david, mix=6, diago_david_ndim=2)
    1️⃣  SCF (4 Cores, OOM-Lvl 0)
       🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).
-      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
-      ✅ System-RAM und Prozesse sind sauber.
-      ⚙️ Starte PWSCF (from_scratch, 4 Cores)...
-      --- QE ERROR LOG ---
-      --------------------------------------------------------------------------
-      mpirun was unable to launch the specified application as it could not access
-      or execute an executable:
-      
-      Executable: /home/marco/qe-source/bin/pw.x
-      Node: Supraleiter-HPC-Knoten
-      
-      while attempting to start process rank 0.
-      --------------------------------------------------------------------------
-      4 total processes failed to start
-      --------------------
-      ⚠️ Crash (SOFT). Versuch 3/3...
-      ❌ Zu viele Abstürze (3). Skippe.

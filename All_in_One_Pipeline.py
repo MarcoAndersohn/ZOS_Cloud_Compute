@@ -73,8 +73,8 @@ CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 BACKUP_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output_backup.txt")
 
-PW_EXE = shutil.which("pw.x") or "/usr/bin/pw.x"
-PH_EXE = shutil.which("ph.x") or "/usr/bin/ph.x"
+PW_EXE = "/home/marco/qe-source/bin/pw.x"
+PH_EXE = "/home/marco/qe-source/bin/ph.x"
 DOS_EXE = shutil.which("dos.x") or "/usr/bin/dos.x"
 Q2R_EXE = shutil.which("q2r.x") or "/usr/bin/q2r.x"
 MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
@@ -302,14 +302,13 @@ def analyze_crash_reason(output_file):
             print("      🧨 FATAL, Pseudopotential übersteigt QE-Limit. Neues Pseudo (PAW) benötigt!")
             return "PSEUDO_ERROR"
 
-        ram_match = re.search(r"estimated total dynamical ram\s*>\s*([0-9\.]+)\s*(mb|gb)", lines_lower)
-
         error_keywords = ["error", "mpi_abort", "segmentation fault", "stopping", "fatal", "diagonalization failed"]
         has_error_msg = any(key in lines_lower for key in error_keywords)
 
         if has_error_msg: 
             return "HARD"
 
+        ram_match = re.search(r"estimated total dynamical ram\s*>\s*([0-9\.]+)\s*(mb|gb)", lines_lower)
         if ram_match:
             if "self-consistent calculation" not in lines_lower and "iteration #" not in lines_lower:
                 return "LIKELY_OOM"
@@ -472,13 +471,6 @@ def apply_oom_settings(input_file, level, force_cg=False):
     with open(input_file, 'w') as f: f.write(content)
     return True
 
-def apply_aainit_workaround(input_file):
-    with open(input_file, 'r') as f: content = f.read()
-    content = re.sub(r"ecutwfc\s*=\s*[0-9\.]+", "ecutwfc = 40.0", content)
-    content = re.sub(r"ecutrho\s*=\s*[0-9\.]+", "ecutrho = 320.0", content)
-    with open(input_file, 'w') as f: f.write(content)
-    print("      🔧 aainit-Workaround: ecutwfc=40, ecutrho=320.")
-
 def fix_input_file(input_file, iteration_count=0):
     with open(input_file, 'r') as f: content = f.read()
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
@@ -492,8 +484,10 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_mode='local-TF',")
 
-    if "ecutwfc" not in content:
-        content = content.replace("&SYSTEM", "&SYSTEM\n ecutwfc=80.0, ecutrho=800.0,")
+    if "ecutwfc" in content:
+        content = re.sub(r"ecutwfc\s*=\s*[0-9\.]+", "ecutwfc = 80.0", content)
+    if "ecutrho" in content:
+        content = re.sub(r"ecutrho\s*=\s*[0-9\.]+", "ecutrho = 800.0", content)
 
     target_beta = 0.7
     if iteration_count >= 30: target_beta = 0.4
@@ -528,7 +522,7 @@ def get_last_iteration(output_file):
         return val
     except: return 0
 
-def run_monitored_pw(input_file, output_file, cwd, active_cores):
+def run_monitored_pw(input_file, output_file, cwd, active_cores, force_cg=False):
     fix_input_file(input_file, 0)
     last_git_sync = time.time()
     last_checkpoint_time = 0 
@@ -649,7 +643,6 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                 print("      🔄 nstep-Limit -> Neustart für weitere Optimierung.")
                 return "RESTART_NEEDED"
             elif final_reason == "LIKELY_OOM": return "OOM"
-            elif final_reason == "AAINIT_ERROR": return "CRASH"
             
             return "CRASH"
 
@@ -770,8 +763,6 @@ def is_ssh_session_active():
 # 6. SCF-BLOCK
 # =============================================================================
 def run_scf_block(name, work_dir, scf_in, scf_out):
-    aainit_ecut_reduced = False
-    
     if not os.path.exists(scf_out): file_level = 0
     else: file_level = detect_oom_level(scf_in)
         
@@ -872,30 +863,9 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
                 return "NON_CONV"
 
             if reason == "AAINIT_ERROR":
-                if current_cores > 1:
-                    print("      🔩 aainit-Fehler -> LÖSCHE tmp und Checkpoints, wechsle auf 1 Core.")
-                    current_cores = 1
-                    crash_counter = 0
-                    tmp_path = os.path.join(work_dir, "tmp")
-                    chkpt_path = os.path.join(work_dir, "tmp_SAFE_CHECKPOINT")
-                    if os.path.exists(tmp_path): shutil.rmtree(tmp_path, ignore_errors=True)
-                    if os.path.exists(chkpt_path): shutil.rmtree(chkpt_path, ignore_errors=True)
-                    update_csv(name, "Retrying (aainit -> 1 Core)")
-                    continue
-                else:
-                    if not aainit_ecut_reduced:
-                        aainit_ecut_reduced = True
-                        apply_aainit_workaround(scf_in)
-                        tmp_p = os.path.join(work_dir, "tmp")
-                        chkpt_p = os.path.join(work_dir, "tmp_SAFE_CHECKPOINT")
-                        if os.path.exists(tmp_p): shutil.rmtree(tmp_p, ignore_errors=True)
-                        if os.path.exists(chkpt_p): shutil.rmtree(chkpt_p, ignore_errors=True)
-                        print("      🔧 aainit auf 1 Core -> reduziere ecutwfc und lösche alte Speicherstände.")
-                        update_csv(name, "Retrying (aainit -> ecutwfc=40)")
-                        continue
-                    print("      ❌ aainit-Fehler unlösbar. System zu komplex. Skippe.")
-                    update_csv(name, "SKIPPED (OOM Limit)")
-                    return "OOM_LIMIT"
+                print("      ❌ aainit-Fehler. System zu komplex. Skippe.")
+                update_csv(name, "SKIPPED (OOM Limit)")
+                return "OOM_LIMIT"
 
             crash_counter += 1
             print(f"      ⚠️ Crash ({reason}). Versuch {crash_counter}/3...")
@@ -957,10 +927,18 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
                 return "CRASH"
 
             if crash_reason == "CORRUPT_FILE_ERROR":
-                print("      🧨 Defekte Phonon-Datei -> Lösche _ph0 und starte Phonon-Phase neu...")
+                print("      🧨 Defekte Phonon-Datei -> Lösche Caches (_ph0, a2Fsave, dvscf) und starte neu...")
                 for p in [os.path.join(work_dir, "tmp", "_ph0"),
                            os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
                     if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
+                
+                for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")):
+                    try: os.remove(f)
+                    except: pass
+                for f in glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
+                    try: os.remove(f)
+                    except: pass
+
                 if os.path.exists(ph_out): os.remove(ph_out)
                 phonon_attempts -= 1  
                 continue
@@ -1141,6 +1119,12 @@ def main():
             row_data = get_csv_full_info(name)
             last_status = row_data.get('Status', 'NEW')
             stability = row_data.get('Stabilität', '-')
+            tc_status = str(row_data.get('Tc (K)', '-')).strip()
+            lam_status = str(row_data.get('Lambda', '-')).strip()
+
+            if not stability: stability = "-"
+            if not tc_status: tc_status = "-"
+            if not lam_status: lam_status = "-"
 
             if "SKIPPED" in last_status:
                 print(f"⏩ Überspringe {name} (Status, {last_status})")
@@ -1151,10 +1135,15 @@ def main():
                 print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                 continue
 
-            if "Metall" in last_status and stability in ["STABIL", "INSTABIL"]:
-                cleanup_heavy_files(work_dir, name)
-                print(f"⏩ Überspringe {name} (Bereits vollständig analysiert, {stability})")
-                continue
+            if "Metall" in last_status:
+                if stability == "INSTABIL":
+                    cleanup_heavy_files(work_dir, name)
+                    print(f"⏩ Überspringe {name} (Bereits vollständig analysiert, INSTABIL)")
+                    continue
+                elif stability == "STABIL" and tc_status != "-" and lam_status != "-":
+                    cleanup_heavy_files(work_dir, name)
+                    print(f"⏩ Überspringe {name} (Bereits vollständig analysiert, STABIL, Tc={tc_status}K)")
+                    continue
 
             if "Metall" in last_status and (stability == "-" or stability == "Unbekannt"):
                 print(f"🔄 Retry Phonon für {name} (Metall, aber Stabilität unbekannt)...")

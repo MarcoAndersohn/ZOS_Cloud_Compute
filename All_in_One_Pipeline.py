@@ -745,13 +745,13 @@ def main():
                     git_sync(f"Fertig, {name} (Isolator)")
                     continue
 
-                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
+                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen & El-Ph...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1=2, nq2=2, nq3=2 /\n")
                     
                     ph_cores = int(DEFAULT_CORES)
                     if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
@@ -821,53 +821,7 @@ def main():
                     continue
 
                 if stab == "STABIL":
-                    print(f"   ⚛️ PHASE 2 Vorbereitung für {name}...")
-                    
-                    is_resuming_phase2 = False
-                    if os.path.exists(ph_in):
-                        with open(ph_in, 'r') as f:
-                            if "electron_phonon" in f.read():
-                                is_resuming_phase2 = True
-
-                    tmp_path = os.path.join(work_dir, "tmp")
-                    if not is_resuming_phase2:
-                        print("   🧹 Erster Start von Phase 2, Passe Cache-Dateien an...")
-                        
-                        for f in glob.glob(os.path.join(work_dir, "*.dyn*")):
-                            try: os.remove(f)
-                            except: pass
-                        for f in glob.glob(os.path.join(tmp_path, "*.a2Fsave*")):
-                            try: os.remove(f)
-                            except: pass
-                        if os.path.exists(ph_out): os.remove(ph_out)
-                        
-                        c_nq1, c_nq2, c_nq3 = "2", "2", "2"
-                        if os.path.exists(ph_in):
-                            with open(ph_in, 'r') as f:
-                                c = f.read()
-                                m1 = re.search(r"nq1\s*=\s*(\d+)", c)
-                                m2 = re.search(r"nq2\s*=\s*(\d+)", c)
-                                m3 = re.search(r"nq3\s*=\s*(\d+)", c)
-                                if m1: c_nq1 = m1.group(1)
-                                if m2: c_nq2 = m2.group(1)
-                                if m3: c_nq3 = m3.group(1)
-                                
-                        with open(ph_in, "w") as f:
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', trans=.false., nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3} /\n")
-
-                    update_csv(name, "Rechnet El-Ph (Phononen)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
-                    
-                    if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
-                        ph_cores = int(DEFAULT_CORES)
-                        if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
-                        print("   ⚛️ Starte Phase 2 (El-Ph)...")
-                        ph_res_2 = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
-                        
-                        if ph_res_2 != "DONE":
-                            print("   ❌ El-Ph Phononen fehlgeschlagen.")
-                            update_csv(name, "ERROR (El-Ph Crash)")
-                            git_sync(f"El-Ph Crash, {name}")
-                            continue
+                    print(f"   ✅ Material ist STABIL (Min Freq {min_f} THz). Starte direkt El-Ph Post-Processing...")
 
                     q2r_in = os.path.join(work_dir, "q2r.in")
                     q2r_out = os.path.join(work_dir, "q2r.out")

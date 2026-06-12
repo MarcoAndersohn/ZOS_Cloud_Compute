@@ -28,8 +28,8 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-DEFAULT_CORES = "2"
-SAFE_CORES = "1"
+DEFAULT_CORES = "4"
+SAFE_CORES = "2"
 MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
@@ -332,7 +332,7 @@ def is_recoverable_fragmentation_error(ph_output_file):
         return False
     except: return False
 
-def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
+def run_cleanup_scf(scf_input_file, cwd, cores_to_use=4):
     print(f"      🚑 Starte RECOVERY-Modus (Collect Waves), Cores={cores_to_use}")
     
     with open(scf_input_file, 'r') as f: content = f.read()
@@ -377,12 +377,8 @@ def disable_symmetries_and_reduce_grid(input_file):
         if "search_sym" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
     
-    content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
-    content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
-    content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
-
     with open(input_file, 'w') as f: f.write(content)
-    print(f"      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.")
+    print(f"      🛡️ Symmetrien deaktiviert.")
 
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
@@ -671,7 +667,7 @@ def main():
                             elif oom_level == 2: update_csv(name, "Retrying (OOM Lvl 2, DiskIO)")
                             elif oom_level == 3: update_csv(name, "Retrying (OOM Lvl 3, Mix3)")
                             elif oom_level == 4:
-                                update_csv(name, "Retrying (OOM Lvl 4, 1Core)")
+                                update_csv(name, "Retrying (OOM Lvl 4, Cores reduziert)")
                                 current_cores = int(SAFE_CORES)
                             else:
                                 update_csv(name, "SKIPPED (OOM Limit)")
@@ -780,7 +776,7 @@ def main():
                         if crash_reason == "SYMMETRY_ERROR":
                              print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
 
-                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, {SAFE_CORES} Cores...")
+                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Sym=OFF, {SAFE_CORES} Cores...")
                         
                         disable_symmetries_and_reduce_grid(ph_in)
                         

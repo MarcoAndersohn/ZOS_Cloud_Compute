@@ -60,6 +60,23 @@ def send_notification(message):
         requests.post(url, data=payload, timeout=10)
     except: pass
 
+def check_and_free_disk_space(min_free_gb=5.0):
+    try:
+        total, used, free = shutil.disk_usage("/")
+        free_gb = free / (1024**3)
+        if free_gb < min_free_gb:
+            print(f"      🧹 Festplatte fast voll ({free_gb:.2f} GB frei). Starte Notfall-Cleanup...")
+            for wfc_file in glob.glob(os.path.join(WORK_DIR, "RUN_*", "tmp", "*.wfc*")):
+                try: os.remove(wfc_file)
+                except: pass
+            for ph_dir in glob.glob(os.path.join(WORK_DIR, "RUN_*", "tmp", "_ph0")):
+                try: shutil.rmtree(ph_dir, ignore_errors=True)
+                except: pass
+            new_free = shutil.disk_usage("/").free / (1024**3)
+            print(f"      ✅ Cleanup beendet. Jetzt {new_free:.2f} GB frei.")
+    except Exception as e:
+        print(f"      ⚠️ Warnung beim Disk-Check, {e}")
+
 def set_logic_app_state(state="Enabled"):
     if not shutil.which("az"): return
     try:
@@ -92,8 +109,7 @@ def print_error_tail(log_file, lines=50):
         with open(log_file, 'r', errors='ignore') as f:
             tail = f.readlines()[-lines:]
         print(f"      --- LETZTE {lines} ZEILEN DES FEHLERS ---")
-        for line in tail:
-            print("      " + line.rstrip())
+        for line in tail: print("      " + line.rstrip())
         print("      -----------------------------------------")
     except: pass
 
@@ -117,7 +133,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
+            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -129,7 +145,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             found = True
             break
     if not found:
-        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
+        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H%M")}
         if lam != "-": new_row['Lambda'] = str(lam)
         if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
         if tc != "-": new_row['Tc (K)'] = str(tc)
@@ -185,7 +201,7 @@ def analyze_crash_reason(output_file):
             return "XML_ERROR"
             
         if "i/o past end of record" in lines_lower or ("end of file" in lines_lower and ("elphon.f90" in lines_lower or "write_rec.f90" in lines_lower)):
-            return "CORRUPT_FILE_ERROR"
+            return "ELPH_CORRUPT"
 
         if "not orthogonal" in lines_lower and "d_s" in lines_lower:
             return "SYMMETRY_ERROR"
@@ -216,6 +232,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
     last_checkpoint_time = 0 
 
     while True:
+        check_and_free_disk_space()
         with open(input_file, 'r') as f: content = f.read()
         tmp_dir = os.path.join(cwd, "tmp") 
         checkpoint_dir = os.path.join(cwd, "tmp_SAFE_CHECKPOINT") 
@@ -490,6 +507,7 @@ def get_last_iteration(output_file):
 # --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
+    check_and_free_disk_space()
 
     with open(input_file, 'r') as f: content = f.read()
     if os.path.exists(output_file):
@@ -503,7 +521,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
         cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
-        print(f"      ⚙️ Starte PHONONEN (Cores, {active_cores})...")
+        print(f"      ⚙️ Starte PHONONEN (Cores {active_cores})...")
         process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
         
         try:
@@ -534,6 +552,9 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
             return "OOM"
 
         if process.returncode != 0:
+            reason = analyze_crash_reason(output_file)
+            if reason == "ELPH_CORRUPT":
+                return "ELPH_CORRUPT"
             return "CRASH"
 
         try:
@@ -548,11 +569,12 @@ def deallocate_vm():
         print("🛑 Azure CLI nicht gefunden. Verlasse mich auf lokalen Shutdown.")
         return
     try:
-        result = subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], capture_output=True, text=True, timeout=60)
+        subprocess.run(["az", "login", "--identity"], capture_output=True, timeout=30)
+        result = subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten", "--no-wait"], capture_output=True, text=True, timeout=60)
         if result.returncode != 0:
             print(f"⚠️ Azure CLI Deallocate Fehler, {result.stderr}")
         else:
-            print("✅ VM erfolgreich deallokiert.")
+            print("✅ VM erfolgreich deallokiert (Asynchron).")
     except Exception as e: 
         print(f"⚠️ Fehler beim Aufruf der Azure CLI, {e}")
 
@@ -566,8 +588,8 @@ def main():
         
         set_logic_app_state("Enabled")
         with open(TXT_LOG_FILE, "a") as f:
-            f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
-        print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
+            f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H%M')}\n{'='*40}\n")
+        print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H%M')}\n{'='*40}\n")
         
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
@@ -619,6 +641,7 @@ def main():
                 scf_in = os.path.join(work_dir, "scf.in")
                 dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
                 ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
+                ph_elph_in, ph_elph_out = os.path.join(work_dir, "ph_elph.in"), os.path.join(work_dir, "ph_elph.out")
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
@@ -756,12 +779,13 @@ def main():
                     continue
 
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen & El-Ph...")
-                update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
+                update_csv(name, "Rechnet Phononen (Step 1)...", e_fermi, round(dos_val, 4), "JA")
                 
+                # --- PHONONEN SCHRITT 1 (Reine Berechnung) ---
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1=2, nq2=2, nq3=2 /\n")
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true. /\n")
                     
                     ph_cores = int(DEFAULT_CORES)
                     if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
@@ -786,16 +810,18 @@ def main():
                             update_csv(name, "SCF_RESET (XML Error)")
                             break
                             
-                        if crash_reason == "CORRUPT_FILE_ERROR":
-                            print("      🧨 Defekte Phonon-Datei (a2Fsave/dvscf). Lösche Caches und starte neu...")
+                        if crash_reason == "ELPH_CORRUPT" or crash_reason == "CORRUPT_FILE_ERROR":
+                            print("      🧨 Defekte Datei erkannt. Lösche Caches und zwinge Start from Scratch...")
                             for p in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
                                 if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
-                            for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")):
+                            for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")) + glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
                                 try: os.remove(f)
                                 except: pass
-                            for f in glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
-                                try: os.remove(f)
-                                except: pass
+                            
+                            with open(ph_in, 'r') as f: ph_content = f.read()
+                            ph_content = ph_content.replace("recover=.true.", "recover=.false.")
+                            with open(ph_in, 'w') as f: f.write(ph_content)
+                            
                             if os.path.exists(ph_out): os.remove(ph_out)
                             continue
 
@@ -830,6 +856,21 @@ def main():
                          print("      ❌ Phononen endgültig fehlgeschlagen.")
                          update_csv(name, "SKIPPED (Phonon Crash)") 
                          git_sync(f"Phonon Crash, {name}")
+                         continue
+
+                # --- PHONONEN SCHRITT 2 (Isolierte El-Ph Auswertung) ---
+                update_csv(name, "Rechnet El-Ph (Step 2)...", e_fermi, round(dos_val, 4), "JA")
+                if not os.path.exists(ph_elph_out) or "JOB DONE" not in open(ph_elph_out, errors='ignore').read():
+                    print("   🔌 Starte isolierten El-Ph Sammel-Lauf (2 Cores für max RAM)...")
+                    with open(ph_elph_in, "w") as f:
+                        f.write(f"ElPh\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., trans=.false., electron_phonon='interpolated' /\n")
+                    
+                    elph_res = run_monitored_ph(ph_elph_in, ph_elph_out, work_dir, int(SAFE_CORES))
+                    
+                    if elph_res != "DONE":
+                         print("      ❌ El-Phonon Lauf endgültig fehlgeschlagen.")
+                         update_csv(name, "SKIPPED (El-Ph Crash)") 
+                         git_sync(f"El-Ph Crash, {name}")
                          continue
 
                 min_f, stab = "-", "Unbekannt"

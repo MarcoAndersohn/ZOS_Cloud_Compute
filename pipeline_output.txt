@@ -39,3 +39,61 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    4d41a6d3..b9ed6a66  main -> main
       ❤️ Git Heartbeat (Phonon)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   b9ed6a66..aad5b518  main -> main
+      ⚠️ Crash/OOM in Phononen!
+      --- LETZTE 50 ZEILEN DES FEHLERS ---
+           freq (  18-  18) =        816.9  [cm-1]   --> A               I+R
+           freq (  19-  19) =        888.2  [cm-1]   --> A               I+R
+           freq (  20-  20) =        888.3  [cm-1]   --> A               I+R
+           freq (  21-  21) =        894.7  [cm-1]   --> A               I+R
+           freq (  22-  22) =        919.4  [cm-1]   --> A               I+R
+           freq (  23-  23) =        919.4  [cm-1]   --> A               I+R
+           freq (  24-  24) =        966.5  [cm-1]   --> A               I+R
+           freq (  25-  25) =        966.5  [cm-1]   --> A               I+R
+           freq (  26-  26) =       1004.9  [cm-1]   --> A               I+R
+           freq (  27-  27) =       1130.2  [cm-1]   --> A               I+R
+           freq (  28-  28) =       1400.7  [cm-1]   --> A               I+R
+           freq (  29-  29) =       1400.7  [cm-1]   --> A               I+R
+           freq (  30-  30) =       1489.8  [cm-1]   --> A               I+R
+           freq (  31-  31) =       1517.4  [cm-1]   --> A               I+R
+           freq (  32-  32) =       1661.7  [cm-1]   --> A               I+R
+           freq (  33-  33) =       1661.7  [cm-1]   --> A               I+R
+           freq (  34-  34) =       1758.9  [cm-1]   --> A               I+R
+           freq (  35-  35) =       1758.9  [cm-1]   --> A               I+R
+           freq (  36-  36) =       1801.1  [cm-1]   --> A               I+R
+           electron-phonon interaction  ...
+      
+      At line 806 of file elphon.f90 (unit = 40, file = './tmp/BaMg3H8.a2Fsave')
+      Fortran runtime error: End of file
+      
+      Error termination. Backtrace:
+      #0  0x7231f1823960 in ???
+      #1  0x7231f18244d9 in ???
+      #2  0x7231f182510f in ???
+      #3  0x7231f1a7817b in ???
+      #4  0x7231f1a71684 in ???
+      #5  0x7231f1a722aa in ???
+      #6  0x6400ee44ba71 in ???
+      #7  0x6400ee436c32 in ???
+      #8  0x6400ee430191 in ???
+      #9  0x6400ee42fffe in ???
+      #10  0x7231f1429d8f in ???
+      #11  0x7231f1429e3f in ???
+      #12  0x6400ee43002d in ???
+      #13  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28878,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      -----------------------------------------
+      🧨 Defekte Phonon-Datei (a2Fsave/dvscf). Lösche Caches und starte neu...
+      ⚙️ Starte PHONONEN (Cores, 4)...
+      ❤️ Git Heartbeat (Phonon)...

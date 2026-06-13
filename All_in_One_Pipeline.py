@@ -86,6 +86,17 @@ def git_sync(message):
     except Exception as e:
         print(f"⚠️ Git Fehler, {e}")
 
+def print_error_tail(log_file, lines=50):
+    if not os.path.exists(log_file): return
+    try:
+        with open(log_file, 'r', errors='ignore') as f:
+            tail = f.readlines()[-lines:]
+        print(f"      --- LETZTE {lines} ZEILEN DES FEHLERS ---")
+        for line in tail:
+            print("      " + line.rstrip())
+        print("      -----------------------------------------")
+    except: pass
+
 def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
     try:
         lam = float(lambda_ep)
@@ -106,7 +117,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H,%M")})
+            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -118,7 +129,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             found = True
             break
     if not found:
-        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H,%M")}
+        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
         if lam != "-": new_row['Lambda'] = str(lam)
         if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
         if tc != "-": new_row['Tc (K)'] = str(tc)
@@ -172,6 +183,9 @@ def analyze_crash_reason(output_file):
         
         if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower:
             return "XML_ERROR"
+            
+        if "i/o past end of record" in lines_lower or ("end of file" in lines_lower and ("elphon.f90" in lines_lower or "write_rec.f90" in lines_lower)):
+            return "CORRUPT_FILE_ERROR"
 
         if "not orthogonal" in lines_lower and "d_s" in lines_lower:
             return "SYMMETRY_ERROR"
@@ -752,18 +766,37 @@ def main():
                     ph_cores = int(DEFAULT_CORES)
                     if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
 
-                    ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
-                    
-                    if ph_res != "DONE":
-                        print("      ⚠️ Crash/OOM!")
+                    ph_attempts = 0
+                    while ph_attempts < 3:
+                        ph_attempts += 1
+                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                        
+                        if ph_res == "DONE":
+                            break
+                            
+                        print("      ⚠️ Crash/OOM in Phononen!")
                         crash_reason = analyze_crash_reason(ph_out)
+                        print_error_tail(ph_out, 50)
                         
                         if crash_reason == "XML_ERROR":
-                            print("      🧨 FATAL, XML korrupt. Lösche .save und erzwinge SCF-Neustart im nächsten Durchlauf.")
+                            print("      🧨 FATAL, XML korrupt. Lösche .save und erzwinge SCF-Neustart.")
                             tmp_save_path = os.path.join(work_dir, "tmp")
                             if os.path.exists(tmp_save_path): shutil.rmtree(tmp_save_path, ignore_errors=True)
                             if os.path.exists(scf_out): os.remove(scf_out)
                             update_csv(name, "SCF_RESET (XML Error)")
+                            break
+                            
+                        if crash_reason == "CORRUPT_FILE_ERROR":
+                            print("      🧨 Defekte Phonon-Datei (a2Fsave/dvscf). Lösche Caches und starte neu...")
+                            for p in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                                if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
+                            for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")):
+                                try: os.remove(f)
+                                except: pass
+                            for f in glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
+                                try: os.remove(f)
+                                except: pass
+                            if os.path.exists(ph_out): os.remove(ph_out)
                             continue
 
                         if is_recoverable_fragmentation_error(ph_out):
@@ -774,15 +807,13 @@ def main():
                                 print("      👎 Recovery fehlgeschlagen.")
                         
                         if crash_reason == "SYMMETRY_ERROR":
-                             print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
+                             print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)")
 
                         print(f"      🛡️ Aktiviere NOTFALL-MODUS, Sym=OFF, {SAFE_CORES} Cores...")
-                        
                         disable_symmetries_and_reduce_grid(ph_in)
                         
                         tmp_path = os.path.join(work_dir, "tmp")
                         ph0_path = os.path.join(tmp_path, "_ph0")
-                        
                         if os.path.exists(ph0_path):
                             try:
                                 shutil.rmtree(ph0_path, ignore_errors=True)
@@ -792,8 +823,8 @@ def main():
                         if os.path.exists(ph_out):
                             try: os.remove(ph_out)
                             except: pass
-
-                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, int(SAFE_CORES))
+                        
+                        ph_cores = int(SAFE_CORES)
                     
                     if ph_res != "DONE":
                          print("      ❌ Phononen endgültig fehlgeschlagen.")
@@ -835,6 +866,7 @@ def main():
 
                     if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
                         print(f"      ❌ Q2R fehlgeschlagen!")
+                        print_error_tail(q2r_out, 50)
                         update_csv(name, "ERROR (Q2R Crash)")
                         git_sync(f"Q2R Crash, {name}")
                         continue
@@ -850,6 +882,7 @@ def main():
 
                     if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
                         print(f"      ❌ Matdyn fehlgeschlagen!")
+                        print_error_tail(matdyn_out, 50)
                         update_csv(name, "ERROR (Matdyn Crash)")
                         git_sync(f"Matdyn Crash, {name}")
                         continue

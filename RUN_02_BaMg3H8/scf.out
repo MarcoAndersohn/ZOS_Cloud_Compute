@@ -4292,3 +4292,64 @@ End final coordinates
 
      Computing stress (Cartesian axis) and pressure
 
+          total   stress  (Ry/bohr**3)                   (kbar)     P=       -0.10
+  -0.00000067   0.00000168  -0.00000168           -0.10        0.25       -0.25
+   0.00000168  -0.00000067  -0.00000168            0.25       -0.10       -0.25
+  -0.00000168  -0.00000168  -0.00000066           -0.25       -0.25       -0.10
+
+
+     Writing output data file ./tmp/BaMg3H8.save/
+
+     init_run     :     27.94s CPU     30.21s WALL (       2 calls)
+     electrons    :    481.84s CPU    918.37s WALL (      20 calls)
+     update_pot   :    296.65s CPU    298.36s WALL (      18 calls)
+     forces       :    176.96s CPU    191.70s WALL (      20 calls)
+     stress       :    421.65s CPU    472.20s WALL (      20 calls)
+
+     Called by init_run:
+     wfcinit      :      1.16s CPU      2.36s WALL (       2 calls)
+     potinit      :      9.81s CPU      9.89s WALL (       2 calls)
+     hinit0       :     15.62s CPU     15.87s WALL (       2 calls)
+
+     Called by electrons:
+     c_bands      :    172.60s CPU    407.13s WALL (     163 calls)
+     sum_band     :    135.50s CPU    278.18s WALL (     163 calls)
+     v_of_rho     :     22.68s CPU     25.66s WALL (     182 calls)
+     newd         :    105.37s CPU    165.62s WALL (     182 calls)
+     PAW_pot      :     67.03s CPU     67.44s WALL (     200 calls)
+     mix_rho      :      2.97s CPU      4.47s WALL (     163 calls)
+
+     Called by c_bands:
+     init_us_2    :      6.02s CPU      6.40s WALL (    3088 calls)
+     cegterg      :    158.13s CPU    383.76s WALL (    1304 calls)
+
+     Called by *egterg:
+     cdiaghg      :      2.87s CPU      7.06s WALL (    4479 calls)
+     h_psi        :    133.76s CPU    346.18s WALL (    4647 calls)
+     s_psi        :      5.87s CPU      7.37s WALL (    4647 calls)
+     g_psi        :      0.77s CPU      0.72s WALL (    3327 calls)
+
+     Called by h_psi:
+     h_psi:calbec :      8.79s CPU     18.93s WALL (    4647 calls)
+     vloc_psi     :    118.01s CPU    318.02s WALL (    4647 calls)
+     add_vuspsi   :      6.54s CPU      8.66s WALL (    4647 calls)
+
+     General routines
+     calbec       :     15.13s CPU     39.81s WALL (    6895 calls)
+     fft          :     22.18s CPU     41.61s WALL (    2845 calls)
+     ffts         :      0.54s CPU      1.09s WALL (     345 calls)
+     fftw         :    128.80s CPU    374.29s WALL (  128286 calls)
+     interpolate  :      1.58s CPU      1.69s WALL (     182 calls)
+
+     Parallel routines
+     fft_scatt_xy :     12.43s CPU     15.75s WALL (  131476 calls)
+     fft_scatt_yz :     74.85s CPU    325.59s WALL (  131476 calls)
+
+     PWSCF        :  23m43.27s CPU  32m17.62s WALL
+
+
+   This run was terminated on:  14:49:53  13Jun2026            
+
+=------------------------------------------------------------------------------=
+   JOB DONE.
+=------------------------------------------------------------------------------=

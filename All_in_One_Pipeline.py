@@ -133,7 +133,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H%M")})
+            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -145,7 +145,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             found = True
             break
     if not found:
-        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H%M")}
+        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
         if lam != "-": new_row['Lambda'] = str(lam)
         if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
         if tc != "-": new_row['Tc (K)'] = str(tc)
@@ -505,6 +505,19 @@ def get_last_iteration(output_file):
     except: return 0
 
 # --- ROBUSTE PHONON WRAPPER ---
+def get_cores_from_log(log_file, default_cores=4):
+    if not os.path.exists(log_file): return int(default_cores)
+    try:
+        with open(log_file, 'r', errors='ignore') as f:
+            content = f.read()
+        # Sucht alle Vorkommen von "running on X processors"
+        matches = re.findall(r"running on\s+(\d+)\s+processors", content, re.IGNORECASE)
+        if matches:
+            # Wir nehmen den allerletzten Eintrag, falls es Neustarts gab
+            return int(matches[-1])
+        return int(default_cores)
+    except: return int(default_cores)
+
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
     check_and_free_disk_space()
@@ -588,8 +601,8 @@ def main():
         
         set_logic_app_state("Enabled")
         with open(TXT_LOG_FILE, "a") as f:
-            f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H%M')}\n{'='*40}\n")
-        print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H%M')}\n{'='*40}\n")
+            f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
+        print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
@@ -647,6 +660,7 @@ def main():
 
                 result = "DONE"
                 crash_counter = 0
+                oom_tolerance_counter = 0
 
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
                     update_csv(name, "Rechnet SCF...")
@@ -681,6 +695,7 @@ def main():
                     if oom_level >= 4: current_cores = int(SAFE_CORES)
                     
                     crash_counter = 0  
+                    oom_tolerance_counter = 0
                     
                     while True:
                         apply_oom_settings(scf_in, oom_level)
@@ -696,20 +711,26 @@ def main():
                             break
 
                         elif result == "OOM":
-                            oom_level += 1
-                            crash_counter = 0 
-                            print(f"      ⚠️ OOM Fehler erkannt. Eskaliere zu Level {oom_level}...")
-                            
-                            if oom_level == 1: update_csv(name, "Retrying (OOM Lvl 1, CG)")
-                            elif oom_level == 2: update_csv(name, "Retrying (OOM Lvl 2, DiskIO)")
-                            elif oom_level == 3: update_csv(name, "Retrying (OOM Lvl 3, Mix3)")
-                            elif oom_level == 4:
-                                update_csv(name, "Retrying (OOM Lvl 4, Cores reduziert)")
-                                current_cores = int(SAFE_CORES)
+                            oom_tolerance_counter += 1
+                            if oom_tolerance_counter >= 2:
+                                oom_level += 1
+                                oom_tolerance_counter = 0
+                                crash_counter = 0 
+                                print(f"      ⚠️ Zweiter OOM Fehler in Folge. Eskaliere zu Level {oom_level}...")
+                                
+                                if oom_level == 1: update_csv(name, "Retrying (OOM Lvl 1, CG)")
+                                elif oom_level == 2: update_csv(name, "Retrying (OOM Lvl 2, DiskIO)")
+                                elif oom_level == 3: update_csv(name, "Retrying (OOM Lvl 3, Mix3)")
+                                elif oom_level == 4:
+                                    update_csv(name, "Retrying (OOM Lvl 4, Cores reduziert)")
+                                    current_cores = int(SAFE_CORES)
+                                else:
+                                    update_csv(name, "SKIPPED (OOM Limit)")
+                                    print("      ❌ System zu komplex für verfügbaren RAM. Skippe.")
+                                    break
                             else:
-                                update_csv(name, "SKIPPED (OOM Limit)")
-                                print("      ❌ System zu komplex für verfügbaren RAM. Skippe.")
-                                break
+                                print(f"      🔄 OOM Fehler erkannt (1/2). Toleranz greift, probiere Level {oom_level} erneut...")
+                                update_csv(name, f"Retrying (OOM Tol {oom_tolerance_counter}/2)")
                             continue
 
                         elif result == "CRASH":
@@ -787,8 +808,9 @@ def main():
                         with open(ph_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true. /\n")
                     
-                    ph_cores = int(DEFAULT_CORES)
-                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
+                    # Erbt die erfolgreiche Anzahl an Kernen aus der SCF-Rechnung
+                    scf_used_cores = get_cores_from_log(scf_out, DEFAULT_CORES)
+                    ph_cores = scf_used_cores
 
                     ph_attempts = 0
                     while ph_attempts < 3:
@@ -861,11 +883,12 @@ def main():
                 # --- PHONONEN SCHRITT 2 (Isolierte El-Ph Auswertung) ---
                 update_csv(name, "Rechnet El-Ph (Step 2)...", e_fermi, round(dos_val, 4), "JA")
                 if not os.path.exists(ph_elph_out) or "JOB DONE" not in open(ph_elph_out, errors='ignore').read():
-                    print("   🔌 Starte isolierten El-Ph Sammel-Lauf (2 Cores für max RAM)...")
+                    print(f"   🔌 Starte isolierten El-Ph Sammel-Lauf ({current_cores} Cores passend zur SCF-Datei)...")
                     with open(ph_elph_in, "w") as f:
                         f.write(f"ElPh\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., trans=.false., electron_phonon='interpolated' /\n")
                     
-                    elph_res = run_monitored_ph(ph_elph_in, ph_elph_out, work_dir, int(SAFE_CORES))
+                    # El-Ph nutzt ebenfalls streng die vererbten current_cores
+                    elph_res = run_monitored_ph(ph_elph_in, ph_elph_out, work_dir, scf_used_cores)
                     
                     if elph_res != "DONE":
                          print("      ❌ El-Phonon Lauf endgültig fehlgeschlagen.")

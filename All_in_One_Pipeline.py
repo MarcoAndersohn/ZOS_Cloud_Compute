@@ -34,7 +34,7 @@ MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
 
-FORCE_RETRY_LIST = []
+FORCE_RETRY_LIST = ["02_BaMg3H8"] # <-- Zwinge Neustart für BaMg3H8
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
@@ -181,6 +181,16 @@ def count_job_attempts(log_file, job_name):
     except: return 1
     return max(1, count)
 
+def get_cores_from_log(log_file, default_cores=4):
+    if not os.path.exists(log_file): return int(default_cores)
+    try:
+        with open(log_file, 'r', errors='ignore') as f:
+            content = f.read()
+        matches = re.findall(r"running on\s+(\d+)\s+processors", content, re.IGNORECASE)
+        if matches: return int(matches[-1])
+        return int(default_cores)
+    except: return int(default_cores)
+
 # =============================================================================
 # 3. SMART LOGIC & VALIDATION & CRASH ANALYSE
 # =============================================================================
@@ -197,6 +207,9 @@ def analyze_crash_reason(output_file):
         
         lines_lower = lines.lower()
         
+        if "wrong trans" in lines_lower:
+            return "WRONG_TRANS_ERROR"
+            
         if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower:
             return "XML_ERROR"
             
@@ -505,19 +518,6 @@ def get_last_iteration(output_file):
     except: return 0
 
 # --- ROBUSTE PHONON WRAPPER ---
-def get_cores_from_log(log_file, default_cores=4):
-    if not os.path.exists(log_file): return int(default_cores)
-    try:
-        with open(log_file, 'r', errors='ignore') as f:
-            content = f.read()
-        # Sucht alle Vorkommen von "running on X processors"
-        matches = re.findall(r"running on\s+(\d+)\s+processors", content, re.IGNORECASE)
-        if matches:
-            # Wir nehmen den allerletzten Eintrag, falls es Neustarts gab
-            return int(matches[-1])
-        return int(default_cores)
-    except: return int(default_cores)
-
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
     check_and_free_disk_space()
@@ -566,6 +566,9 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
         if process.returncode != 0:
             reason = analyze_crash_reason(output_file)
+            if reason == "WRONG_TRANS_ERROR":
+                 print("      🧨 Falscher 'trans' Parameter in ph.x erkannt.")
+                 return "WRONG_TRANS_ERROR"
             if reason == "ELPH_CORRUPT":
                 return "ELPH_CORRUPT"
             return "CRASH"
@@ -621,6 +624,7 @@ def main():
                 if os.path.exists(work_dir):
                     shutil.rmtree(work_dir, ignore_errors=True)
                 update_csv(name, "NEW", "-", "-", "-", "-", "-")
+                FORCE_RETRY_LIST.remove(name) # Einmalig, dann aus Liste werfen
             
             row_data = get_csv_full_info(name)
             last_status = row_data.get('Status', 'NEW')
@@ -803,14 +807,15 @@ def main():
                 update_csv(name, "Rechnet Phononen (Step 1)...", e_fermi, round(dos_val, 4), "JA")
                 
                 # --- PHONONEN SCHRITT 1 (Reine Berechnung) ---
+                scf_used_cores = get_cores_from_log(scf_out, DEFAULT_CORES)
+                
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true. /\n")
+                            # HIER: KEIN trans=.false., aber recover=.true. als Fail-Safe, ldisp ist drin.
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true., recover=.true. /\n")
                     
-                    # Erbt die erfolgreiche Anzahl an Kernen aus der SCF-Rechnung
-                    scf_used_cores = get_cores_from_log(scf_out, DEFAULT_CORES)
-                    ph_cores = scf_used_cores
+                    ph_cores = scf_used_cores 
 
                     ph_attempts = 0
                     while ph_attempts < 3:
@@ -880,22 +885,7 @@ def main():
                          git_sync(f"Phonon Crash, {name}")
                          continue
 
-                # --- PHONONEN SCHRITT 2 (Isolierte El-Ph Auswertung) ---
-                update_csv(name, "Rechnet El-Ph (Step 2)...", e_fermi, round(dos_val, 4), "JA")
-                if not os.path.exists(ph_elph_out) or "JOB DONE" not in open(ph_elph_out, errors='ignore').read():
-                    print(f"   🔌 Starte isolierten El-Ph Sammel-Lauf ({current_cores} Cores passend zur SCF-Datei)...")
-                    with open(ph_elph_in, "w") as f:
-                        f.write(f"ElPh\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., trans=.false., electron_phonon='interpolated' /\n")
-                    
-                    # El-Ph nutzt ebenfalls streng die vererbten current_cores
-                    elph_res = run_monitored_ph(ph_elph_in, ph_elph_out, work_dir, scf_used_cores)
-                    
-                    if elph_res != "DONE":
-                         print("      ❌ El-Phonon Lauf endgültig fehlgeschlagen.")
-                         update_csv(name, "SKIPPED (El-Ph Crash)") 
-                         git_sync(f"El-Ph Crash, {name}")
-                         continue
-
+                # --- PRÜFE STABILITÄT DIREKT NACH SCHRITT 1 ---
                 min_f, stab = "-", "Unbekannt"
                 if os.path.exists(ph_out):
                       with open(ph_out, 'r') as f:
@@ -912,6 +902,23 @@ def main():
                     continue
 
                 if stab == "STABIL":
+                    update_csv(name, "Rechnet El-Ph (Step 2)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    
+                    # --- PHONONEN SCHRITT 2 (Isolierte El-Ph Auswertung) ---
+                    if not os.path.exists(ph_elph_out) or "JOB DONE" not in open(ph_elph_out, errors='ignore').read():
+                        print(f"   🔌 Starte isolierten El-Ph Sammel-Lauf ({scf_used_cores} Cores)...")
+                        with open(ph_elph_in, "w") as f:
+                            # HIER: electron_phonon rein, trans WIRD NICHT auf false gesetzt!
+                            f.write(f"ElPh\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., electron_phonon='interpolated' /\n")
+                        
+                        elph_res = run_monitored_ph(ph_elph_in, ph_elph_out, work_dir, scf_used_cores)
+                        
+                        if elph_res != "DONE":
+                             print("      ❌ El-Phonon Lauf endgültig fehlgeschlagen.")
+                             update_csv(name, "SKIPPED (El-Ph Crash)") 
+                             git_sync(f"El-Ph Crash, {name}")
+                             continue
+
                     print(f"   ✅ Material ist STABIL (Min Freq {min_f} THz). Starte direkt El-Ph Post-Processing...")
 
                     q2r_in = os.path.join(work_dir, "q2r.in")

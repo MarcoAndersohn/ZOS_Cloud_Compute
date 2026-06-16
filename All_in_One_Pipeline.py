@@ -34,7 +34,6 @@ MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
 
-# HIER LEER GEMACHT! Nichts wird mehr zwangsgelöscht.
 FORCE_RETRY_LIST = [] 
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -107,7 +106,6 @@ def git_sync(message):
 def print_error_tail(log_file, lines=100):
     if not os.path.exists(log_file): return
     try:
-        # 1. Hole die letzten 100 Zeilen statt nur 50
         with open(log_file, 'r', errors='ignore') as f:
             tail = f.readlines()[-lines:]
             
@@ -116,14 +114,10 @@ def print_error_tail(log_file, lines=100):
             error_msg += "      " + line.rstrip() + "\n"
         error_msg += "      -----------------------------------------\n"
         
-        # Ausgabe im Terminal
         print(error_msg)
-        
-        # 2. Schreibe den Fehler direkt in den zentralen Log (pipeline_output.txt)
         with open(TXT_LOG_FILE, 'a') as f_out:
             f_out.write(error_msg)
             
-        # 3. Suche nach der versteckten Quantum ESPRESSO "CRASH" Datei
         work_dir = os.path.dirname(log_file)
         crash_file = os.path.join(work_dir, "CRASH")
         if os.path.exists(crash_file):
@@ -135,7 +129,7 @@ def print_error_tail(log_file, lines=100):
                 f_out.write(crash_msg)
                 
     except Exception as e: 
-        print(f"      ⚠️ Fehler beim Auslesen des Logs: {e}")
+        print(f"      ⚠️ Fehler beim Auslesen des Logs, {e}")
 
 def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
     try:
@@ -157,7 +151,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
+            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H,%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -169,7 +163,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             found = True
             break
     if not found:
-        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
+        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H,%M")}
         if lam != "-": new_row['Lambda'] = str(lam)
         if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
         if tc != "-": new_row['Tc (K)'] = str(tc)
@@ -218,6 +212,7 @@ def get_cores_from_log(log_file, default_cores=4):
 # =============================================================================
 # 3. SMART LOGIC & VALIDATION & CRASH ANALYSE
 # =============================================================================
+
 def analyze_crash_reason(output_file):
     if not os.path.exists(output_file): return "NONE"
     try:
@@ -235,22 +230,27 @@ def analyze_crash_reason(output_file):
             return "WRONG_TRANS_ERROR"
             
         if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower or "tag root not found" in lines_lower:
+            print("      🧨 XML-Struktur zerstört (Corruption).")
             return "XML_ERROR"
+
+        if "not orthogonal" in lines_lower and "d_s" in lines_lower:
+            print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
+            return "SYMMETRY_ERROR"
+
+        if "mx dimension too small" in lines_lower:
+            print("      🧨 FATAL, Pseudopotential übersteigt QE-Limit. Neues Pseudo (PAW) benötigt!")
+            return "PSEUDO_ERROR"
             
         if "i/o past end of record" in lines_lower or ("end of file" in lines_lower and ("elphon.f90" in lines_lower or "write_rec.f90" in lines_lower)):
             return "ELPH_CORRUPT"
 
-        if "not orthogonal" in lines_lower and "d_s" in lines_lower:
-            return "SYMMETRY_ERROR"
-
-        if "mx dimension too small" in lines_lower:
-            return "PSEUDO_ERROR"
-
         ram_match = re.search(r"estimated total dynamical ram\s*>\s*([0-9\.]+)\s*(mb|gb)", lines_lower)
+
         error_keywords = ["error", "mpi_abort", "segmentation fault", "stopping", "fatal", "diagonalization failed"]
         has_error_msg = any(key in lines_lower for key in error_keywords)
 
-        if has_error_msg: return "HARD"
+        if has_error_msg: 
+            return "HARD"
 
         if ram_match:
             if "self-consistent calculation" not in lines_lower and "iteration #" not in lines_lower:
@@ -400,7 +400,7 @@ def is_recoverable_fragmentation_error(ph_output_file):
         return False
     except: return False
 
-def run_cleanup_scf(scf_input_file, cwd, cores_to_use=4):
+def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
     print(f"      🚑 Starte RECOVERY-Modus (Collect Waves), Cores={cores_to_use}")
     
     with open(scf_input_file, 'r') as f: content = f.read()
@@ -445,8 +445,12 @@ def disable_symmetries_and_reduce_grid(input_file):
         if "search_sym" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
     
+    content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
+    content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
+    content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
+
     with open(input_file, 'w') as f: f.write(content)
-    print(f"      🛡️ Symmetrien deaktiviert.")
+    print(f"      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.")
 
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
@@ -459,13 +463,13 @@ def detect_oom_level(input_file):
 
 def apply_oom_settings(input_file, level):
     with open(input_file, 'r') as f: content = f.read()
-    diag = 'david'; mix = 6; disk = None 
-    msg = "Standard (david, mix=6, diago_david_ndim=2)"
+    diag = 'cg'; mix = 4; disk = None 
+    msg = "Standard (cg, mix=4)"
 
-    if level >= 1: diag = 'cg'; mix = 4; disk = 'low'; msg = "Stufe 1 (cg, mix=4, disk_io='low')"
-    if level >= 2: diag = 'cg'; mix = 3; disk = 'low'; msg = "Stufe 2 (cg, mix=3, disk_io='low')"
-    if level >= 3: diag = 'cg'; mix = 2; disk = 'low'; msg = "Stufe 3 (cg, mix=2, disk_io='low')"
-    if level >= 4: diag = 'cg'; mix = 2; disk = 'low'; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
+    if level >= 1: disk = 'low'; msg = "Stufe 1 (cg, mix=4, disk_io='low')"
+    if level >= 2: mix = 3; msg = "Stufe 2 (cg, mix=3, disk_io='low')"
+    if level >= 3: mix = 2; msg = "Stufe 3 (cg, mix=2, disk_io='low')"
+    if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
 
     print(f"      📉 Setze RAM-Strategie, {msg}")
 
@@ -478,12 +482,6 @@ def apply_oom_settings(input_file, level):
         content = re.sub(r"mixing_ndim\s*=\s*\d+", f"mixing_ndim = {mix}", content)
     else:
         content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_ndim = {mix},")
-
-    ndim = 2
-    if "diago_david_ndim" in content:
-        content = re.sub(r"diago_david_ndim\s*=\s*\d+", f"diago_david_ndim = {ndim}", content)
-    else:
-        content = content.replace("&ELECTRONS", f"&ELECTRONS\n diago_david_ndim = {ndim},")
 
     if disk == 'low':
         if "disk_io" in content:
@@ -520,6 +518,22 @@ def fix_input_file(input_file, iteration_count=0):
 
     with open(input_file, 'w') as f: f.write(content)
     return True
+
+def get_last_iteration(output_file):
+    if not os.path.exists(output_file): return 0
+    try:
+        file_size = os.path.getsize(output_file)
+        with open(output_file, 'rb') as f:
+            f.seek(max(0, file_size - 10000), 0) 
+            chunk = f.read().decode('utf-8', errors='ignore')
+        bfgs_matches = re.findall(r"number of bfgs steps\s*=\s*(\d+)", chunk)
+        scf_matches = re.findall(r"iteration #\s*(\d+)", chunk)
+        val = 0
+        if bfgs_matches: val = int(bfgs_matches[-1])
+        elif scf_matches: val = int(scf_matches[-1])
+        return val
+    except: return 0
+
 
 # --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
@@ -662,7 +676,8 @@ def main():
                 scf_in = os.path.join(work_dir, "scf.in")
                 dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
                 ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
-                ph_elph_in, ph_elph_out = os.path.join(work_dir, "ph_elph.in"), os.path.join(work_dir, "ph_elph.out")
+                ph_elph_in = os.path.join(work_dir, "ph_elph.in")
+                ph_elph_out = os.path.join(work_dir, "ph_elph.out")
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
@@ -807,7 +822,7 @@ def main():
                     git_sync(f"Fertig, {name} (Isolator)")
                     continue
 
-                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen & El-Ph...")
+                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen (Step 1)...", e_fermi, round(dos_val, 4), "JA")
                 
                 # --- PHONONEN SCHRITT 1 (Reine Berechnung) ---
@@ -818,7 +833,6 @@ def main():
                         with open(ph_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true., recover=.true. /\n")
                     
-                    # PHONONEN-KERNE SIND NUN UNANTASTBAR AN SCF GEBUNDEN
                     ph_cores = scf_used_cores 
 
                     ph_attempts = 0
@@ -831,29 +845,14 @@ def main():
                             
                         print("      ⚠️ Crash/OOM in Phononen!")
                         crash_reason = analyze_crash_reason(ph_out)
-                        print_error_tail(ph_out, 50)
+                        print_error_tail(ph_out, 100)
                         
                         if crash_reason == "XML_ERROR":
-                            print("      🧨 FATAL, XML korrupt. Lösche .save und erzwinge SCF-Neustart.")
+                            print("      🧨 FATAL, XML korrupt. Lösche .save und erzwinge SCF-Neustart im nächsten Durchlauf.")
                             tmp_save_path = os.path.join(work_dir, "tmp")
                             if os.path.exists(tmp_save_path): shutil.rmtree(tmp_save_path, ignore_errors=True)
                             if os.path.exists(scf_out): os.remove(scf_out)
                             update_csv(name, "SCF_RESET (XML Error)")
-                            break
-                            
-                        if crash_reason == "ELPH_CORRUPT" or crash_reason == "CORRUPT_FILE_ERROR":
-                            print("      🧨 Defekte Datei erkannt. Lösche Caches und zwinge Start from Scratch...")
-                            for p in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
-                                if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
-                            for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")) + glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
-                                try: os.remove(f)
-                                except: pass
-                            
-                            with open(ph_in, 'r') as f: ph_content = f.read()
-                            ph_content = ph_content.replace("recover=.true.", "recover=.false.")
-                            with open(ph_in, 'w') as f: f.write(ph_content)
-                            
-                            if os.path.exists(ph_out): os.remove(ph_out)
                             continue
 
                         if is_recoverable_fragmentation_error(ph_out):
@@ -864,14 +863,15 @@ def main():
                                 print("      👎 Recovery fehlgeschlagen.")
                         
                         if crash_reason == "SYMMETRY_ERROR":
-                             print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)")
+                             print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
 
-                        # NOTFALL-MODUS: REDUZIERT KEINE KERNE MEHR!
-                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Sym=OFF (Behalte zwingend {scf_used_cores} Cores bei!)...")
+                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF (Vererbe {scf_used_cores} Cores)...")
+                        
                         disable_symmetries_and_reduce_grid(ph_in)
                         
                         tmp_path = os.path.join(work_dir, "tmp")
                         ph0_path = os.path.join(tmp_path, "_ph0")
+                        
                         if os.path.exists(ph0_path):
                             try:
                                 shutil.rmtree(ph0_path, ignore_errors=True)
@@ -881,14 +881,14 @@ def main():
                         if os.path.exists(ph_out):
                             try: os.remove(ph_out)
                             except: pass
-                    
+
                     if ph_res != "DONE":
                          print("      ❌ Phononen endgültig fehlgeschlagen.")
                          update_csv(name, "SKIPPED (Phonon Crash)") 
                          git_sync(f"Phonon Crash, {name}")
                          continue
 
-                # --- PRÜFE STABILITÄT DIREKT NACH SCHRITT 1 ---
+                # --- PRÜFE STABILITÄT NACH PHASE 1 ---
                 min_f, stab = "-", "Unbekannt"
                 if os.path.exists(ph_out):
                       with open(ph_out, 'r') as f:
@@ -905,23 +905,34 @@ def main():
                     continue
 
                 if stab == "STABIL":
-                    update_csv(name, "Rechnet El-Ph (Step 2)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    update_csv(name, "Rechnet El-Ph (Phononen)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                     
-                    # --- PHONONEN SCHRITT 2 (Isolierte El-Ph Auswertung) ---
                     if not os.path.exists(ph_elph_out) or "JOB DONE" not in open(ph_elph_out, errors='ignore').read():
-                        print(f"   🔌 Starte isolierten El-Ph Sammel-Lauf ({scf_used_cores} Cores)...")
-                        with open(ph_elph_in, "w") as f:
-                            f.write(f"ElPh\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., electron_phonon='interpolated' /\n")
+                        print(f"   🔌 Starte Phase 2 El-Ph ({scf_used_cores} Cores)...")
                         
-                        elph_res = run_monitored_ph(ph_elph_in, ph_elph_out, work_dir, scf_used_cores)
-                        
-                        if elph_res != "DONE":
-                             print("      ❌ El-Phonon Lauf endgültig fehlgeschlagen.")
-                             update_csv(name, "SKIPPED (El-Ph Crash)") 
-                             git_sync(f"El-Ph Crash, {name}")
-                             continue
+                        c_nq1, c_nq2, c_nq3 = "2", "2", "2"
+                        if os.path.exists(ph_in):
+                            with open(ph_in, 'r') as f:
+                                c = f.read()
+                                m1 = re.search(r"nq1\s*=\s*(\d+)", c)
+                                m2 = re.search(r"nq2\s*=\s*(\d+)", c)
+                                m3 = re.search(r"nq3\s*=\s*(\d+)", c)
+                                if m1: c_nq1 = m1.group(1)
+                                if m2: c_nq2 = m2.group(1)
+                                if m3: c_nq3 = m3.group(1)
 
-                    print(f"   ✅ Material ist STABIL (Min Freq {min_f} THz). Starte direkt El-Ph Post-Processing...")
+                        with open(ph_elph_in, "w") as f:
+                            f.write(f"ElPh\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3}, recover=.true. /\n")
+
+                        ph_res_2 = run_monitored_ph(ph_elph_in, ph_elph_out, work_dir, scf_used_cores)
+                        
+                        if ph_res_2 != "DONE":
+                            print("   ❌ El-Ph fehlgeschlagen.")
+                            update_csv(name, "ERROR (El-Ph Crash)")
+                            git_sync(f"El-Ph Crash, {name}")
+                            continue
+
+                    print("   ✅ El-Ph fertig. Starte Q2R und Matdyn...")
 
                     q2r_in = os.path.join(work_dir, "q2r.in")
                     q2r_out = os.path.join(work_dir, "q2r.out")
@@ -939,7 +950,7 @@ def main():
 
                     if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
                         print(f"      ❌ Q2R fehlgeschlagen!")
-                        print_error_tail(q2r_out, 50)
+                        print_error_tail(q2r_out, 100)
                         update_csv(name, "ERROR (Q2R Crash)")
                         git_sync(f"Q2R Crash, {name}")
                         continue
@@ -955,7 +966,7 @@ def main():
 
                     if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
                         print(f"      ❌ Matdyn fehlgeschlagen!")
-                        print_error_tail(matdyn_out, 50)
+                        print_error_tail(matdyn_out, 100)
                         update_csv(name, "ERROR (Matdyn Crash)")
                         git_sync(f"Matdyn Crash, {name}")
                         continue

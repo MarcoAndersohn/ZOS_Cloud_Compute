@@ -34,7 +34,8 @@ MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
 
-FORCE_RETRY_LIST = [] # <-- Zwinge Neustart für BaMg3H8
+# HIER LEER GEMACHT! Nichts wird mehr zwangsgelöscht.
+FORCE_RETRY_LIST = [] 
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
@@ -103,15 +104,38 @@ def git_sync(message):
     except Exception as e:
         print(f"⚠️ Git Fehler, {e}")
 
-def print_error_tail(log_file, lines=50):
+def print_error_tail(log_file, lines=100):
     if not os.path.exists(log_file): return
     try:
+        # 1. Hole die letzten 100 Zeilen statt nur 50
         with open(log_file, 'r', errors='ignore') as f:
             tail = f.readlines()[-lines:]
-        print(f"      --- LETZTE {lines} ZEILEN DES FEHLERS ---")
-        for line in tail: print("      " + line.rstrip())
-        print("      -----------------------------------------")
-    except: pass
+            
+        error_msg = f"\n      --- LETZTE {lines} ZEILEN VON {os.path.basename(log_file)} ---\n"
+        for line in tail: 
+            error_msg += "      " + line.rstrip() + "\n"
+        error_msg += "      -----------------------------------------\n"
+        
+        # Ausgabe im Terminal
+        print(error_msg)
+        
+        # 2. Schreibe den Fehler direkt in den zentralen Log (pipeline_output.txt)
+        with open(TXT_LOG_FILE, 'a') as f_out:
+            f_out.write(error_msg)
+            
+        # 3. Suche nach der versteckten Quantum ESPRESSO "CRASH" Datei
+        work_dir = os.path.dirname(log_file)
+        crash_file = os.path.join(work_dir, "CRASH")
+        if os.path.exists(crash_file):
+            with open(crash_file, 'r', errors='ignore') as fc:
+                crash_content = fc.read()
+            crash_msg = f"\n      🚨 QE CRASH FILE GEFUNDEN 🚨\n{crash_content}\n      -----------------------------------------\n"
+            print(crash_msg)
+            with open(TXT_LOG_FILE, 'a') as f_out:
+                f_out.write(crash_msg)
+                
+    except Exception as e: 
+        print(f"      ⚠️ Fehler beim Auslesen des Logs: {e}")
 
 def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
     try:
@@ -210,7 +234,7 @@ def analyze_crash_reason(output_file):
         if "wrong trans" in lines_lower:
             return "WRONG_TRANS_ERROR"
             
-        if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower:
+        if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower or "tag root not found" in lines_lower:
             return "XML_ERROR"
             
         if "i/o past end of record" in lines_lower or ("end of file" in lines_lower and ("elphon.f90" in lines_lower or "write_rec.f90" in lines_lower)):
@@ -481,11 +505,6 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    if "ecutwfc" in content:
-        content = re.sub(r"ecutwfc\s*=\s*[0-9\.]+", "ecutwfc = 80.0", content)
-    if "ecutrho" in content:
-        content = re.sub(r"ecutrho\s*=\s*[0-9\.]+", "ecutrho = 800.0", content)
-
     target_beta = 0.7
     if iteration_count >= 30: target_beta = 0.4
     if iteration_count >= 60: target_beta = 0.25
@@ -501,21 +520,6 @@ def fix_input_file(input_file, iteration_count=0):
 
     with open(input_file, 'w') as f: f.write(content)
     return True
-
-def get_last_iteration(output_file):
-    if not os.path.exists(output_file): return 0
-    try:
-        file_size = os.path.getsize(output_file)
-        with open(output_file, 'rb') as f:
-            f.seek(max(0, file_size - 10000), 0) 
-            chunk = f.read().decode('utf-8', errors='ignore')
-        bfgs_matches = re.findall(r"number of bfgs steps\s*=\s*(\d+)", chunk)
-        scf_matches = re.findall(r"iteration #\s*(\d+)", chunk)
-        val = 0
-        if bfgs_matches: val = int(bfgs_matches[-1])
-        elif scf_matches: val = int(scf_matches[-1])
-        return val
-    except: return 0
 
 # --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
@@ -569,8 +573,8 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
             if reason == "WRONG_TRANS_ERROR":
                  print("      🧨 Falscher 'trans' Parameter in ph.x erkannt.")
                  return "WRONG_TRANS_ERROR"
-            if reason == "ELPH_CORRUPT":
-                return "ELPH_CORRUPT"
+            if reason == "ELPH_CORRUPT" or reason == "XML_ERROR":
+                return reason
             return "CRASH"
 
         try:
@@ -624,7 +628,7 @@ def main():
                 if os.path.exists(work_dir):
                     shutil.rmtree(work_dir, ignore_errors=True)
                 update_csv(name, "NEW", "-", "-", "-", "-", "-")
-                FORCE_RETRY_LIST.remove(name) # Einmalig, dann aus Liste werfen
+                FORCE_RETRY_LIST.remove(name)
             
             row_data = get_csv_full_info(name)
             last_status = row_data.get('Status', 'NEW')
@@ -812,9 +816,9 @@ def main():
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         with open(ph_in, "w") as f: 
-                            # HIER: KEIN trans=.false., aber recover=.true. als Fail-Safe, ldisp ist drin.
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true., recover=.true. /\n")
                     
+                    # PHONONEN-KERNE SIND NUN UNANTASTBAR AN SCF GEBUNDEN
                     ph_cores = scf_used_cores 
 
                     ph_attempts = 0
@@ -862,7 +866,8 @@ def main():
                         if crash_reason == "SYMMETRY_ERROR":
                              print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)")
 
-                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Sym=OFF, {SAFE_CORES} Cores...")
+                        # NOTFALL-MODUS: REDUZIERT KEINE KERNE MEHR!
+                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Sym=OFF (Behalte zwingend {scf_used_cores} Cores bei!)...")
                         disable_symmetries_and_reduce_grid(ph_in)
                         
                         tmp_path = os.path.join(work_dir, "tmp")
@@ -876,8 +881,6 @@ def main():
                         if os.path.exists(ph_out):
                             try: os.remove(ph_out)
                             except: pass
-                        
-                        ph_cores = int(SAFE_CORES)
                     
                     if ph_res != "DONE":
                          print("      ❌ Phononen endgültig fehlgeschlagen.")
@@ -908,7 +911,6 @@ def main():
                     if not os.path.exists(ph_elph_out) or "JOB DONE" not in open(ph_elph_out, errors='ignore').read():
                         print(f"   🔌 Starte isolierten El-Ph Sammel-Lauf ({scf_used_cores} Cores)...")
                         with open(ph_elph_in, "w") as f:
-                            # HIER: electron_phonon rein, trans WIRD NICHT auf false gesetzt!
                             f.write(f"ElPh\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., electron_phonon='interpolated' /\n")
                         
                         elph_res = run_monitored_ph(ph_elph_in, ph_elph_out, work_dir, scf_used_cores)

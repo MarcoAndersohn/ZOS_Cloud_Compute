@@ -84,3 +84,71 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 🚀 NEUSTART SMART-PIPELINE, 2026-06-16 00:03
 ========================================
 
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   b30c0274..178d7c6e  main -> main
+⏩ Überspringe 01_HfH3_Top1 (Ist ein Isolator)
+⏩ Überspringe 01_LiTaH6Ru (Ist ein Isolator)
+⏩ Überspringe 01_SrMgGaB3H16 (Ist ein Isolator)
+✅ 02_BaMg3H8 SCF ist fertig.
+
+💎 Job, 02_BaMg3H8
+   ⚡ Metall (DOS=0.737). Berechne Phononen & El-Ph...
+      ⚙️ Starte PHONONEN (Cores 4)...
+      ⚠️ Crash/OOM in Phononen!
+      --- LETZTE 50 ZEILEN DES FEHLERS ---
+           ./tmp/BaMg3H8.save/
+           file Ba.UPF: wavefunction(s)  5S 6S renormalized
+           file Mg.UPF: wavefunction(s)  3S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min        1530     608    170                89571    22651    3382
+           Max        1531     609    171                89574    22652    3386
+           Sum        6121    2435    681               358289    90607   13533
+      
+           Reading collected, re-writing distributed wavefunctions
+      
+           Saving dvscf to file. Distribute only q points, not irreducible represetations.
+       end of file reached, tag Root not found
+      At line 965 of file xmltools.f90
+      Fortran runtime error: Sequential READ or WRITE not allowed after EOF marker, possibly use REWIND or BACKSPACE
+      
+      Error termination. Backtrace:
+      #0  0x7a5803423960 in ???
+      #1  0x7a58034244d9 in ???
+      #2  0x7a580342510f in ???
+      #3  0x7a580367b96d in ???
+      #4  0x584172fb8a2a in ???
+      #5  0x584172b3463c in ???
+      #6  0x584172ae3f8c in ???
+      #7  0x584172ae0184 in ???
+      #8  0x584172adfffe in ???
+      #9  0x7a5803029d8f in ???
+      #10  0x7a5803029e3f in ???
+      #11  0x584172ae002d in ???
+      #12  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28699,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      -----------------------------------------
+      🛡️ Aktiviere NOTFALL-MODUS, Sym=OFF, 2 Cores...
+      🛡️ Symmetrien deaktiviert.
+      🧹 Defekten Phononen-Cache (_ph0) gelöscht.
+      ⚙️ Starte PHONONEN (Cores 2)...
+      ❤️ Git Heartbeat (Phonon)...

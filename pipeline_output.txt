@@ -530,3 +530,217 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
       🧹 Defekten Phononen-Cache (_ph0) gelöscht.
       ⚙️ Starte PHONONEN (Cores 4)...
       ❤️ Git Heartbeat (Phonon)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   93d452c5..83715762  main -> main
+      ⚠️ Crash/OOM in Phononen!
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+            iter #   3 total cpu time :  2181.0 secs   av.it.:  16.2
+            thresh= 5.285E-06 alpha_mix =  0.700 |ddv_scf|^2 =  3.695E-11
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -1.3197E-03    -1.2925E-26
+      
+            iter #   4 total cpu time :  2191.7 secs   av.it.:  16.8
+            thresh= 6.079E-07 alpha_mix =  0.700 |ddv_scf|^2 =  1.746E-12
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -1.3711E-03    -1.0340E-25
+      
+            iter #   5 total cpu time :  2202.6 secs   av.it.:  17.0
+            thresh= 1.321E-07 alpha_mix =  0.700 |ddv_scf|^2 =  1.305E-13
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -1.3196E-03    -1.0340E-25
+      
+            iter #   6 total cpu time :  2213.3 secs   av.it.:  17.4
+            thresh= 3.612E-08 alpha_mix =  0.700 |ddv_scf|^2 =  7.961E-15
+      
+           End of self-consistent calculation
+      
+           Convergence has been achieved
+      
+           Number of q in the star =    1
+           List of q in the star:
+                1   0.000000000   0.000000000   0.000000000
+      
+           Diagonalizing the dynamical matrix
+      
+           q = (    0.000000000   0.000000000   0.000000000 )
+      
+       **************************************************************************
+           freq (    1) =       0.958606 [THz] =      31.975643 [cm-1]
+           freq (    2) =       1.188258 [THz] =      39.636031 [cm-1]
+           freq (    3) =       1.196844 [THz] =      39.922419 [cm-1]
+           freq (    4) =       3.930386 [THz] =     131.103553 [cm-1]
+           freq (    5) =      13.936007 [THz] =     464.855143 [cm-1]
+           freq (    6) =      13.936929 [THz] =     464.885911 [cm-1]
+           freq (    7) =      14.044504 [THz] =     468.474218 [cm-1]
+           freq (    8) =      16.912253 [THz] =     564.132035 [cm-1]
+           freq (    9) =      16.913113 [THz] =     564.160710 [cm-1]
+           freq (   10) =      21.112340 [THz] =     704.231846 [cm-1]
+           freq (   11) =      21.134779 [THz] =     704.980332 [cm-1]
+           freq (   12) =      21.135038 [THz] =     704.988993 [cm-1]
+           freq (   13) =      22.271682 [THz] =     742.903355 [cm-1]
+           freq (   14) =      22.479720 [THz] =     749.842737 [cm-1]
+           freq (   15) =      22.479836 [THz] =     749.846614 [cm-1]
+           freq (   16) =      22.565773 [THz] =     752.713172 [cm-1]
+           freq (   17) =      22.566770 [THz] =     752.746434 [cm-1]
+           freq (   18) =      24.507877 [THz] =     817.494784 [cm-1]
+           freq (   19) =      26.436647 [THz] =     881.831638 [cm-1]
+           freq (   20) =      26.438237 [THz] =     881.884660 [cm-1]
+           freq (   21) =      26.704458 [THz] =     890.764844 [cm-1]
+           freq (   22) =      27.585334 [THz] =     920.147702 [cm-1]
+           freq (   23) =      27.585426 [THz] =     920.150751 [cm-1]
+           freq (   24) =      28.883161 [THz] =     963.438548 [cm-1]
+           freq (   25) =      28.884163 [THz] =     963.471964 [cm-1]
+           freq (   26) =      30.147537 [THz] =    1005.613605 [cm-1]
+           freq (   27) =      33.927465 [THz] =    1131.698411 [cm-1]
+           freq (   28) =      42.026968 [THz] =    1401.868744 [cm-1]
+           freq (   29) =      42.027183 [THz] =    1401.875914 [cm-1]
+           freq (   30) =      44.517278 [THz] =    1484.936565 [cm-1]
+           freq (   31) =      45.494308 [THz] =    1517.526764 [cm-1]
+           freq (   32) =      49.841071 [THz] =    1662.519189 [cm-1]
+           freq (   33) =      49.841648 [THz] =    1662.538434 [cm-1]
+           freq (   34) =      52.784298 [THz] =    1760.694646 [cm-1]
+           freq (   35) =      52.784395 [THz] =    1760.697891 [cm-1]
+           freq (   36) =      54.052666 [THz] =    1803.002878 [cm-1]
+       **************************************************************************
+           electron-phonon interaction  ...
+      
+      At line 806 of file elphon.f90 (unit = 40, file = './tmp/BaMg3H8.a2Fsave')
+      Fortran runtime error: End of file
+      
+      Error termination. Backtrace:
+      #0  0x78ad21023960 in ???
+      #1  0x78ad210244d9 in ???
+      #2  0x78ad2102510f in ???
+      #3  0x78ad2127817b in ???
+      #4  0x78ad21271684 in ???
+      #5  0x78ad212722aa in ???
+      #6  0x5759ee603a71 in ???
+      #7  0x5759ee5eec32 in ???
+      #8  0x5759ee5e8191 in ???
+      #9  0x5759ee5e7ffe in ???
+      #10  0x78ad20c29d8f in ???
+      #11  0x78ad20c29e3f in ???
+      #12  0x5759ee5e802d in ???
+      #13  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28909,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      -----------------------------------------
+
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+            iter #   3 total cpu time :  2181.0 secs   av.it.:  16.2
+            thresh= 5.285E-06 alpha_mix =  0.700 |ddv_scf|^2 =  3.695E-11
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -1.3197E-03    -1.2925E-26
+      
+            iter #   4 total cpu time :  2191.7 secs   av.it.:  16.8
+            thresh= 6.079E-07 alpha_mix =  0.700 |ddv_scf|^2 =  1.746E-12
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -1.3711E-03    -1.0340E-25
+      
+            iter #   5 total cpu time :  2202.6 secs   av.it.:  17.0
+            thresh= 1.321E-07 alpha_mix =  0.700 |ddv_scf|^2 =  1.305E-13
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -1.3196E-03    -1.0340E-25
+      
+            iter #   6 total cpu time :  2213.3 secs   av.it.:  17.4
+            thresh= 3.612E-08 alpha_mix =  0.700 |ddv_scf|^2 =  7.961E-15
+      
+           End of self-consistent calculation
+      
+           Convergence has been achieved
+      
+           Number of q in the star =    1
+           List of q in the star:
+                1   0.000000000   0.000000000   0.000000000
+      
+           Diagonalizing the dynamical matrix
+      
+           q = (    0.000000000   0.000000000   0.000000000 )
+      
+       **************************************************************************
+           freq (    1) =       0.958606 [THz] =      31.975643 [cm-1]
+           freq (    2) =       1.188258 [THz] =      39.636031 [cm-1]
+           freq (    3) =       1.196844 [THz] =      39.922419 [cm-1]
+           freq (    4) =       3.930386 [THz] =     131.103553 [cm-1]
+           freq (    5) =      13.936007 [THz] =     464.855143 [cm-1]
+           freq (    6) =      13.936929 [THz] =     464.885911 [cm-1]
+           freq (    7) =      14.044504 [THz] =     468.474218 [cm-1]
+           freq (    8) =      16.912253 [THz] =     564.132035 [cm-1]
+           freq (    9) =      16.913113 [THz] =     564.160710 [cm-1]
+           freq (   10) =      21.112340 [THz] =     704.231846 [cm-1]
+           freq (   11) =      21.134779 [THz] =     704.980332 [cm-1]
+           freq (   12) =      21.135038 [THz] =     704.988993 [cm-1]
+           freq (   13) =      22.271682 [THz] =     742.903355 [cm-1]
+           freq (   14) =      22.479720 [THz] =     749.842737 [cm-1]
+           freq (   15) =      22.479836 [THz] =     749.846614 [cm-1]
+           freq (   16) =      22.565773 [THz] =     752.713172 [cm-1]
+           freq (   17) =      22.566770 [THz] =     752.746434 [cm-1]
+           freq (   18) =      24.507877 [THz] =     817.494784 [cm-1]
+           freq (   19) =      26.436647 [THz] =     881.831638 [cm-1]
+           freq (   20) =      26.438237 [THz] =     881.884660 [cm-1]
+           freq (   21) =      26.704458 [THz] =     890.764844 [cm-1]
+           freq (   22) =      27.585334 [THz] =     920.147702 [cm-1]
+           freq (   23) =      27.585426 [THz] =     920.150751 [cm-1]
+           freq (   24) =      28.883161 [THz] =     963.438548 [cm-1]
+           freq (   25) =      28.884163 [THz] =     963.471964 [cm-1]
+           freq (   26) =      30.147537 [THz] =    1005.613605 [cm-1]
+           freq (   27) =      33.927465 [THz] =    1131.698411 [cm-1]
+           freq (   28) =      42.026968 [THz] =    1401.868744 [cm-1]
+           freq (   29) =      42.027183 [THz] =    1401.875914 [cm-1]
+           freq (   30) =      44.517278 [THz] =    1484.936565 [cm-1]
+           freq (   31) =      45.494308 [THz] =    1517.526764 [cm-1]
+           freq (   32) =      49.841071 [THz] =    1662.519189 [cm-1]
+           freq (   33) =      49.841648 [THz] =    1662.538434 [cm-1]
+           freq (   34) =      52.784298 [THz] =    1760.694646 [cm-1]
+           freq (   35) =      52.784395 [THz] =    1760.697891 [cm-1]
+           freq (   36) =      54.052666 [THz] =    1803.002878 [cm-1]
+       **************************************************************************
+           electron-phonon interaction  ...
+      
+      At line 806 of file elphon.f90 (unit = 40, file = './tmp/BaMg3H8.a2Fsave')
+      Fortran runtime error: End of file
+      
+      Error termination. Backtrace:
+      #0  0x78ad21023960 in ???
+      #1  0x78ad210244d9 in ???
+      #2  0x78ad2102510f in ???
+      #3  0x78ad2127817b in ???
+      #4  0x78ad21271684 in ???
+      #5  0x78ad212722aa in ???
+      #6  0x5759ee603a71 in ???
+      #7  0x5759ee5eec32 in ???
+      #8  0x5759ee5e8191 in ???
+      #9  0x5759ee5e7ffe in ???
+      #10  0x78ad20c29d8f in ???
+      #11  0x78ad20c29e3f in ???
+      #12  0x5759ee5e802d in ???
+      #13  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28909,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      -----------------------------------------
+      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF (Vererbe 4 Cores)...
+      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.
+      🧹 Defekten Phononen-Cache (_ph0) gelöscht.
+      ❌ Phononen/El-Ph endgültig fehlgeschlagen.

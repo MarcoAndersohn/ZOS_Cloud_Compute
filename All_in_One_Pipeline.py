@@ -56,7 +56,7 @@ MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
 def send_notification(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC: {message}"}
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC, {message}"}
         requests.post(url, data=payload, timeout=10)
     except: pass
 
@@ -75,7 +75,7 @@ def check_and_free_disk_space(min_free_gb=5.0):
             new_free = shutil.disk_usage("/").free / (1024**3)
             print(f"      ✅ Cleanup beendet. Jetzt {new_free:.2f} GB frei.")
     except Exception as e:
-        print(f"      ⚠️ Warnung beim Disk-Check: {e}")
+        print(f"      ⚠️ Warnung beim Disk-Check, {e}")
 
 def set_logic_app_state(state="Enabled"):
     if not shutil.which("az"): return
@@ -89,7 +89,7 @@ def initial_git_pull():
     try:
         subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60, capture_output=True)
     except Exception as e:
-        print(f"⚠️ Initialer Git Pull Fehler: {e}")
+        print(f"⚠️ Initialer Git Pull Fehler, {e}")
 
 def git_sync(message):
     env = os.environ.copy()
@@ -101,7 +101,7 @@ def git_sync(message):
         subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60, capture_output=True)
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=60)
     except Exception as e:
-        print(f"⚠️ Git Fehler: {e}")
+        print(f"⚠️ Git Fehler, {e}")
 
 def print_error_tail(log_file, lines=100):
     if not os.path.exists(log_file): return
@@ -129,7 +129,7 @@ def print_error_tail(log_file, lines=100):
                 f_out.write(crash_msg)
                 
     except Exception as e: 
-        print(f"      ⚠️ Fehler beim Auslesen des Logs: {e}")
+        print(f"      ⚠️ Fehler beim Auslesen des Logs, {e}")
 
 def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
     try:
@@ -190,11 +190,11 @@ def count_job_attempts(log_file, job_name):
             size = f.tell()
             f.seek(max(0, size - 50000), 0)
             lines = f.read().decode('utf-8', errors='ignore').splitlines()
-        job_marker = f"💎 Job: {job_name}"
+        job_marker = f"💎 Job, {job_name}"
         for line in reversed(lines):
             if job_marker in line:
                 count += 1
-            elif "💎 Job:" in line and job_name not in line:
+            elif "💎 Job," in line and job_name not in line:
                 break
     except: return 1
     return max(1, count)
@@ -238,7 +238,7 @@ def analyze_crash_reason(output_file):
             return "SYMMETRY_ERROR"
 
         if "mx dimension too small" in lines_lower:
-            print("      🧨 FATAL: Pseudopotential übersteigt QE-Limit. Neues Pseudo (PAW) benötigt!")
+            print("      🧨 FATAL, Pseudopotential übersteigt QE-Limit. Neues Pseudo (PAW) benötigt!")
             return "PSEUDO_ERROR"
             
         if "i/o past end of record" in lines_lower or ("end of file" in lines_lower and ("elphon.f90" in lines_lower or "write_rec.f90" in lines_lower)):
@@ -297,7 +297,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                     print("      ✅ Checkpoint erfolgreich geladen!")
                 else:
                     print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
-            except Exception as e: print(f"      ❌ Fehler beim Laden des Checkpoints: {e}")
+            except Exception as e: print(f"      ❌ Fehler beim Laden des Checkpoints, {e}")
         else:
             print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
 
@@ -334,7 +334,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                                 print("      ✅ Checkpoint erstellt.")
                                 git_sync("Checkpoint & Log Update")
                                 last_git_sync = time.time() 
-                            except Exception as e: print(f"      ⚠️ Checkpoint fail: {e}")
+                            except Exception as e: print(f"      ⚠️ Checkpoint fail, {e}")
 
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
@@ -431,7 +431,7 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
             print("      ✅ Recovery-Lauf beendet. Daten sollten jetzt consolidated sein.")
             return True
         except Exception as e:
-            print(f"      ❌ Recovery fehlgeschlagen: {e}")
+            print(f"      ❌ Recovery fehlgeschlagen, {e}")
             return False
 
 def disable_symmetries_and_reduce_grid(input_file):
@@ -471,7 +471,7 @@ def apply_oom_settings(input_file, level):
     if level >= 3: mix = 2; msg = "Stufe 3 (cg, mix=2, disk_io='low')"
     if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
 
-    print(f"      📉 Setze RAM-Strategie: {msg}")
+    print(f"      📉 Setze RAM-Strategie, {msg}")
 
     if "diagonalization" in content:
         content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", f"diagonalization='{diag}'", content)
@@ -607,11 +607,11 @@ def deallocate_vm():
         subprocess.run(["az", "login", "--identity"], capture_output=True, timeout=30)
         result = subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten", "--no-wait"], capture_output=True, text=True, timeout=60)
         if result.returncode != 0:
-            print(f"⚠️ Azure CLI Deallocate Fehler: {result.stderr}")
+            print(f"⚠️ Azure CLI Deallocate Fehler, {result.stderr}")
         else:
             print("✅ VM erfolgreich deallokiert (Asynchron).")
     except Exception as e: 
-        print(f"⚠️ Fehler beim Aufruf der Azure CLI: {e}")
+        print(f"⚠️ Fehler beim Aufruf der Azure CLI, {e}")
 
 # =============================================================================
 # 4. HAUPTPROGRAMM
@@ -650,16 +650,19 @@ def main():
             stability = row_data.get('Stabilität', '-')
 
             if "SKIPPED" in last_status:
-                print(f"⏩ Überspringe {name} (Status: {last_status})")
+                print(f"⏩ Überspringe {name} (Status, {last_status})")
                 continue
             
             if "Isolator" in last_status:
                 print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                 continue
 
-            if "Metall" in last_status and stability in ["STABIL", "INSTABIL"] and "Tc" in last_status:
-                print(f"⏩ Überspringe {name} (Bereits vollständig analysiert: {stability})")
+            if stability == "INSTABIL" or (stability == "STABIL" and "Tc" in last_status):
+                print(f"⏩ Überspringe {name} (Bereits vollständig analysiert, {stability})")
                 continue
+
+            if "Metall" in last_status and (stability == "-" or stability == "Unbekannt"):
+                print(f"🔄 Retry Phonon für {name} (Metall, aber Stabilität unbekannt)...")
 
             crash_type = analyze_crash_reason(scf_out)
             if crash_type == "NON_CONVERGED":
@@ -670,7 +673,7 @@ def main():
             
             try:
                 if not os.path.exists(work_dir): os.makedirs(work_dir)
-                print(f"\n💎 Job: {name}")
+                print(f"\n💎 Job, {name}")
                 scf_in = os.path.join(work_dir, "scf.in")
                 dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
                 ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
@@ -696,7 +699,7 @@ def main():
                             new_name = f"{scf_out}.crash_{timestamp}"
                             try:
                                 os.rename(scf_out, new_name)
-                                print(f"      👻 Ghost-Protection: Alte scf.out zu {os.path.basename(new_name)} verschoben.")
+                                print(f"      👻 Ghost-Protection, Alte scf.out zu {os.path.basename(new_name)} verschoben.")
                             except: pass
 
                         if attempts >= MAX_RETRIES_LEVEL:
@@ -826,9 +829,13 @@ def main():
                 
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
+                        ph0_path = os.path.join(work_dir, "tmp", "_ph0")
+                        if os.path.exists(ph0_path):
+                            try: shutil.rmtree(ph0_path, ignore_errors=True)
+                            except: pass
+                        
                         with open(ph_in, "w") as f: 
-                            # HIER IST DIE MAGIE: electron_phonon='interpolated' ist direkt in der Phononen-Rechnung mit drin!
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true., recover=.true., electron_phonon='interpolated' /\n")
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true., electron_phonon='interpolated' /\n")
                     
                     ph_cores = scf_used_cores 
 
@@ -845,7 +852,7 @@ def main():
                         print_error_tail(ph_out, 100)
                         
                         if crash_reason == "XML_ERROR":
-                            print("      🧨 FATAL: XML korrupt. Lösche .save und erzwinge SCF-Neustart im nächsten Durchlauf.")
+                            print("      🧨 FATAL, XML korrupt. Lösche .save und erzwinge SCF-Neustart im nächsten Durchlauf.")
                             tmp_save_path = os.path.join(work_dir, "tmp")
                             if os.path.exists(tmp_save_path): shutil.rmtree(tmp_save_path, ignore_errors=True)
                             if os.path.exists(scf_out): os.remove(scf_out)
@@ -853,7 +860,7 @@ def main():
                             continue
 
                         if is_recoverable_fragmentation_error(ph_out):
-                            print("      🤕 Diagnose: Fragmentierung erkannt. Starte 'Collect-Recovery'...")
+                            print("      🤕 Diagnose, Fragmentierung erkannt. Starte 'Collect-Recovery'...")
                             if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
                                 print("      👍 Recovery erfolgreich.")
                             else:
@@ -959,13 +966,13 @@ def main():
                     git_sync(f"Fertig, {name} (Tc={tc}K)")
 
             except Exception as job_err:
-                print(f"🚨 Fehler bei Job {name}: {job_err}")
-                update_csv(name, f"ERROR (Python: {str(job_err)[:30]})")
+                print(f"🚨 Fehler bei Job {name}, {job_err}")
+                update_csv(name, f"ERROR (Python, {str(job_err)[:30]})")
                 continue 
 
         send_notification("🎉 Alle Jobs erledigt.")
         
-        with open(SIGNAL_FILE, "w") as f: f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")
+        with open(SIGNAL_FILE, "w") as f: f.write(f"Status, Fertig\nTimestamp, {time.ctime()}")
         git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")
         set_logic_app_state("Disabled")
         print("🛑 Deallokiere VM über Azure CLI...")
@@ -979,7 +986,7 @@ def main():
         full_error = f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()})\n{e}\n{traceback.format_exc()}\n"
         with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
         git_sync("🚨 Notfall Sync nach Skript-Absturz")
-        send_notification(f"🚨 KRITISCHER FEHLER: {e} -> Shutdown.")
+        send_notification(f"🚨 KRITISCHER FEHLER, {e} -> Shutdown.")
         
         set_logic_app_state("Disabled")
         print("🛑 Deallokiere VM über Azure CLI nach Crash...")

@@ -151,7 +151,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H,%M")})
+            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -163,7 +163,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             found = True
             break
     if not found:
-        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H,%M")}
+        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
         if lam != "-": new_row['Lambda'] = str(lam)
         if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
         if tc != "-": new_row['Tc (K)'] = str(tc)
@@ -226,7 +226,7 @@ def analyze_crash_reason(output_file):
         
         lines_lower = lines.lower()
         
-        if "wrong trans" in lines_lower:
+        if "wrong trans" in lines_lower or "wrong elph" in lines_lower:
             return "WRONG_TRANS_ERROR"
             
         if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower or "tag root not found" in lines_lower:
@@ -541,14 +541,16 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
     check_and_free_disk_space()
 
     with open(input_file, 'r') as f: content = f.read()
-    if os.path.exists(output_file):
+    
+    # NUR recover=.true. einfügen, wenn es NICHT explizit deaktiviert wurde
+    if os.path.exists(output_file) and "recover=.false." not in content.lower():
         if "recover" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
     
     run_input = input_file + ".run"
     with open(run_input, 'w') as f: f.write(content)
     
-    file_mode = 'a' if "recover=.true." in content else 'w'
+    file_mode = 'a' if ("recover=.true." in content.lower()) else 'w'
 
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
         cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
@@ -585,7 +587,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         if process.returncode != 0:
             reason = analyze_crash_reason(output_file)
             if reason == "WRONG_TRANS_ERROR":
-                 print("      🧨 Falscher 'trans' Parameter in ph.x erkannt.")
+                 print("      🧨 Falscher 'trans/elph' Parameter in ph.x erkannt.")
                  return "WRONG_TRANS_ERROR"
             if reason == "ELPH_CORRUPT" or reason == "XML_ERROR":
                 return reason
@@ -907,8 +909,13 @@ def main():
                 if stab == "STABIL":
                     update_csv(name, "Rechnet El-Ph (Phononen)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                     
+                    # --- PHONONEN SCHRITT 2 (Isolierte El-Ph Auswertung) ---
                     if not os.path.exists(ph_elph_out) or "JOB DONE" not in open(ph_elph_out, errors='ignore').read():
-                        print(f"   🔌 Starte Phase 2 El-Ph ({scf_used_cores} Cores)...")
+                        print(f"   🔌 Starte isolierten El-Ph Sammel-Lauf ({scf_used_cores} Cores)...")
+                        
+                        if os.path.exists(ph_elph_out):
+                            try: os.remove(ph_elph_out)
+                            except: pass
                         
                         c_nq1, c_nq2, c_nq3 = "2", "2", "2"
                         if os.path.exists(ph_in):
@@ -922,7 +929,8 @@ def main():
                                 if m3: c_nq3 = m3.group(1)
 
                         with open(ph_elph_in, "w") as f:
-                            f.write(f"ElPh\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3}, recover=.true. /\n")
+                            # DER FIX: recover=.false. & trans=.false. -> Zwingt Quantum ESPRESSO, nicht die .recover-Konsistenz zu prüfen, sondern sauber von Platte zu lesen!
+                            f.write(f"ElPh\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3}, recover=.false., trans=.false., electron_phonon='interpolated' /\n")
 
                         ph_res_2 = run_monitored_ph(ph_elph_in, ph_elph_out, work_dir, scf_used_cores)
                         

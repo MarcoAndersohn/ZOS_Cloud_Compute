@@ -21,3 +21,218 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    ⚡ Metall (DOS=0.650). Berechne Phononen UND El-Ph zusammen...
       ⚙️ Starte PHONONEN (Cores 4)...
       ❤️ Git Heartbeat (Phonon)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   857f042a..9fd271dc  main -> main
+      ⚠️ Crash/OOM in Phononen!
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+           freq (    8) =      16.912253 [THz] =     564.132035 [cm-1]
+           freq (    9) =      16.913113 [THz] =     564.160710 [cm-1]
+           freq (   10) =      21.112340 [THz] =     704.231846 [cm-1]
+           freq (   11) =      21.134779 [THz] =     704.980332 [cm-1]
+           freq (   12) =      21.135038 [THz] =     704.988993 [cm-1]
+           freq (   13) =      22.271682 [THz] =     742.903355 [cm-1]
+           freq (   14) =      22.479720 [THz] =     749.842737 [cm-1]
+           freq (   15) =      22.479836 [THz] =     749.846614 [cm-1]
+           freq (   16) =      22.565773 [THz] =     752.713172 [cm-1]
+           freq (   17) =      22.566770 [THz] =     752.746434 [cm-1]
+           freq (   18) =      24.507877 [THz] =     817.494784 [cm-1]
+           freq (   19) =      26.436647 [THz] =     881.831638 [cm-1]
+           freq (   20) =      26.438237 [THz] =     881.884660 [cm-1]
+           freq (   21) =      26.704458 [THz] =     890.764844 [cm-1]
+           freq (   22) =      27.585334 [THz] =     920.147702 [cm-1]
+           freq (   23) =      27.585426 [THz] =     920.150751 [cm-1]
+           freq (   24) =      28.883161 [THz] =     963.438548 [cm-1]
+           freq (   25) =      28.884163 [THz] =     963.471964 [cm-1]
+           freq (   26) =      30.147537 [THz] =    1005.613605 [cm-1]
+           freq (   27) =      33.927465 [THz] =    1131.698411 [cm-1]
+           freq (   28) =      42.026968 [THz] =    1401.868744 [cm-1]
+           freq (   29) =      42.027183 [THz] =    1401.875914 [cm-1]
+           freq (   30) =      44.517278 [THz] =    1484.936565 [cm-1]
+           freq (   31) =      45.494308 [THz] =    1517.526764 [cm-1]
+           freq (   32) =      49.841071 [THz] =    1662.519189 [cm-1]
+           freq (   33) =      49.841648 [THz] =    1662.538434 [cm-1]
+           freq (   34) =      52.784298 [THz] =    1760.694646 [cm-1]
+           freq (   35) =      52.784395 [THz] =    1760.697891 [cm-1]
+           freq (   36) =      54.052666 [THz] =    1803.002878 [cm-1]
+       **************************************************************************
+      
+           Mode symmetry, C_1 (1)     point group:
+      
+           freq (   1-   1) =         32.0  [cm-1]   --> A               I+R
+           freq (   2-   2) =         39.6  [cm-1]   --> A               I+R
+           freq (   3-   3) =         39.9  [cm-1]   --> A               I+R
+           freq (   4-   4) =        131.1  [cm-1]   --> A               I+R
+           freq (   5-   5) =        464.9  [cm-1]   --> A               I+R
+           freq (   6-   6) =        464.9  [cm-1]   --> A               I+R
+           freq (   7-   7) =        468.5  [cm-1]   --> A               I+R
+           freq (   8-   8) =        564.1  [cm-1]   --> A               I+R
+           freq (   9-   9) =        564.2  [cm-1]   --> A               I+R
+           freq (  10-  10) =        704.2  [cm-1]   --> A               I+R
+           freq (  11-  11) =        705.0  [cm-1]   --> A               I+R
+           freq (  12-  12) =        705.0  [cm-1]   --> A               I+R
+           freq (  13-  13) =        742.9  [cm-1]   --> A               I+R
+           freq (  14-  14) =        749.8  [cm-1]   --> A               I+R
+           freq (  15-  15) =        749.8  [cm-1]   --> A               I+R
+           freq (  16-  16) =        752.7  [cm-1]   --> A               I+R
+           freq (  17-  17) =        752.7  [cm-1]   --> A               I+R
+           freq (  18-  18) =        817.5  [cm-1]   --> A               I+R
+           freq (  19-  19) =        881.8  [cm-1]   --> A               I+R
+           freq (  20-  20) =        881.9  [cm-1]   --> A               I+R
+           freq (  21-  21) =        890.8  [cm-1]   --> A               I+R
+           freq (  22-  22) =        920.1  [cm-1]   --> A               I+R
+           freq (  23-  23) =        920.2  [cm-1]   --> A               I+R
+           freq (  24-  24) =        963.4  [cm-1]   --> A               I+R
+           freq (  25-  25) =        963.5  [cm-1]   --> A               I+R
+           freq (  26-  26) =       1005.6  [cm-1]   --> A               I+R
+           freq (  27-  27) =       1131.7  [cm-1]   --> A               I+R
+           freq (  28-  28) =       1401.9  [cm-1]   --> A               I+R
+           freq (  29-  29) =       1401.9  [cm-1]   --> A               I+R
+           freq (  30-  30) =       1484.9  [cm-1]   --> A               I+R
+           freq (  31-  31) =       1517.5  [cm-1]   --> A               I+R
+           freq (  32-  32) =       1662.5  [cm-1]   --> A               I+R
+           freq (  33-  33) =       1662.5  [cm-1]   --> A               I+R
+           freq (  34-  34) =       1760.7  [cm-1]   --> A               I+R
+           freq (  35-  35) =       1760.7  [cm-1]   --> A               I+R
+           freq (  36-  36) =       1803.0  [cm-1]   --> A               I+R
+           electron-phonon interaction  ...
+      
+      At line 806 of file elphon.f90 (unit = 40, file = './tmp/BaMg3H8.a2Fsave')
+      Fortran runtime error: End of file
+      
+      Error termination. Backtrace:
+      #0  0x7d8dd5023960 in ???
+      #1  0x7d8dd50244d9 in ???
+      #2  0x7d8dd502510f in ???
+      #3  0x7d8dd527817b in ???
+      #4  0x7d8dd5271684 in ???
+      #5  0x7d8dd52722aa in ???
+      #6  0x5f5217326a71 in ???
+      #7  0x5f5217311c32 in ???
+      #8  0x5f521730b191 in ???
+      #9  0x5f521730affe in ???
+      #10  0x7d8dd4c29d8f in ???
+      #11  0x7d8dd4c29e3f in ???
+      #12  0x5f521730b02d in ???
+      #13  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28698,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      -----------------------------------------
+
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+           freq (    8) =      16.912253 [THz] =     564.132035 [cm-1]
+           freq (    9) =      16.913113 [THz] =     564.160710 [cm-1]
+           freq (   10) =      21.112340 [THz] =     704.231846 [cm-1]
+           freq (   11) =      21.134779 [THz] =     704.980332 [cm-1]
+           freq (   12) =      21.135038 [THz] =     704.988993 [cm-1]
+           freq (   13) =      22.271682 [THz] =     742.903355 [cm-1]
+           freq (   14) =      22.479720 [THz] =     749.842737 [cm-1]
+           freq (   15) =      22.479836 [THz] =     749.846614 [cm-1]
+           freq (   16) =      22.565773 [THz] =     752.713172 [cm-1]
+           freq (   17) =      22.566770 [THz] =     752.746434 [cm-1]
+           freq (   18) =      24.507877 [THz] =     817.494784 [cm-1]
+           freq (   19) =      26.436647 [THz] =     881.831638 [cm-1]
+           freq (   20) =      26.438237 [THz] =     881.884660 [cm-1]
+           freq (   21) =      26.704458 [THz] =     890.764844 [cm-1]
+           freq (   22) =      27.585334 [THz] =     920.147702 [cm-1]
+           freq (   23) =      27.585426 [THz] =     920.150751 [cm-1]
+           freq (   24) =      28.883161 [THz] =     963.438548 [cm-1]
+           freq (   25) =      28.884163 [THz] =     963.471964 [cm-1]
+           freq (   26) =      30.147537 [THz] =    1005.613605 [cm-1]
+           freq (   27) =      33.927465 [THz] =    1131.698411 [cm-1]
+           freq (   28) =      42.026968 [THz] =    1401.868744 [cm-1]
+           freq (   29) =      42.027183 [THz] =    1401.875914 [cm-1]
+           freq (   30) =      44.517278 [THz] =    1484.936565 [cm-1]
+           freq (   31) =      45.494308 [THz] =    1517.526764 [cm-1]
+           freq (   32) =      49.841071 [THz] =    1662.519189 [cm-1]
+           freq (   33) =      49.841648 [THz] =    1662.538434 [cm-1]
+           freq (   34) =      52.784298 [THz] =    1760.694646 [cm-1]
+           freq (   35) =      52.784395 [THz] =    1760.697891 [cm-1]
+           freq (   36) =      54.052666 [THz] =    1803.002878 [cm-1]
+       **************************************************************************
+      
+           Mode symmetry, C_1 (1)     point group:
+      
+           freq (   1-   1) =         32.0  [cm-1]   --> A               I+R
+           freq (   2-   2) =         39.6  [cm-1]   --> A               I+R
+           freq (   3-   3) =         39.9  [cm-1]   --> A               I+R
+           freq (   4-   4) =        131.1  [cm-1]   --> A               I+R
+           freq (   5-   5) =        464.9  [cm-1]   --> A               I+R
+           freq (   6-   6) =        464.9  [cm-1]   --> A               I+R
+           freq (   7-   7) =        468.5  [cm-1]   --> A               I+R
+           freq (   8-   8) =        564.1  [cm-1]   --> A               I+R
+           freq (   9-   9) =        564.2  [cm-1]   --> A               I+R
+           freq (  10-  10) =        704.2  [cm-1]   --> A               I+R
+           freq (  11-  11) =        705.0  [cm-1]   --> A               I+R
+           freq (  12-  12) =        705.0  [cm-1]   --> A               I+R
+           freq (  13-  13) =        742.9  [cm-1]   --> A               I+R
+           freq (  14-  14) =        749.8  [cm-1]   --> A               I+R
+           freq (  15-  15) =        749.8  [cm-1]   --> A               I+R
+           freq (  16-  16) =        752.7  [cm-1]   --> A               I+R
+           freq (  17-  17) =        752.7  [cm-1]   --> A               I+R
+           freq (  18-  18) =        817.5  [cm-1]   --> A               I+R
+           freq (  19-  19) =        881.8  [cm-1]   --> A               I+R
+           freq (  20-  20) =        881.9  [cm-1]   --> A               I+R
+           freq (  21-  21) =        890.8  [cm-1]   --> A               I+R
+           freq (  22-  22) =        920.1  [cm-1]   --> A               I+R
+           freq (  23-  23) =        920.2  [cm-1]   --> A               I+R
+           freq (  24-  24) =        963.4  [cm-1]   --> A               I+R
+           freq (  25-  25) =        963.5  [cm-1]   --> A               I+R
+           freq (  26-  26) =       1005.6  [cm-1]   --> A               I+R
+           freq (  27-  27) =       1131.7  [cm-1]   --> A               I+R
+           freq (  28-  28) =       1401.9  [cm-1]   --> A               I+R
+           freq (  29-  29) =       1401.9  [cm-1]   --> A               I+R
+           freq (  30-  30) =       1484.9  [cm-1]   --> A               I+R
+           freq (  31-  31) =       1517.5  [cm-1]   --> A               I+R
+           freq (  32-  32) =       1662.5  [cm-1]   --> A               I+R
+           freq (  33-  33) =       1662.5  [cm-1]   --> A               I+R
+           freq (  34-  34) =       1760.7  [cm-1]   --> A               I+R
+           freq (  35-  35) =       1760.7  [cm-1]   --> A               I+R
+           freq (  36-  36) =       1803.0  [cm-1]   --> A               I+R
+           electron-phonon interaction  ...
+      
+      At line 806 of file elphon.f90 (unit = 40, file = './tmp/BaMg3H8.a2Fsave')
+      Fortran runtime error: End of file
+      
+      Error termination. Backtrace:
+      #0  0x7d8dd5023960 in ???
+      #1  0x7d8dd50244d9 in ???
+      #2  0x7d8dd502510f in ???
+      #3  0x7d8dd527817b in ???
+      #4  0x7d8dd5271684 in ???
+      #5  0x7d8dd52722aa in ???
+      #6  0x5f5217326a71 in ???
+      #7  0x5f5217311c32 in ???
+      #8  0x5f521730b191 in ???
+      #9  0x5f521730affe in ???
+      #10  0x7d8dd4c29d8f in ???
+      #11  0x7d8dd4c29e3f in ???
+      #12  0x5f521730b02d in ???
+      #13  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28698,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      -----------------------------------------
+      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF (Vererbe 4 Cores)...
+      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.
+      🧹 Defekten Phononen-Cache (_ph0) gelöscht.
+      ⚙️ Starte PHONONEN (Cores 4)...
+      ❤️ Git Heartbeat (Phonon)...

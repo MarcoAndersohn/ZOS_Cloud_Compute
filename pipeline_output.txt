@@ -186,3 +186,132 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 🚀 NEUSTART SMART-PIPELINE, 2026-06-16 18:44
 ========================================
 
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   a268e372..5495b8a7  main -> main
+⏩ Überspringe 01_HfH3_Top1 (Ist ein Isolator)
+⏩ Überspringe 01_LiTaH6Ru (Ist ein Isolator)
+⏩ Überspringe 01_SrMgGaB3H16 (Ist ein Isolator)
+✅ 02_BaMg3H8 SCF ist fertig.
+
+💎 Job: 02_BaMg3H8
+   ⚡ Metall (DOS=0.650). Berechne Phononen UND El-Ph zusammen...
+      ⚙️ Starte PHONONEN (Cores 4)...
+      🧨 Falscher 'trans/elph' Parameter in ph.x erkannt.
+      ⚠️ Crash/OOM in Phononen!
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+           Program PHONON v.6.7MaX starts on 16Jun2026 at 18:44:44
+      
+           This program is part of the open-source Quantum ESPRESSO suite
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org",
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine read_control_ph (1):
+           wrong trans
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 2 in communicator MPI_COMM_WORLD
+      with errorcode 1.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      [Supraleiter-HPC-Knoten:01067] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+      [Supraleiter-HPC-Knoten:01067] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+      -----------------------------------------
+
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+           Program PHONON v.6.7MaX starts on 16Jun2026 at 18:44:44
+      
+           This program is part of the open-source Quantum ESPRESSO suite
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org",
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine read_control_ph (1):
+           wrong trans
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 2 in communicator MPI_COMM_WORLD
+      with errorcode 1.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      [Supraleiter-HPC-Knoten:01067] 3 more processes have sent help message help-mpi-api.txt / mpi-abort
+      [Supraleiter-HPC-Knoten:01067] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+      -----------------------------------------
+
+      🚨 QE CRASH FILE GEFUNDEN 🚨
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     task #         1
+     from read_control_ph : error #         1
+     wrong trans
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     task #         0
+     from read_control_ph : error #         1
+     wrong trans
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+      -----------------------------------------
+
+
+      🚨 QE CRASH FILE GEFUNDEN 🚨
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     task #         1
+     from read_control_ph : error #         1
+     wrong trans
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     task #         0
+     from read_control_ph : error #         1
+     wrong trans
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+      -----------------------------------------
+      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF (Vererbe 4 Cores)...
+      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.
+      🧹 Defekten Phononen-Cache (_ph0) gelöscht.
+      ⚙️ Starte PHONONEN (Cores 4)...
+      ❤️ Git Heartbeat (Phonon)...

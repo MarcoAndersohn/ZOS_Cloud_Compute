@@ -213,6 +213,33 @@ def get_cores_from_log(log_file, default_cores=4):
 # 3. SMART LOGIC & VALIDATION & CRASH ANALYSE
 # =============================================================================
 
+def make_kpoints_dense(filepath):
+    if not os.path.exists(filepath): return False
+    with open(filepath, 'r') as f: content = f.read()
+    if "! KPOINTS_DENSIFIED" in content: return False 
+    
+    lines = content.split('\n')
+    out_lines = []
+    in_kpoints = False
+    for line in lines:
+        if "K_POINTS" in line.upper() and "automatic" in line.lower():
+            in_kpoints = True
+            out_lines.append(line)
+            continue
+        if in_kpoints and line.strip() and not line.strip().startswith("!"):
+            parts = line.split()
+            if len(parts) >= 3:
+                try:
+                    k1, k2, k3 = int(parts[0])*2, int(parts[1])*2, int(parts[2])*2
+                    shift = " ".join(parts[3:]) if len(parts) > 3 else "0 0 0"
+                    out_lines.append(f" {k1} {k2} {k3} {shift} ! KPOINTS_DENSIFIED")
+                    in_kpoints = False
+                    continue
+                except: pass
+        out_lines.append(line)
+    with open(filepath, 'w') as f: f.write("\n".join(out_lines))
+    return True
+
 def analyze_crash_reason(output_file):
     if not os.path.exists(output_file): return "NONE"
     try:
@@ -377,6 +404,89 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
             elif final_reason == "LIKELY_OOM": return "OOM"
             
             return "CRASH"
+
+def execute_scf_block(name, scf_in, scf_out, work_dir, input_file, phase_label):
+    if os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read():
+        return "DONE", get_cores_from_log(scf_out, DEFAULT_CORES)
+    
+    update_csv(name, f"Rechnet SCF ({phase_label})...")
+    file_level = detect_oom_level(scf_in)
+    start_crash_reason = analyze_crash_reason(scf_out)
+    
+    if start_crash_reason == "LIKELY_OOM":
+        attempts = count_job_attempts(TXT_LOG_FILE, name)
+        print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt. Versuch Nr. {attempts} auf diesem Level.")
+        if os.path.exists(scf_out):
+            timestamp = datetime.now().strftime("%H%M%S")
+            try: os.rename(scf_out, f"{scf_out}.crash_{timestamp}")
+            except: pass
+        if attempts >= MAX_RETRIES_LEVEL:
+            oom_level = file_level + 1
+            print(f"      ❗ Threshold ({MAX_RETRIES_LEVEL}) erreicht! Eskaliere HÄRTER (Level {file_level} -> {oom_level}).")
+            update_csv(name, f"Recovering (Escalating to Lvl {oom_level})")
+        else:
+            oom_level = file_level
+            print(f"      🔄 Threshold noch nicht erreicht. Gebe Level {file_level} noch eine Chance.")
+            update_csv(name, f"Retrying (Attempt {attempts}/{MAX_RETRIES_LEVEL})")
+    else:
+        oom_level = file_level
+
+    crash_counter = 0
+    oom_tolerance_counter = 0
+
+    while True:
+        current_cores = int(SAFE_CORES) if oom_level >= 4 else int(DEFAULT_CORES)
+        apply_oom_settings(scf_in, oom_level)
+        
+        print(f"   1️⃣  SCF {phase_label} ({current_cores} Cores, OOM-Lvl {oom_level})")
+        result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
+        
+        if result == "DONE":
+            return "DONE", current_cores
+        elif result == "MAX_STEPS":
+            update_csv(name, "SKIPPED (Max BFGS Steps)")
+            git_sync(f"Skipped {name}, >{MAX_BFGS_STEPS} BFGS Steps")
+            return "SKIPPED", current_cores
+        elif result == "OOM":
+            oom_tolerance_counter += 1
+            if oom_tolerance_counter >= 2:
+                oom_level += 1
+                oom_tolerance_counter = 0
+                crash_counter = 0
+                print(f"      ⚠️ Zweiter OOM Fehler in Folge. Eskaliere zu Level {oom_level}...")
+                if oom_level == 1: update_csv(name, "Retrying (OOM Lvl 1, CG)")
+                elif oom_level == 2: update_csv(name, "Retrying (OOM Lvl 2, DiskIO)")
+                elif oom_level == 3: update_csv(name, "Retrying (OOM Lvl 3, Mix3)")
+                elif oom_level == 4: update_csv(name, "Retrying (OOM Lvl 4, Cores reduziert)")
+                else:
+                    update_csv(name, "SKIPPED (OOM Limit)")
+                    print("      ❌ System zu komplex für verfügbaren RAM. Skippe.")
+                    return "SKIPPED", current_cores
+            else:
+                print(f"      🔄 OOM Fehler erkannt (1/2). Toleranz greift, probiere Level {oom_level} erneut...")
+                update_csv(name, f"Retrying (OOM Tol {oom_tolerance_counter}/2)")
+            continue
+        elif result == "CRASH":
+            reason = analyze_crash_reason(scf_out)
+            if reason == "NON_CONVERGED":
+                update_csv(name, "SKIPPED (Non-Conv)")
+                return "SKIPPED", current_cores
+            elif reason == "PSEUDO_ERROR":
+                update_csv(name, "SKIPPED (Pseudo Limit)")
+                print(f"      ❌ Skippe Job wegen inkompatiblem Pseudopotential.")
+                git_sync(f"Skipped {name}, Pseudo Error")
+                return "SKIPPED", current_cores
+            else:
+                crash_counter += 1
+                if crash_counter >= 3:
+                    print(f"      ❌ Zu viele unlösbare Abstürze ({crash_counter}). Skippe Job.")
+                    update_csv(name, "SKIPPED (Permanent Crash)")
+                    git_sync(f"Skipped {name}, Permanent Crash")
+                    return "SKIPPED", current_cores
+                update_csv(name, f"Retrying (Crash {crash_counter}/3)")
+                time.sleep(2)
+                continue
+    return "CRASH", current_cores
         
 def is_xml_valid(xml_path):
     if not os.path.exists(xml_path): return False
@@ -648,6 +758,7 @@ def main():
             row_data = get_csv_full_info(name)
             last_status = row_data.get('Status', 'NEW')
             stability = row_data.get('Stabilität', '-')
+            lam = row_data.get('Lambda', '-')
 
             if "SKIPPED" in last_status:
                 print(f"⏩ Überspringe {name} (Status, {last_status})")
@@ -657,130 +768,24 @@ def main():
                 print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                 continue
 
-            if stability == "INSTABIL" or (stability == "STABIL" and "Tc" in last_status):
-                print(f"⏩ Überspringe {name} (Bereits vollständig analysiert, {stability})")
-                continue
+            # Steht das System bereit für Phase 2?
+            needs_dense_run = False
+            if stability == "STABIL" and lam == "-":
+                needs_dense_run = True
 
-            if "Metall" in last_status and (stability == "-" or stability == "Unbekannt"):
-                print(f"🔄 Retry Phonon für {name} (Metall, aber Stabilität unbekannt)...")
-
-            crash_type = analyze_crash_reason(scf_out)
-            if crash_type == "NON_CONVERGED":
-                update_csv(name, "SKIPPED (Non-Conv)")
-                continue
-            elif crash_type == "DONE":
-                print(f"✅ {name} SCF ist fertig.")
-            
-            try:
+            if stability not in ["STABIL", "INSTABIL"]:
+                
+                # --- PHASE 1 (Test-Modus) ---
                 if not os.path.exists(work_dir): os.makedirs(work_dir)
-                print(f"\n💎 Job, {name}")
+                print(f"\n💎 Job, {name} (Phase 1, Test)")
                 scf_in = os.path.join(work_dir, "scf.in")
                 dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
                 ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-                result = "DONE"
-                crash_counter = 0
-                oom_tolerance_counter = 0
-
-                if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
-                    update_csv(name, "Rechnet SCF...")
-                    
-                    file_level = detect_oom_level(scf_in)
-                    start_crash_reason = analyze_crash_reason(scf_out)
-                    
-                    if start_crash_reason == "LIKELY_OOM":
-                        attempts = count_job_attempts(TXT_LOG_FILE, name)
-                        print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt. Versuch Nr. {attempts} auf diesem Level.")
-                        
-                        if os.path.exists(scf_out):
-                            timestamp = datetime.now().strftime("%H%M%S")
-                            new_name = f"{scf_out}.crash_{timestamp}"
-                            try:
-                                os.rename(scf_out, new_name)
-                                print(f"      👻 Ghost-Protection, Alte scf.out zu {os.path.basename(new_name)} verschoben.")
-                            except: pass
-
-                        if attempts >= MAX_RETRIES_LEVEL:
-                            oom_level = file_level + 1
-                            print(f"      ❗ Threshold ({MAX_RETRIES_LEVEL}) erreicht! Eskaliere HÄRTER (Level {file_level} -> {oom_level}).")
-                            update_csv(name, f"Recovering (Escalating to Lvl {oom_level})")
-                        else:
-                            oom_level = file_level
-                            print(f"      🔄 Threshold noch nicht erreicht. Gebe Level {file_level} noch eine Chance.")
-                            update_csv(name, f"Retrying (Attempt {attempts}/{MAX_RETRIES_LEVEL})")
-                    else:
-                        oom_level = file_level
-
-                    current_cores = int(DEFAULT_CORES)
-                    if oom_level >= 4: current_cores = int(SAFE_CORES)
-                    
-                    crash_counter = 0  
-                    oom_tolerance_counter = 0
-                    
-                    while True:
-                        apply_oom_settings(scf_in, oom_level)
-                        
-                        print(f"   1️⃣  SCF ({current_cores} Cores, OOM-Lvl {oom_level})")
-                        result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
-                        
-                        if result == "DONE": break 
-                        
-                        elif result == "MAX_STEPS":
-                            update_csv(name, "SKIPPED (Max BFGS Steps)")
-                            git_sync(f"Skipped {name}, >{MAX_BFGS_STEPS} BFGS Steps")
-                            break
-
-                        elif result == "OOM":
-                            oom_tolerance_counter += 1
-                            if oom_tolerance_counter >= 2:
-                                oom_level += 1
-                                oom_tolerance_counter = 0
-                                crash_counter = 0 
-                                print(f"      ⚠️ Zweiter OOM Fehler in Folge. Eskaliere zu Level {oom_level}...")
-                                
-                                if oom_level == 1: update_csv(name, "Retrying (OOM Lvl 1, CG)")
-                                elif oom_level == 2: update_csv(name, "Retrying (OOM Lvl 2, DiskIO)")
-                                elif oom_level == 3: update_csv(name, "Retrying (OOM Lvl 3, Mix3)")
-                                elif oom_level == 4:
-                                    update_csv(name, "Retrying (OOM Lvl 4, Cores reduziert)")
-                                    current_cores = int(SAFE_CORES)
-                                else:
-                                    update_csv(name, "SKIPPED (OOM Limit)")
-                                    print("      ❌ System zu komplex für verfügbaren RAM. Skippe.")
-                                    break
-                            else:
-                                print(f"      🔄 OOM Fehler erkannt (1/2). Toleranz greift, probiere Level {oom_level} erneut...")
-                                update_csv(name, f"Retrying (OOM Tol {oom_tolerance_counter}/2)")
-                            continue
-
-                        elif result == "CRASH":
-                            reason = analyze_crash_reason(scf_out)
-                            if reason == "NON_CONVERGED":
-                                update_csv(name, "SKIPPED (Non-Conv)")
-                                break
-                            elif reason == "PSEUDO_ERROR":
-                                update_csv(name, "SKIPPED (Pseudo Limit)")
-                                print(f"      ❌ Skippe Job wegen inkompatiblem Pseudopotential.")
-                                git_sync(f"Skipped {name}, Pseudo Error")
-                                break
-                            else:
-                                crash_counter += 1
-                                if crash_counter >= 3:
-                                    print(f"      ❌ Zu viele unlösbare Abstürze ({crash_counter}). Skippe Job.")
-                                    update_csv(name, "SKIPPED (Permanent Crash)")
-                                    git_sync(f"Skipped {name}, Permanent Crash")
-                                    break
-                                
-                                update_csv(name, f"Retrying (Crash {crash_counter}/3)")
-                                time.sleep(2)
-                                continue 
-
-                if result == "MAX_STEPS" or result == "OOM" or crash_counter >= 3 or analyze_crash_reason(scf_out) == "PSEUDO_ERROR": continue 
-                if analyze_crash_reason(scf_out) != "DONE":
-                    git_sync(f"Failed, {name}")
-                    continue 
+                scf_res, scf_cores = execute_scf_block(name, scf_in, scf_out, work_dir, input_file, "Test")
+                if scf_res != "DONE": continue 
 
                 with open(scf_in, 'r') as f: 
                     match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
@@ -821,38 +826,29 @@ def main():
                     git_sync(f"Fertig, {name} (Isolator)")
                     continue
 
-                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen UND El-Ph zusammen...")
-                update_csv(name, "Rechnet Phononen & El-Ph...", e_fermi, round(dos_val, 4), "JA")
-                
-                # --- PHONONEN & EL-PH SCHRITT (Alles in einem Lauf) ---
-                scf_used_cores = get_cores_from_log(scf_out, DEFAULT_CORES)
+                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen-Test...")
+                update_csv(name, "Rechnet Phononen (Test)...", e_fermi, round(dos_val, 4), "JA")
                 
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
-                        ph0_path = os.path.join(work_dir, "tmp", "_ph0")
-                        if os.path.exists(ph0_path):
-                            try: shutil.rmtree(ph0_path, ignore_errors=True)
-                            except: pass
-                        
                         with open(ph_in, "w") as f: 
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true., electron_phonon='interpolated' /\n")
-                    
-                    ph_cores = scf_used_cores 
+                            # HIER KEIN El-Ph, REINER STABILITÄTSTEST
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2, reduce_io=.true., recover=.true. /\n")
 
                     ph_attempts = 0
                     while ph_attempts < 3:
                         ph_attempts += 1
-                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, scf_cores)
                         
                         if ph_res == "DONE":
                             break
                             
-                        print("      ⚠️ Crash/OOM in Phononen!")
+                        print("      ⚠️ Crash in Test-Phononen!")
                         crash_reason = analyze_crash_reason(ph_out)
                         print_error_tail(ph_out, 100)
                         
                         if crash_reason == "XML_ERROR":
-                            print("      🧨 FATAL, XML korrupt. Lösche .save und erzwinge SCF-Neustart im nächsten Durchlauf.")
+                            print("      🧨 FATAL, XML korrupt. Lösche .save und erzwinge SCF-Neustart.")
                             tmp_save_path = os.path.join(work_dir, "tmp")
                             if os.path.exists(tmp_save_path): shutil.rmtree(tmp_save_path, ignore_errors=True)
                             if os.path.exists(scf_out): os.remove(scf_out)
@@ -865,34 +861,25 @@ def main():
                                 print("      👍 Recovery erfolgreich.")
                             else:
                                 print("      👎 Recovery fehlgeschlagen.")
-                        
-                        if crash_reason == "SYMMETRY_ERROR":
-                             print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
 
-                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF (Vererbe {scf_used_cores} Cores)...")
-                        
+                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF (Vererbe {scf_cores} Cores)...")
                         disable_symmetries_and_reduce_grid(ph_in)
                         
                         tmp_path = os.path.join(work_dir, "tmp")
                         ph0_path = os.path.join(tmp_path, "_ph0")
-                        
                         if os.path.exists(ph0_path):
-                            try:
-                                shutil.rmtree(ph0_path, ignore_errors=True)
-                                print("      🧹 Defekten Phononen-Cache (_ph0) gelöscht.")
+                            try: shutil.rmtree(ph0_path, ignore_errors=True)
                             except: pass
-                        
                         if os.path.exists(ph_out):
                             try: os.remove(ph_out)
                             except: pass
 
                     if ph_res != "DONE":
-                         print("      ❌ Phononen/El-Ph endgültig fehlgeschlagen.")
+                         print("      ❌ Test-Phononen endgültig fehlgeschlagen.")
                          update_csv(name, "SKIPPED (Phonon Crash)") 
-                         git_sync(f"Phonon/El-Ph Crash, {name}")
+                         git_sync(f"Phonon Crash, {name}")
                          continue
 
-                # --- PRÜFE STABILITÄT (Beinhaltet jetzt auch die El-Ph Frequenzen) ---
                 min_f, stab = "-", "Unbekannt"
                 if os.path.exists(ph_out):
                       with open(ph_out, 'r') as f:
@@ -909,61 +896,143 @@ def main():
                     continue
 
                 if stab == "STABIL":
-                    print(f"   ✅ Material ist STABIL (Min Freq {min_f} THz). Starte direkt El-Ph Post-Processing...")
+                    print(f"   ✅ Material ist STABIL (Min Freq {min_f} THz). Phase 1 abgeschlossen.")
+                    update_csv(name, "Test bestanden (STABIL)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    needs_dense_run = True
 
-                    q2r_in = os.path.join(work_dir, "q2r.in")
-                    q2r_out = os.path.join(work_dir, "q2r.out")
-                    matdyn_in = os.path.join(work_dir, "matdyn.in")
-                    matdyn_out = os.path.join(work_dir, "matdyn.out")
+            # --- PHASE 2 (Präzisions-Modus & El-Ph) ---
+            if needs_dense_run:
+                scf_in = os.path.join(work_dir, "scf.in")
+                scf_out = os.path.join(work_dir, "scf.out")
+                ph_in = os.path.join(work_dir, "ph.in")
+                ph_out = os.path.join(work_dir, "ph.out")
+                
+                was_densified = make_kpoints_dense(scf_in)
+                if was_densified:
+                    print("   🧹 Test-Daten werden gelöscht, K-Punkte für Präzisions-Phase verdoppelt.")
+                    for f in [scf_out, ph_out, ph_in]:
+                        if os.path.exists(f): os.remove(f)
+                    shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
+                    shutil.rmtree(os.path.join(work_dir, "tmp_SAFE_CHECKPOINT"), ignore_errors=True)
+                
+                print(f"\n💎 Job, {name} (Phase 2, Präzision)")
+                
+                scf_res, scf_cores = execute_scf_block(name, scf_in, scf_out, work_dir, input_file, "Präzision")
+                if scf_res != "DONE": continue
+                
+                e_fermi, dos_val = row_data.get('Fermi Energie (eV)', '-'), row_data.get('DOS @ Fermi', '-')
+                min_f, stab = row_data.get('Min Freq (THz)', '-'), row_data.get('Stabilität', 'STABIL')
+                
+                with open(scf_in, 'r') as f: 
+                    match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
+                    prefix = match.group(1) if match else "calc"
+                
+                update_csv(name, "Rechnet El-Ph (Präzision)...", e_fermi, dos_val, "JA", min_f=min_f, stab=stab)
+                
+                if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
+                    if not os.path.exists(ph_in):
+                        with open(ph_in, "w") as f: 
+                            # HIER MIT El-Ph, SAUBER VON ANFANG AN DURCHGERECHNET
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true., recover=.true., electron_phonon='interpolated' /\n")
 
-                    update_csv(name, "Rechnet El-Ph (Q2R)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    ph_attempts = 0
+                    while ph_attempts < 3:
+                        ph_attempts += 1
+                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, scf_cores)
+                        
+                        if ph_res == "DONE": break
+                            
+                        print("      ⚠️ Crash in Präzisions-Phononen!")
+                        crash_reason = analyze_crash_reason(ph_out)
+                        print_error_tail(ph_out, 100)
+                        
+                        if crash_reason == "XML_ERROR" or crash_reason == "ELPH_CORRUPT":
+                            print("      🧨 FATAL, Datenstruktur korrupt. Lösche Caches und starte Ph-Schritt neu.")
+                            for p in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                                if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
+                            for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")) + glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
+                                try: os.remove(f)
+                                except: pass
+                            
+                            with open(ph_in, 'r') as f: ph_content = f.read()
+                            ph_content = ph_content.replace("recover=.true.", "recover=.false.")
+                            with open(ph_in, 'w') as f: f.write(ph_content)
+                            if os.path.exists(ph_out): os.remove(ph_out)
+                            continue
 
-                    if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
-                        print("   4️⃣  Q2R...")
-                        with open(q2r_in, "w") as f:
-                            f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
-                        with open(q2r_in, "r") as fi, open(q2r_out, "w") as fo:
-                            subprocess.run([Q2R_EXE], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=work_dir)
+                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF (Vererbe {scf_cores} Cores)...")
+                        disable_symmetries_and_reduce_grid(ph_in)
+                        
+                        tmp_path = os.path.join(work_dir, "tmp")
+                        ph0_path = os.path.join(tmp_path, "_ph0")
+                        if os.path.exists(ph0_path):
+                            try: shutil.rmtree(ph0_path, ignore_errors=True)
+                            except: pass
+                        if os.path.exists(ph_out):
+                            try: os.remove(ph_out)
+                            except: pass
 
-                    if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
-                        print(f"      ❌ Q2R fehlgeschlagen!")
-                        print_error_tail(q2r_out, 100)
-                        update_csv(name, "ERROR (Q2R Crash)")
-                        git_sync(f"Q2R Crash, {name}")
-                        continue
+                    if ph_res != "DONE":
+                         print("      ❌ Präzisions-Phononen endgültig fehlgeschlagen.")
+                         update_csv(name, "SKIPPED (El-Ph Crash)") 
+                         git_sync(f"El-Ph Crash, {name}")
+                         continue
 
-                    update_csv(name, "Rechnet El-Ph (Matdyn)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                print("   ✅ El-Ph (Präzision) fertig. Starte Q2R und Matdyn...")
 
-                    if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
-                        print("   5️⃣  Matdyn...")
-                        with open(matdyn_in, "w") as f:
-                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
-                        with open(matdyn_in, "r") as fi, open(matdyn_out, "w") as fo:
-                            subprocess.run([MATDYN_EXE], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=work_dir)
+                q2r_in = os.path.join(work_dir, "q2r.in")
+                q2r_out = os.path.join(work_dir, "q2r.out")
+                matdyn_in = os.path.join(work_dir, "matdyn.in")
+                matdyn_out = os.path.join(work_dir, "matdyn.out")
 
-                    if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
-                        print(f"      ❌ Matdyn fehlgeschlagen!")
-                        print_error_tail(matdyn_out, 100)
-                        update_csv(name, "ERROR (Matdyn Crash)")
-                        git_sync(f"Matdyn Crash, {name}")
-                        continue
+                update_csv(name, "Rechnet El-Ph (Q2R)...", e_fermi, dos_val, "JA", min_f=min_f, stab=stab)
 
-                    lam, wlog, tc = "-", "-", "-"
-                    if os.path.exists(matdyn_out):
-                        with open(matdyn_out, 'r', errors='ignore') as f:
-                            mc = f.read()
-                            if "JOB DONE" in mc:
-                                ml = re.search(r"lambda\s*=\s*([0-9\.]+)", mc)
-                                mw = re.search(r"omega_log\s*=\s*([0-9\.]+)", mc)
-                                if ml and mw:
-                                    lam = ml.group(1)
-                                    wlog = mw.group(1)
-                                    tc_v = berechne_tc(wlog, lam)
-                                    if tc_v != "-":
-                                        tc = round(tc_v, 3)
+                if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
+                    print("   4️⃣  Q2R...")
+                    with open(q2r_in, "w") as f:
+                        f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
+                    with open(q2r_in, "r") as fi, open(q2r_out, "w") as fo:
+                        subprocess.run([Q2R_EXE], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=work_dir)
 
-                    update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab, lam=lam, wlog=wlog, tc=tc)
-                    git_sync(f"Fertig, {name} (Tc={tc}K)")
+                if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
+                    print(f"      ❌ Q2R fehlgeschlagen!")
+                    print_error_tail(q2r_out, 100)
+                    update_csv(name, "ERROR (Q2R Crash)")
+                    git_sync(f"Q2R Crash, {name}")
+                    continue
+
+                update_csv(name, "Rechnet El-Ph (Matdyn)...", e_fermi, dos_val, "JA", min_f=min_f, stab=stab)
+
+                if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
+                    print("   5️⃣  Matdyn...")
+                    with open(matdyn_in, "w") as f:
+                        f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
+                    with open(matdyn_in, "r") as fi, open(matdyn_out, "w") as fo:
+                        subprocess.run([MATDYN_EXE], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=work_dir)
+
+                if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
+                    print(f"      ❌ Matdyn fehlgeschlagen!")
+                    print_error_tail(matdyn_out, 100)
+                    update_csv(name, "ERROR (Matdyn Crash)")
+                    git_sync(f"Matdyn Crash, {name}")
+                    continue
+
+                lam, wlog, tc = "-", "-", "-"
+                if os.path.exists(matdyn_out):
+                    with open(matdyn_out, 'r', errors='ignore') as f:
+                        mc = f.read()
+                        if "JOB DONE" in mc:
+                            ml = re.search(r"lambda\s*=\s*([0-9\.]+)", mc)
+                            mw = re.search(r"omega_log\s*=\s*([0-9\.]+)", mc)
+                            if ml and mw:
+                                lam = ml.group(1)
+                                wlog = mw.group(1)
+                                tc_v = berechne_tc(wlog, lam)
+                                if tc_v != "-":
+                                    tc = round(tc_v, 3)
+
+                update_csv(name, "Fertig (Metall)", e_fermi, dos_val, "JA", min_f=min_f, stab=stab, lam=lam, wlog=wlog, tc=tc)
+                git_sync(f"Fertig, {name} (Tc={tc}K)")
 
             except Exception as job_err:
                 print(f"🚨 Fehler bei Job {name}, {job_err}")

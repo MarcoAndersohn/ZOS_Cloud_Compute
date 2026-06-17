@@ -393,3 +393,93 @@
 
      iteration # 14     ecut=    50.00 Ry     beta= 0.70
      CG style diagonalization
+     ethr =  6.55E-08,  avg # of iterations =  3.3
+
+     total cpu time spent up to now is     3707.3 secs
+
+     End of self-consistent calculation
+
+     Number of k-points >= 100: set verbosity='high' to print the bands.
+
+     the Fermi energy is     6.0674 ev
+
+!    total energy              =    -546.60029681 Ry
+     estimated scf accuracy    <       0.00000010 Ry
+     smearing contrib. (-TS)   =       0.00075016 Ry
+     internal energy E=F+TS    =    -546.60104697 Ry
+
+     The total energy is F=E-TS. E is the sum of the following terms:
+     one-electron contribution =      -4.95986436 Ry
+     hartree contribution      =      11.15088136 Ry
+     xc contribution           =     -30.94343572 Ry
+     ewald contribution        =     -53.03440037 Ry
+     one-center paw contrib.   =    -468.81422788 Ry
+
+     convergence has been achieved in  14 iterations
+
+     Forces acting on atoms (cartesian axes, Ry/au):
+
+     atom    1 type  3   force =     0.00001419    0.00000825   -0.00000020
+     atom    2 type  1   force =    -0.00015239   -0.00008947    0.00000478
+     atom    3 type  3   force =     0.00001353    0.00000795    0.00000019
+     atom    4 type  3   force =     0.00001331    0.00000731   -0.00000015
+     atom    5 type  2   force =    -0.00335901    0.00047692    0.00252120
+     atom    6 type  2   force =    -0.00358678   -0.00359339    0.00360119
+     atom    7 type  2   force =     0.00048376   -0.00251331    0.00336918
+     atom    8 type  2   force =    -0.00250708   -0.00336128   -0.00046951
+     atom    9 type  2   force =     0.00338036   -0.00046023   -0.00252350
+     atom   10 type  2   force =     0.00361437    0.00360799   -0.00360036
+     atom   11 type  2   force =    -0.00045207    0.00253188   -0.00337028
+     atom   12 type  2   force =     0.00253782    0.00337739    0.00046745
+
+     Total force =     0.013618     Total SCF correction =     0.000137
+
+
+     Computing stress (Cartesian axis) and pressure
+
+          total   stress  (Ry/bohr**3)                   (kbar)     P=        0.43
+   0.00000293  -0.00004123   0.00004123            0.43       -6.07        6.06
+  -0.00004123   0.00000293   0.00004122           -6.07        0.43        6.06
+   0.00004123   0.00004122   0.00000292            6.06        6.06        0.43
+
+
+     BFGS Geometry Optimization
+     Energy error            =      0.0E+00
+     Gradient error          =      3.6E-03
+     Cell gradient error     =      4.1E-05
+
+
+     number of scf cycles    =   1
+     number of bfgs steps    =   0
+
+     enthalpy new            =    -546.6002968081 Ry
+
+     new trust radius        =       0.0089007069 bohr
+     new conv_thr            =       0.0000010000 Ry
+
+     new unit-cell volume =    929.95482 a.u.^3 (   137.80509 Ang^3 )
+     density =      0.14460 g/cm^3
+
+CELL_PARAMETERS (angstrom)
+   5.169293973  -0.143815061   0.143814463
+  -0.143815065   5.169294331   0.143813917
+   0.143814469   0.143813920   5.169292587
+
+ATOMIC_POSITIONS (angstrom)
+Mg            2.5127464593        2.5127439958        0.1438140984
+Ba            2.6564741268       -0.0000478375        2.6565554229
+Mg            0.0000068600        2.6565583236        2.6565528641
+Mg            0.0000070385        0.0000038618       -0.0000000673
+H             0.1455911920        4.4077782903        1.8455499103
+H             4.2399424872        1.5833846663        1.0731729662
+H             1.8950433108        0.9548216883        5.0237072446
+H             3.4675657543        2.8021441052        3.5618858413
+H             5.0237144697        0.7615227179        3.6113698611
+H             0.9293654820        3.5859162348        4.3837484638
+H             3.2742678259        4.2144813096        0.4332131667
+H             1.7017448770        2.3671585869        1.8950330673
+
+
+
+     Writing output data file ./tmp/BaMg3H8.save/
+     NEW-OLD atomic charge density approx. for the potential

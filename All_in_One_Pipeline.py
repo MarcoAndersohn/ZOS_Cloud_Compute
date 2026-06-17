@@ -230,9 +230,16 @@ def make_kpoints_dense(filepath):
             parts = line.split()
             if len(parts) >= 3:
                 try:
-                    k1, k2, k3 = int(parts[0])*2, int(parts[1])*2, int(parts[2])*2
+                    # Hole das ursprüngliche Gitter
+                    base_k1, base_k2, base_k3 = int(parts[0]), int(parts[1]), int(parts[2])
+                    
+                    # Erhöhe hart auf mindestens 12x12x12, um El-Ph-Abstürze (End of file) zu verhindern!
+                    target_k1 = max(12, base_k1 * 3)
+                    target_k2 = max(12, base_k2 * 3)
+                    target_k3 = max(12, base_k3 * 3)
+                    
                     shift = " ".join(parts[3:]) if len(parts) > 3 else "0 0 0"
-                    out_lines.append(f" {k1} {k2} {k3} {shift} ! KPOINTS_DENSIFIED")
+                    out_lines.append(f" {target_k1} {target_k2} {target_k3} {shift} ! KPOINTS_DENSIFIED")
                     in_kpoints = False
                     continue
                 except: pass

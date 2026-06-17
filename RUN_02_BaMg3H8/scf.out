@@ -1129,3 +1129,127 @@ H             1.7096005255        2.3836523678        1.9206862577
 
      Computing stress (Cartesian axis) and pressure
 
+          total   stress  (Ry/bohr**3)                   (kbar)     P=        0.52
+   0.00000356   0.00000461  -0.00000461            0.52        0.68       -0.68
+   0.00000461   0.00000356  -0.00000461            0.68        0.52       -0.68
+  -0.00000461  -0.00000461   0.00000356           -0.68       -0.68        0.52
+
+     Energy error            =      5.7E-04
+     Gradient error          =      3.0E-03
+     Cell gradient error     =      4.6E-06
+
+
+     number of scf cycles    =   5
+     number of bfgs steps    =   4
+
+     enthalpy old            =    -546.6016293552 Ry
+     enthalpy new            =    -546.6022040615 Ry
+
+     CASE: enthalpy_new < enthalpy_old
+
+     new trust radius        =       0.0251202452 bohr
+     new conv_thr            =       0.0000000301 Ry
+
+     new unit-cell volume =    933.16201 a.u.^3 (   138.28034 Ang^3 )
+     density =      0.14410 g/cm^3
+
+CELL_PARAMETERS (angstrom)
+   5.177777571  -0.182978634   0.182978131
+  -0.182978775   5.177772910   0.182977181
+   0.182978323   0.182977232   5.177769458
+
+ATOMIC_POSITIONS (angstrom)
+Mg            2.4974178725        2.4974004062        0.1829755964
+Ba            2.6802970797       -0.0000521485        2.6803278526
+Mg           -0.0000026554        2.6803711599        2.6803799068
+Mg            0.0000017827        0.0000101492       -0.0000010297
+H             0.1021924802        4.4307465603        1.8981184555
+H             4.2209329223        1.5405480874        1.1398349906
+H             1.9333614255        0.9652367618        5.0755844071
+H             3.4626461695        2.7825794199        3.6103852799
+H             5.0755865311        0.7470290517        3.6456086867
+H             0.9568603986        3.6372300979        4.4039013605
+H             3.2444418620        4.2125418975        0.4681539148
+H             1.7151527115        2.3952160533        1.9333524555
+
+
+
+     Writing output data file ./tmp/BaMg3H8.save/
+     NEW-OLD atomic charge density approx. for the potential
+     extrapolated charge   24.03476, renormalised to   24.00000
+
+     total cpu time spent up to now is    12036.9 secs
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    50.00 Ry     beta= 0.70
+     CG style diagonalization
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  2 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     c_bands:  1 eigenvalues not converged
+     ethr =  1.00E-06,  avg # of iterations =  5.5
+
+     total cpu time spent up to now is    12454.0 secs
+
+     total energy              =    -546.60246005 Ry
+     estimated scf accuracy    <       0.00038217 Ry
+
+     iteration #  2     ecut=    50.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  1.59E-06,  avg # of iterations =  3.4
+
+     total cpu time spent up to now is    12697.8 secs
+
+     total energy              =    -546.60250401 Ry
+     estimated scf accuracy    <       0.00004928 Ry
+
+     iteration #  3     ecut=    50.00 Ry     beta= 0.70
+     CG style diagonalization

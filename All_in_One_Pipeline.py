@@ -746,7 +746,6 @@ def main():
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
-            scf_out = os.path.join(work_dir, "scf.out")
             
             try:
                 if name in FORCE_RETRY_LIST:
@@ -758,8 +757,8 @@ def main():
                 
                 row_data = get_csv_full_info(name)
                 last_status = row_data.get('Status', 'NEW')
-                stability = row_data.get('Stabilität', '-')
-                lam = row_data.get('Lambda', '-')
+                stability = row_data.get('Stabilität', '-').strip()
+                lam = row_data.get('Lambda', '-').strip()
 
                 if "SKIPPED" in last_status:
                     print(f"⏩ Überspringe {name} (Status, {last_status})")
@@ -769,16 +768,26 @@ def main():
                     print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                     continue
 
+                if stability == "INSTABIL":
+                    print(f"⏩ Überspringe {name} (Bereits vollständig analysiert, INSTABIL)")
+                    continue
+
+                if stability == "STABIL" and lam != "-" and lam != "":
+                    print(f"⏩ Überspringe {name} (Bereits vollständig analysiert, STABIL)")
+                    continue
+
                 needs_dense_run = False
-                if stability == "STABIL" and lam == "-":
+                if stability == "STABIL" and (lam == "-" or lam == ""):
                     needs_dense_run = True
 
-                if stability not in ["STABIL", "INSTABIL"]:
+                if not needs_dense_run:
                     
                     # --- PHASE 1 (Test-Modus) ---
                     if not os.path.exists(work_dir): os.makedirs(work_dir)
                     print(f"\n💎 Job, {name} (Phase 1, Test)")
+                    
                     scf_in = os.path.join(work_dir, "scf.in")
+                    scf_out = os.path.join(work_dir, "scf.out")
                     dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
                     ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
 
@@ -901,10 +910,14 @@ def main():
 
                 # --- PHASE 2 (Präzisions-Modus & El-Ph) ---
                 if needs_dense_run:
+                    if not os.path.exists(work_dir): os.makedirs(work_dir)
+                    
                     scf_in = os.path.join(work_dir, "scf.in")
                     scf_out = os.path.join(work_dir, "scf.out")
                     ph_in = os.path.join(work_dir, "ph.in")
                     ph_out = os.path.join(work_dir, "ph.out")
+                    
+                    if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
                     
                     was_densified = make_kpoints_dense(scf_in)
                     if was_densified:

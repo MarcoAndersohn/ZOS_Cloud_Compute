@@ -230,14 +230,10 @@ def make_kpoints_dense(filepath):
             parts = line.split()
             if len(parts) >= 3:
                 try:
-                    # Hole das ursprüngliche Gitter
                     base_k1, base_k2, base_k3 = int(parts[0]), int(parts[1]), int(parts[2])
-                    
-                    # Erhöhe hart auf mindestens 12x12x12, um El-Ph-Abstürze (End of file) zu verhindern!
                     target_k1 = max(12, base_k1 * 3)
                     target_k2 = max(12, base_k2 * 3)
                     target_k3 = max(12, base_k3 * 3)
-                    
                     shift = " ".join(parts[3:]) if len(parts) > 3 else "0 0 0"
                     out_lines.append(f" {target_k1} {target_k2} {target_k3} {shift} ! KPOINTS_DENSIFIED")
                     in_kpoints = False
@@ -263,7 +259,7 @@ def analyze_crash_reason(output_file):
         if "wrong trans" in lines_lower or "wrong elph" in lines_lower:
             return "WRONG_TRANS_ERROR"
             
-        if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower or "tag root not found" in lines_lower:
+        if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower or "tag root not found" in lines_lower or "partial_el_phon" in lines_lower or "xmltools.f90" in lines_lower:
             print("      🧨 XML-Struktur zerstört (Corruption).")
             return "XML_ERROR"
 
@@ -950,6 +946,10 @@ def main():
                     
                     if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                         if not os.path.exists(ph_in):
+                            ph0_path = os.path.join(work_dir, "tmp", "_ph0")
+                            if os.path.exists(ph0_path):
+                                try: shutil.rmtree(ph0_path, ignore_errors=True)
+                                except: pass
                             with open(ph_in, "w") as f: 
                                 f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true., recover=.true., electron_phonon='interpolated' /\n")
 
@@ -964,31 +964,17 @@ def main():
                             crash_reason = analyze_crash_reason(ph_out)
                             print_error_tail(ph_out, 100)
                             
-                            if crash_reason == "XML_ERROR" or crash_reason == "ELPH_CORRUPT":
-                                print("      🧨 FATAL, Datenstruktur korrupt. Lösche Caches und starte Ph-Schritt neu.")
-                                for p in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
-                                    if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
-                                for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")) + glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
-                                    try: os.remove(f)
-                                    except: pass
-                                
-                                with open(ph_in, 'r') as f: ph_content = f.read()
-                                ph_content = ph_content.replace("recover=.true.", "recover=.false.")
-                                with open(ph_in, 'w') as f: f.write(ph_content)
-                                if os.path.exists(ph_out): os.remove(ph_out)
-                                continue
-
-                            print(f"      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF (Vererbe {scf_cores} Cores)...")
-                            disable_symmetries_and_reduce_grid(ph_in)
+                            print("      🛡️ Bereinige Caches und erzwinge sauberen Neustart der Phononen...")
+                            for p in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                                if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
+                            for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")) + glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
+                                try: os.remove(f)
+                                except: pass
                             
-                            tmp_path = os.path.join(work_dir, "tmp")
-                            ph0_path = os.path.join(tmp_path, "_ph0")
-                            if os.path.exists(ph0_path):
-                                try: shutil.rmtree(ph0_path, ignore_errors=True)
-                                except: pass
-                            if os.path.exists(ph_out):
-                                try: os.remove(ph_out)
-                                except: pass
+                            with open(ph_in, 'r') as f: ph_content = f.read()
+                            ph_content = ph_content.replace("recover=.true.", "recover=.false.")
+                            with open(ph_in, 'w') as f: f.write(ph_content)
+                            if os.path.exists(ph_out): os.remove(ph_out)
 
                         if ph_res != "DONE":
                              print("      ❌ Präzisions-Phononen endgültig fehlgeschlagen.")

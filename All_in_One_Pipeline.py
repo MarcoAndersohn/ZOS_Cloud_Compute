@@ -231,9 +231,11 @@ def make_kpoints_dense(filepath):
             if len(parts) >= 3:
                 try:
                     base_k1, base_k2, base_k3 = int(parts[0]), int(parts[1]), int(parts[2])
+                    
                     target_k1 = max(12, base_k1 * 3)
                     target_k2 = max(12, base_k2 * 3)
                     target_k3 = max(12, base_k3 * 3)
+                    
                     shift = " ".join(parts[3:]) if len(parts) > 3 else "0 0 0"
                     out_lines.append(f" {target_k1} {target_k2} {target_k3} {shift} ! KPOINTS_DENSIFIED")
                     in_kpoints = False
@@ -951,7 +953,7 @@ def main():
                                 try: shutil.rmtree(ph0_path, ignore_errors=True)
                                 except: pass
                             with open(ph_in, "w") as f: 
-                                f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, reduce_io=.true., recover=.true., electron_phonon='interpolated' /\n")
+                                f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., electron_phonon='interpolated' /\n")
 
                         ph_attempts = 0
                         while ph_attempts < 3:

@@ -70,3 +70,429 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 🚀 NEUSTART SMART-PIPELINE, 2026-06-19 15:59
 ========================================
 
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   a11a6944..44e3560a  main -> main
+⏩ Überspringe 01_HfH3_Top1 (Ist ein Isolator)
+⏩ Überspringe 01_LiTaH6Ru (Ist ein Isolator)
+⏩ Überspringe 01_SrMgGaB3H16 (Ist ein Isolator)
+
+💎 Job, 02_BaMg3H8 (Phase 2, Präzision)
+      ⚙️ Starte PHONONEN (Cores 4)...
+      ⚠️ Crash in Präzisions-Phononen!
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+            iter #   4 total cpu time : 16819.7 secs   av.it.:  16.3
+            thresh= 8.310E-07 alpha_mix =  0.700 |ddv_scf|^2 =  1.888E-12
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -2.2797E-06     0.0000E+00
+      
+            iter #   5 total cpu time : 17939.3 secs   av.it.:  17.1
+            thresh= 1.374E-07 alpha_mix =  0.700 |ddv_scf|^2 =  4.814E-14
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -2.2679E-06     0.0000E+00
+      
+            iter #   6 total cpu time : 19062.7 secs   av.it.:  17.1
+            thresh= 2.194E-08 alpha_mix =  0.700 |ddv_scf|^2 =  7.542E-15
+      
+           End of self-consistent calculation
+      
+           Convergence has been achieved
+      
+      
+           Representation #   4 mode #   4
+      
+           Self-consistent Calculation
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -8.1285E-05     0.0000E+00
+      
+            iter #   1 total cpu time : 19627.0 secs   av.it.:   5.9
+            thresh= 1.000E-02 alpha_mix =  0.700 |ddv_scf|^2 =  7.656E-07
+      
+           Pert. #  1: Fermi energy shift (Ry) =     4.7993E-06     0.0000E+00
+      
+            iter #   2 total cpu time : 20676.9 secs   av.it.:  16.1
+            thresh= 8.750E-05 alpha_mix =  0.700 |ddv_scf|^2 =  2.417E-07
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -2.0035E-05     0.0000E+00
+      
+            iter #   3 total cpu time : 21744.1 secs   av.it.:  16.0
+            thresh= 4.917E-05 alpha_mix =  0.700 |ddv_scf|^2 =  2.819E-09
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -1.9920E-05     0.0000E+00
+      
+            iter #   4 total cpu time : 22766.9 secs   av.it.:  15.4
+            thresh= 5.310E-06 alpha_mix =  0.700 |ddv_scf|^2 =  9.176E-10
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -2.0189E-05     0.0000E+00
+      
+            iter #   5 total cpu time : 23781.5 secs   av.it.:  14.8
+            thresh= 3.029E-06 alpha_mix =  0.700 |ddv_scf|^2 =  1.051E-10
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -2.0281E-05     0.0000E+00
+      
+            iter #   6 total cpu time : 24861.9 secs   av.it.:  16.2
+            thresh= 1.025E-06 alpha_mix =  0.700 |ddv_scf|^2 =  1.739E-11
+      
+           Program PHONON v.6.7MaX starts on 19Jun2026 at 15:59: 5
+      
+           This program is part of the open-source Quantum ESPRESSO suite
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org",
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+           Reading xml data from directory:
+      
+           ./tmp/BaMg3H8.save/
+           file Ba.UPF: wavefunction(s)  5S 6S renormalized
+           file Mg.UPF: wavefunction(s)  3S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min         757     375    109                31205    11006    1732
+           Max         758     376    110                31206    11007    1734
+           Sum        3031    1503    437               124821    44027    6931
+      
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      [Supraleiter-HPC-Knoten:01114] 1 more process has sent help message help-mpi-api.txt / mpi-abort
+      [Supraleiter-HPC-Knoten:01114] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+      -----------------------------------------
+
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+            iter #   4 total cpu time : 16819.7 secs   av.it.:  16.3
+            thresh= 8.310E-07 alpha_mix =  0.700 |ddv_scf|^2 =  1.888E-12
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -2.2797E-06     0.0000E+00
+      
+            iter #   5 total cpu time : 17939.3 secs   av.it.:  17.1
+            thresh= 1.374E-07 alpha_mix =  0.700 |ddv_scf|^2 =  4.814E-14
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -2.2679E-06     0.0000E+00
+      
+            iter #   6 total cpu time : 19062.7 secs   av.it.:  17.1
+            thresh= 2.194E-08 alpha_mix =  0.700 |ddv_scf|^2 =  7.542E-15
+      
+           End of self-consistent calculation
+      
+           Convergence has been achieved
+      
+      
+           Representation #   4 mode #   4
+      
+           Self-consistent Calculation
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -8.1285E-05     0.0000E+00
+      
+            iter #   1 total cpu time : 19627.0 secs   av.it.:   5.9
+            thresh= 1.000E-02 alpha_mix =  0.700 |ddv_scf|^2 =  7.656E-07
+      
+           Pert. #  1: Fermi energy shift (Ry) =     4.7993E-06     0.0000E+00
+      
+            iter #   2 total cpu time : 20676.9 secs   av.it.:  16.1
+            thresh= 8.750E-05 alpha_mix =  0.700 |ddv_scf|^2 =  2.417E-07
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -2.0035E-05     0.0000E+00
+      
+            iter #   3 total cpu time : 21744.1 secs   av.it.:  16.0
+            thresh= 4.917E-05 alpha_mix =  0.700 |ddv_scf|^2 =  2.819E-09
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -1.9920E-05     0.0000E+00
+      
+            iter #   4 total cpu time : 22766.9 secs   av.it.:  15.4
+            thresh= 5.310E-06 alpha_mix =  0.700 |ddv_scf|^2 =  9.176E-10
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -2.0189E-05     0.0000E+00
+      
+            iter #   5 total cpu time : 23781.5 secs   av.it.:  14.8
+            thresh= 3.029E-06 alpha_mix =  0.700 |ddv_scf|^2 =  1.051E-10
+      
+           Pert. #  1: Fermi energy shift (Ry) =    -2.0281E-05     0.0000E+00
+      
+            iter #   6 total cpu time : 24861.9 secs   av.it.:  16.2
+            thresh= 1.025E-06 alpha_mix =  0.700 |ddv_scf|^2 =  1.739E-11
+      
+           Program PHONON v.6.7MaX starts on 19Jun2026 at 15:59: 5
+      
+           This program is part of the open-source Quantum ESPRESSO suite
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org",
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+           Reading xml data from directory:
+      
+           ./tmp/BaMg3H8.save/
+           file Ba.UPF: wavefunction(s)  5S 6S renormalized
+           file Mg.UPF: wavefunction(s)  3S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min         757     375    109                31205    11006    1732
+           Max         758     376    110                31206    11007    1734
+           Sum        3031    1503    437               124821    44027    6931
+      
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      [Supraleiter-HPC-Knoten:01114] 1 more process has sent help message help-mpi-api.txt / mpi-abort
+      [Supraleiter-HPC-Knoten:01114] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+      -----------------------------------------
+      🛡️ Bereinige Caches und erzwinge sauberen Neustart der Phononen...
+      ⚙️ Starte PHONONEN (Cores 4)...
+      ⚠️ Crash in Präzisions-Phononen!
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+           Program PHONON v.6.7MaX starts on 19Jun2026 at 15:59:11
+      
+           This program is part of the open-source Quantum ESPRESSO suite
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org",
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+           Reading xml data from directory:
+      
+           ./tmp/BaMg3H8.save/
+           file Ba.UPF: wavefunction(s)  5S 6S renormalized
+           file Mg.UPF: wavefunction(s)  3S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min         757     375    109                31205    11006    1732
+           Max         758     376    110                31206    11007    1734
+           Sum        3031    1503    437               124821    44027    6931
+      
+      [Supraleiter-HPC-Knoten:01148] [[28746,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+      -----------------------------------------
+
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+           Program PHONON v.6.7MaX starts on 19Jun2026 at 15:59:11
+      
+           This program is part of the open-source Quantum ESPRESSO suite
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org",
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+           Reading xml data from directory:
+      
+           ./tmp/BaMg3H8.save/
+           file Ba.UPF: wavefunction(s)  5S 6S renormalized
+           file Mg.UPF: wavefunction(s)  3S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min         757     375    109                31205    11006    1732
+           Max         758     376    110                31206    11007    1734
+           Sum        3031    1503    437               124821    44027    6931
+      
+      [Supraleiter-HPC-Knoten:01148] [[28746,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+      -----------------------------------------
+      🛡️ Bereinige Caches und erzwinge sauberen Neustart der Phononen...
+      ⚙️ Starte PHONONEN (Cores 4)...
+      🧨 FATAL, Pseudopotential übersteigt QE-Limit. Neues Pseudo (PAW) benötigt!
+      ⚠️ Crash in Präzisions-Phononen!
+      🧨 FATAL, Pseudopotential übersteigt QE-Limit. Neues Pseudo (PAW) benötigt!
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+           Program PHONON v.6.7MaX starts on 19Jun2026 at 15:59:17
+      
+           This program is part of the open-source Quantum ESPRESSO suite
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org",
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+           Reading xml data from directory:
+      
+           ./tmp/BaMg3H8.save/
+           file Ba.UPF: wavefunction(s)  5S 6S renormalized
+           file Mg.UPF: wavefunction(s)  3S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min         757     375    109                31205    11006    1732
+           Max         758     376    110                31206    11007    1734
+           Sum        3031    1503    437               124821    44027    6931
+      
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      [Supraleiter-HPC-Knoten:01182] [[28840,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 501
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      -----------------------------------------
+
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+           Program PHONON v.6.7MaX starts on 19Jun2026 at 15:59:17
+      
+           This program is part of the open-source Quantum ESPRESSO suite
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org",
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+           Reading xml data from directory:
+      
+           ./tmp/BaMg3H8.save/
+           file Ba.UPF: wavefunction(s)  5S 6S renormalized
+           file Mg.UPF: wavefunction(s)  3S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min         757     375    109                31205    11006    1732
+           Max         758     376    110                31206    11007    1734
+           Sum        3031    1503    437               124821    44027    6931
+      
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine aainit (14):
+           mx dimension too small
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      [Supraleiter-HPC-Knoten:01182] [[28840,0],0] ORTE_ERROR_LOG: Out of resource in file ../../../orte/util/show_help.c at line 501
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 1 in communicator MPI_COMM_WORLD
+      with errorcode 14.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      -----------------------------------------
+      🛡️ Bereinige Caches und erzwinge sauberen Neustart der Phononen...
+      ❌ Präzisions-Phononen endgültig fehlgeschlagen.

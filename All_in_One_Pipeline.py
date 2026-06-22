@@ -30,7 +30,9 @@ DOS_THRESHOLD = 0.05
 
 DEFAULT_CORES = "4"
 SAFE_CORES = "2"
-MEMORY_LIMIT_PERCENT = 92.0
+
+# HIER DAS KORRIGIERTE LIMIT FÜR EINEN WEICHEN RAM-FLUSH
+MEMORY_LIMIT_PERCENT = 85.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
 
@@ -232,7 +234,6 @@ def make_kpoints_dense(filepath):
                 try:
                     base_k1, base_k2, base_k3 = int(parts[0]), int(parts[1]), int(parts[2])
                     
-                    # 8x8x8 Gitter: Dicht genug für El-Ph, kompakt genug für QE-Limits
                     target_k1 = max(8, base_k1 * 2)
                     target_k2 = max(8, base_k2 * 2)
                     target_k3 = max(8, base_k3 * 2)
@@ -351,7 +352,8 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
             
             try:
                 while process.poll() is None:
-                    time.sleep(5)
+                    # SCHNELLER CHECK FÜR RAM-KILLS
+                    time.sleep(1)
                     
                     if time.time() - last_checkpoint_time > 900: 
                         if is_xml_valid(xml_path):
@@ -373,8 +375,8 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                     try:
                         mem_usage = psutil.virtual_memory().percent
                         if mem_usage > MEMORY_LIMIT_PERCENT:
-                            print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
-                            process.kill()
+                            print(f"      ⚠️ RAM NOT-AUS (Python Monitor bei {mem_usage}%)!")
+                            process.terminate()
                             return "OOM" 
                     except: pass
 
@@ -654,9 +656,13 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
     with open(input_file, 'r') as f: content = f.read()
     
-    if os.path.exists(output_file) and "recover=.false." not in content.lower():
-        if "recover" not in content:
-            content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
+    # HEILUNG DER GIFTPILLE: Zwinge recover immer auf .true.
+    if "recover=.false." in content.lower():
+        content = re.sub(r"recover\s*=\s*\.false\.", "recover=.true.", content, flags=re.IGNORECASE)
+    elif "recover" not in content.lower():
+        content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
+        
+    with open(input_file, 'w') as f: f.write(content)
     
     run_input = input_file + ".run"
     with open(run_input, 'w') as f: f.write(content)
@@ -670,7 +676,8 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         
         try:
             while process.poll() is None:
-                time.sleep(5)
+                # SCHNELLER CHECK JEDE SEKUNDE
+                time.sleep(1)
                 
                 if time.time() - last_git_sync > 1800:
                     print("      ❤️ Git Heartbeat (Phonon)...")
@@ -680,8 +687,8 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                 try:
                     mem_usage = psutil.virtual_memory().percent
                     if mem_usage > MEMORY_LIMIT_PERCENT:
-                        print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
-                        process.kill()
+                        print(f"      ⚠️ RAM NOT-AUS (Python Monitor bei {mem_usage}%)!")
+                        process.terminate()
                         return "OOM"
                 except: pass
 
@@ -846,15 +853,21 @@ def main():
                                 f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2, reduce_io=.true., recover=.true. /\n")
 
                         ph_attempts = 0
-                        while ph_attempts < 3:
+                        while ph_attempts < 10:
                             ph_attempts += 1
                             ph_res = run_monitored_ph(ph_in, ph_out, work_dir, scf_cores)
                             
                             if ph_res == "DONE":
                                 break
                                 
-                            print("      ⚠️ Crash in Test-Phononen!")
+                            print(f"      ⚠️ Stop in Test-Phononen (Grund: {ph_res}).")
                             crash_reason = analyze_crash_reason(ph_out)
+                            
+                            if ph_res == "OOM" or crash_reason == "LIKELY_OOM":
+                                print("      🔄 OOM RAM-Flush erfolgreich. Mache direkt weiter mit intaktem Cache...")
+                                time.sleep(5)
+                                continue
+                            
                             print_error_tail(ph_out, 100)
                             
                             if crash_reason == "XML_ERROR":
@@ -863,7 +876,7 @@ def main():
                                 if os.path.exists(tmp_save_path): shutil.rmtree(tmp_save_path, ignore_errors=True)
                                 if os.path.exists(scf_out): os.remove(scf_out)
                                 update_csv(name, "SCF_RESET (XML Error)")
-                                continue
+                                break
 
                             if is_recoverable_fragmentation_error(ph_out):
                                 print("      🤕 Diagnose, Fragmentierung erkannt. Starte 'Collect-Recovery'...")
@@ -885,6 +898,7 @@ def main():
                                 except: pass
 
                         if ph_res != "DONE":
+                             if not os.path.exists(scf_out): continue
                              print("      ❌ Test-Phononen endgültig fehlgeschlagen.")
                              update_csv(name, "SKIPPED (Phonon Crash)") 
                              git_sync(f"Phonon Crash, {name}")
@@ -953,26 +967,33 @@ def main():
                                 f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., electron_phonon='interpolated' /\n")
 
                         ph_attempts = 0
-                        while ph_attempts < 3:
+                        while ph_attempts < 15:
                             ph_attempts += 1
                             ph_res = run_monitored_ph(ph_in, ph_out, work_dir, scf_cores)
                             
                             if ph_res == "DONE": break
                                 
-                            print("      ⚠️ Crash in Präzisions-Phononen!")
+                            print(f"      ⚠️ Stop in Präzisions-Phononen (Grund: {ph_res}).")
                             crash_reason = analyze_crash_reason(ph_out)
+                            
+                            if ph_res == "OOM" or crash_reason == "LIKELY_OOM":
+                                print("      🔄 OOM RAM-Flush erfolgreich. Mache direkt weiter mit intaktem Cache...")
+                                time.sleep(5)
+                                continue
+                                
                             print_error_tail(ph_out, 100)
                             
-                            print("      🛡️ Bereinige Caches und erzwinge sauberen Neustart der Phononen...")
-                            for p in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
-                                if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
-                            for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")) + glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
-                                try: os.remove(f)
-                                except: pass
+                            if crash_reason == "XML_ERROR" or crash_reason == "ELPH_CORRUPT":
+                                print("      🧨 FATAL, Datenstruktur korrupt. Lösche Caches und starte Ph-Schritt neu.")
+                                for p in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
+                                    if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
+                                for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")) + glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
+                                    try: os.remove(f)
+                                    except: pass
+                                
+                                if os.path.exists(ph_out): os.remove(ph_out)
+                                continue
                             
-                            with open(ph_in, 'r') as f: ph_content = f.read()
-                            ph_content = ph_content.replace("recover=.true.", "recover=.false.")
-                            with open(ph_in, 'w') as f: f.write(ph_content)
                             if os.path.exists(ph_out): os.remove(ph_out)
 
                         if ph_res != "DONE":

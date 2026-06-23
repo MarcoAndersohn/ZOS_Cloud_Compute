@@ -31,7 +31,6 @@ DOS_THRESHOLD = 0.05
 DEFAULT_CORES = "4"
 SAFE_CORES = "2"
 
-# HIER DAS KORRIGIERTE LIMIT FÜR EINEN WEICHEN RAM-FLUSH
 MEMORY_LIMIT_PERCENT = 85.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
@@ -234,9 +233,10 @@ def make_kpoints_dense(filepath):
                 try:
                     base_k1, base_k2, base_k3 = int(parts[0]), int(parts[1]), int(parts[2])
                     
-                    target_k1 = max(8, base_k1 * 2)
-                    target_k2 = max(8, base_k2 * 2)
-                    target_k3 = max(8, base_k3 * 2)
+                    # SICHERHEITS-GITTER: 6x6x6, um Fortran mx-Limits zu vermeiden
+                    target_k1 = max(6, base_k1 * 2)
+                    target_k2 = max(6, base_k2 * 2)
+                    target_k3 = max(6, base_k3 * 2)
                     
                     shift = " ".join(parts[3:]) if len(parts) > 3 else "0 0 0"
                     out_lines.append(f" {target_k1} {target_k2} {target_k3} {shift} ! KPOINTS_DENSIFIED")
@@ -270,6 +270,10 @@ def analyze_crash_reason(output_file):
         if "not orthogonal" in lines_lower and "d_s" in lines_lower:
             print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
+
+        if "mx dimension too small" in lines_lower:
+            print("      🧨 FATAL, Pseudopotential übersteigt QE-Limit. Array-Grenze gerissen.")
+            return "PSEUDO_ERROR"
             
         if "i/o past end of record" in lines_lower or ("end of file" in lines_lower and ("elphon.f90" in lines_lower or "write_rec.f90" in lines_lower)):
             return "ELPH_CORRUPT"
@@ -352,7 +356,6 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
             
             try:
                 while process.poll() is None:
-                    # SCHNELLER CHECK FÜR RAM-KILLS
                     time.sleep(1)
                     
                     if time.time() - last_checkpoint_time > 900: 
@@ -661,6 +664,10 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         content = re.sub(r"recover\s*=\s*\.false\.", "recover=.true.", content, flags=re.IGNORECASE)
     elif "recover" not in content.lower():
         content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
+
+    # AZURE-TIMEOUT SCHUTZ: Verhindere externe harte Kills
+    if "max_seconds" not in content.lower():
+        content = content.replace("&INPUTPH", "&INPUTPH\n max_seconds=25000,")
         
     with open(input_file, 'w') as f: f.write(content)
     

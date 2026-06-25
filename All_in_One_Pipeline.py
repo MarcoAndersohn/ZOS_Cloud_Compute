@@ -59,7 +59,8 @@ def send_notification(message):
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC, {message}"}
         requests.post(url, data=payload, timeout=10)
-    except: pass
+    except:
+        pass
 
 def check_and_free_disk_space(min_free_gb=5.0):
     try:
@@ -82,7 +83,8 @@ def set_logic_app_state(state="Enabled"):
     if not shutil.which("az"): return
     try:
         subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True, timeout=30)
-    except: pass
+    except:
+        pass
 
 def initial_git_pull():
     env = os.environ.copy()
@@ -142,7 +144,8 @@ def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
         nenner = lam - mu_star * (1.0 + 0.62 * lam)
         if nenner <= 0: return 0.0
         return vorfaktor * math.exp(zaehler / nenner)
-    except: return "-"
+    except:
+        return "-"
 
 def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-", lam="-", wlog="-", tc="-"):
     fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Lambda', 'Omega_log (K)', 'Tc (K)', 'Timestamp']
@@ -213,6 +216,50 @@ def get_cores_from_log(log_file, default_cores=4):
 # =============================================================================
 # 3. SMART LOGIC & VALIDATION & CRASH ANALYSE
 # =============================================================================
+
+def manage_rolling_checkpoints(work_dir):
+    tmp_dir = os.path.join(work_dir, "tmp")
+    bkp1 = os.path.join(work_dir, "tmp_SAFE_1")
+    bkp2 = os.path.join(work_dir, "tmp_SAFE_2")
+
+    if not os.path.exists(tmp_dir): return
+
+    if os.path.exists(bkp1):
+        if os.path.exists(bkp2):
+            shutil.rmtree(bkp2, ignore_errors=True)
+        shutil.move(bkp1, bkp2)
+
+    try:
+        shutil.copytree(tmp_dir, bkp1)
+        print("      💾 Rolling Checkpoint erstellt (BKP1 & BKP2 rotiert).")
+    except: pass
+
+def restore_rolling_checkpoint(work_dir):
+    tmp_dir = os.path.join(work_dir, "tmp")
+    bkp1 = os.path.join(work_dir, "tmp_SAFE_1")
+    bkp2 = os.path.join(work_dir, "tmp_SAFE_2")
+
+    if os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    if os.path.exists(bkp1):
+        print("      🔄 Stelle letzten Speicherstand (BKP1) wieder her...")
+        try:
+            shutil.copytree(bkp1, tmp_dir)
+            shutil.rmtree(bkp1, ignore_errors=True)
+            return True
+        except: pass
+
+    if os.path.exists(bkp2):
+        print("      🔄 BKP1 defekt oder fehlend. Stelle VORLETZTEN Speicherstand (BKP2) wieder her...")
+        try:
+            shutil.copytree(bkp2, tmp_dir)
+            shutil.rmtree(bkp2, ignore_errors=True)
+            return True
+        except: pass
+
+    print("      ❌ Keine intakten Checkpoints mehr vorhanden.")
+    return False
 
 def make_kpoints_dense(filepath):
     if not os.path.exists(filepath): return False
@@ -391,7 +438,9 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                     
                     if cur_iter > 30: fix_input_file(input_file, cur_iter)
 
-            except: process.kill(); return "CRASH"
+            except:
+                process.kill()
+                return "CRASH"
             
             time.sleep(1.5)
             
@@ -580,7 +629,9 @@ def detect_oom_level(input_file):
 
 def apply_oom_settings(input_file, level):
     with open(input_file, 'r') as f: content = f.read()
-    diag = 'cg'; mix = 4; disk = None 
+    diag = 'cg'
+    mix = 4
+    disk = None 
     msg = "Standard (cg, mix=4)"
 
     if level >= 1: disk = 'low'; msg = "Stufe 1 (cg, mix=4, disk_io='low')"
@@ -655,6 +706,7 @@ def get_last_iteration(output_file):
 # --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
+    last_checkpoint_time = time.time()
     check_and_free_disk_space()
 
     with open(input_file, 'r') as f: content = f.read()
@@ -685,6 +737,11 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
             while process.poll() is None:
                 # SCHNELLER CHECK JEDE SEKUNDE
                 time.sleep(1)
+                
+                if time.time() - last_checkpoint_time > 1800:
+                    print("      💾 Erstelle rollierenden Phonon-Checkpoint...")
+                    manage_rolling_checkpoints(cwd)
+                    last_checkpoint_time = time.time()
                 
                 if time.time() - last_git_sync > 1800:
                     print("      ❤️ Git Heartbeat (Phonon)...")
@@ -991,12 +1048,16 @@ def main():
                             print_error_tail(ph_out, 100)
                             
                             if crash_reason == "XML_ERROR" or crash_reason == "ELPH_CORRUPT":
-                                print("      🧨 FATAL, Datenstruktur korrupt. Lösche Caches und starte Ph-Schritt neu.")
-                                for p in [os.path.join(work_dir, "tmp", "_ph0"), os.path.join(work_dir, "tmp_SAFE_PHONON_CHECKPOINT")]:
-                                    if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
-                                for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")) + glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
-                                    try: os.remove(f)
-                                    except: pass
+                                print("      🧨 Datenstruktur korrupt. Versuche Fallback auf Checkpoints.")
+                                success = restore_rolling_checkpoint(work_dir)
+                                
+                                if not success:
+                                    print("      ⚠️ Fallback gescheitert. Mache harten Reset.")
+                                    for p in [os.path.join(work_dir, "tmp", "_ph0")]:
+                                        if os.path.exists(p): shutil.rmtree(p, ignore_errors=True)
+                                    for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")) + glob.glob(os.path.join(work_dir, "tmp", "*.dvscf*")):
+                                        try: os.remove(f)
+                                        except: pass
                                 
                                 if os.path.exists(ph_out): os.remove(ph_out)
                                 continue

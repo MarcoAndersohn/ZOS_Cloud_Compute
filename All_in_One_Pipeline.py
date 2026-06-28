@@ -57,7 +57,7 @@ MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
 def send_notification(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC, {message}"}
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC {message}"}
         requests.post(url, data=payload, timeout=10)
     except:
         pass
@@ -81,7 +81,7 @@ def check_and_free_disk_space(min_free_gb=5.0):
             new_free = shutil.disk_usage("/").free / (1024**3)
             print(f"      ✅ Cleanup beendet. Jetzt {new_free:.2f} GB frei.")
     except Exception as e:
-        print(f"      ⚠️ Warnung beim Disk-Check, {e}")
+        print(f"      ⚠️ Warnung beim Disk-Check {e}")
 
 def set_logic_app_state(state="Enabled"):
     if not shutil.which("az"):
@@ -97,7 +97,7 @@ def initial_git_pull():
     try:
         subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60, capture_output=True)
     except Exception as e:
-        print(f"⚠️ Initialer Git Pull Fehler, {e}")
+        print(f"⚠️ Initialer Git Pull Fehler {e}")
 
 def git_sync(message):
     env = os.environ.copy()
@@ -109,7 +109,7 @@ def git_sync(message):
         subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60, capture_output=True)
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=60)
     except Exception as e:
-        print(f"⚠️ Git Fehler, {e}")
+        print(f"⚠️ Git Fehler {e}")
 
 def print_error_tail(log_file, lines=100):
     if not os.path.exists(log_file):
@@ -138,7 +138,7 @@ def print_error_tail(log_file, lines=100):
                 f_out.write(crash_msg)
                 
     except Exception as e: 
-        print(f"      ⚠️ Fehler beim Auslesen des Logs, {e}")
+        print(f"      ⚠️ Fehler beim Auslesen des Logs {e}")
 
 def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
     try:
@@ -373,7 +373,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                 else:
                     print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
             except Exception as e:
-                print(f"      ❌ Fehler beim Laden des Checkpoints, {e}")
+                print(f"      ❌ Fehler beim Laden des Checkpoints {e}")
         else:
             print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
 
@@ -396,7 +396,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         
         with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
             cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE, "-ndiag", "1"]
-            print(f"      ⚙️ Starte PWSCF ({mode}, {active_cores} Cores, -ndiag 1)...")
+            print(f"      ⚙️ Starte PWSCF ({mode} {active_cores} Cores -ndiag 1)...")
             process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
             
             try:
@@ -415,7 +415,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                                 git_sync("Checkpoint & Log Update")
                                 last_git_sync = time.time() 
                             except Exception as e:
-                                print(f"      ⚠️ Checkpoint fail, {e}")
+                                print(f"      ⚠️ Checkpoint fail {e}")
 
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
@@ -466,9 +466,19 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
             return "CRASH"
 
 def execute_scf_block(name, scf_in, scf_out, work_dir, input_file, phase_label):
-    if os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read():
-        return "DONE", get_cores_from_log(scf_out, DEFAULT_CORES)
+    tmp_dir = os.path.join(work_dir, "tmp")
     
+    # Sicherheitscheck für abgebrochene Fallbacks
+    if os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read():
+        if not os.path.exists(tmp_dir):
+            print("      ⚠️ SCF.out meldet DONE, aber der tmp-Ordner fehlt! Mache SCF neu.")
+            try:
+                os.remove(scf_out)
+            except:
+                pass
+        else:
+            return "DONE", get_cores_from_log(scf_out, DEFAULT_CORES)
+            
     update_csv(name, f"Rechnet SCF ({phase_label})...")
     file_level = detect_oom_level(scf_in)
     start_crash_reason = analyze_crash_reason(scf_out)
@@ -615,7 +625,7 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
             print("      ✅ Recovery-Lauf beendet. Daten sollten jetzt consolidated sein.")
             return True
         except Exception as e:
-            print(f"      ❌ Recovery fehlgeschlagen, {e}")
+            print(f"      ❌ Recovery fehlgeschlagen {e}")
             return False
 
 def disable_symmetries_and_reduce_grid(input_file):
@@ -675,7 +685,7 @@ def apply_oom_settings(input_file, level):
         mix = 2
         msg = "Stufe 4 (cg, mix=2, disk_io='low', david=2)"
 
-    print(f"      📉 Setze RAM-Strategie, {msg}")
+    print(f"      📉 Setze RAM-Strategie {msg}")
 
     if "diagonalization" in content:
         content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", f"diagonalization='{diag}'", content)
@@ -837,11 +847,11 @@ def deallocate_vm():
         subprocess.run(["az", "login", "--identity"], capture_output=True, timeout=30)
         result = subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten", "--no-wait"], capture_output=True, text=True, timeout=60)
         if result.returncode != 0:
-            print(f"⚠️ Azure CLI Deallocate Fehler, {result.stderr}")
+            print(f"⚠️ Azure CLI Deallocate Fehler {result.stderr}")
         else:
             print("✅ VM erfolgreich deallokiert (Asynchron).")
     except Exception as e: 
-        print(f"⚠️ Fehler beim Aufruf der Azure CLI, {e}")
+        print(f"⚠️ Fehler beim Aufruf der Azure CLI {e}")
 
 # =============================================================================
 # 4. HAUPTPROGRAMM
@@ -883,7 +893,7 @@ def main():
                 lam = row_data.get('Lambda', '-').strip()
 
                 if "SKIPPED" in last_status:
-                    print(f"⏩ Überspringe {name} (Status, {last_status})")
+                    print(f"⏩ Überspringe {name} (Status {last_status})")
                     continue
                 
                 if "Isolator" in last_status:
@@ -983,7 +993,7 @@ def main():
                             if ph_res == "DONE":
                                 break
                                 
-                            print(f"      ⚠️ Stop in Test-Phononen (Grund: {ph_res}).")
+                            print(f"      ⚠️ Stop in Test-Phononen (Grund {ph_res}).")
                             crash_reason = analyze_crash_reason(ph_out)
                             
                             if ph_res == "OOM" or crash_reason == "LIKELY_OOM":
@@ -1093,13 +1103,20 @@ def main():
                     update_csv(name, "Rechnet El-Ph (Präzision)...", e_fermi, dos_val, "JA", min_f=min_f, stab=stab)
                     
                     if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
+                        
+                        # Die Trigger-Logik für manuelle El-Ph Neustarts
+                        print("   🧹 Bereinige alte Phononen-Daten. SCF-Speicherstand bleibt erhalten.")
+                        ph0_path = os.path.join(work_dir, "tmp", "_ph0")
+                        if os.path.exists(ph0_path):
+                            try: shutil.rmtree(ph0_path, ignore_errors=True)
+                            except: pass
+                        
+                        for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
+                            for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
+                                try: os.remove(f)
+                                except: pass
+                        
                         if not os.path.exists(ph_in):
-                            ph0_path = os.path.join(work_dir, "tmp", "_ph0")
-                            if os.path.exists(ph0_path):
-                                try:
-                                    shutil.rmtree(ph0_path, ignore_errors=True)
-                                except:
-                                    pass
                             with open(ph_in, "w") as f: 
                                 f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., electron_phonon='interpolated' /\n")
 
@@ -1115,7 +1132,7 @@ def main():
                             if ph_res == "DONE":
                                 break
                                 
-                            print(f"      ⚠️ Stop in Präzisions-Phononen (Grund: {ph_res}).")
+                            print(f"      ⚠️ Stop in Präzisions-Phononen (Grund {ph_res}).")
                             crash_reason = analyze_crash_reason(ph_out)
                             
                             if ph_res == "OOM" or crash_reason == "LIKELY_OOM":
@@ -1206,7 +1223,7 @@ def main():
                     git_sync(f"Fertig, {name} (Tc={tc}K)")
 
             except Exception as job_err:
-                print(f"🚨 Fehler bei Job {name}, {job_err}")
+                print(f"🚨 Fehler bei Job {name} {job_err}")
                 update_csv(name, f"ERROR (Python, {str(job_err)[:30]})")
                 continue 
 

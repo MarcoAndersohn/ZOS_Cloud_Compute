@@ -3953,3 +3953,127 @@ End final coordinates
 
      iteration # 19     ecut=    50.00 Ry     beta= 0.70
      CG style diagonalization
+     ethr =  2.34E-09,  avg # of iterations =  4.8
+
+     total cpu time spent up to now is     7896.7 secs
+
+     total energy              =    -546.60530556 Ry
+     estimated scf accuracy    <       0.00000205 Ry
+
+     iteration # 20     ecut=    50.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  2.34E-09,  avg # of iterations =  3.4
+
+     total cpu time spent up to now is     7935.3 secs
+
+     total energy              =    -546.60530566 Ry
+     estimated scf accuracy    <       0.00000027 Ry
+
+     iteration # 21     ecut=    50.00 Ry     beta= 0.70
+     CG style diagonalization
+     ethr =  1.12E-09,  avg # of iterations =  3.3
+
+     total cpu time spent up to now is     7971.7 secs
+
+     End of self-consistent calculation
+
+     Number of k-points >= 100: set verbosity='high' to print the bands.
+
+     the Fermi energy is     6.2080 ev
+
+!    total energy              =    -546.60530569 Ry
+     estimated scf accuracy    <          4.7E-09 Ry
+     smearing contrib. (-TS)   =       0.00080246 Ry
+     internal energy E=F+TS    =    -546.60610816 Ry
+
+     The total energy is F=E-TS. E is the sum of the following terms:
+     one-electron contribution =      -4.85519368 Ry
+     hartree contribution      =      11.12444940 Ry
+     xc contribution           =     -30.95078400 Ry
+     ewald contribution        =     -53.10755254 Ry
+     one-center paw contrib.   =    -468.81702734 Ry
+
+     convergence has been achieved in  21 iterations
+
+     Forces acting on atoms (cartesian axes, Ry/au):
+
+     atom    1 type  3   force =     0.00001048   -0.00000309   -0.00000343
+     atom    2 type  1   force =    -0.00000907    0.00001935    0.00000150
+     atom    3 type  3   force =    -0.00001019   -0.00000462   -0.00000049
+     atom    4 type  3   force =    -0.00001053   -0.00000019    0.00000389
+     atom    5 type  2   force =     0.00006224   -0.00005684    0.00036262
+     atom    6 type  2   force =     0.00015545    0.00015000   -0.00015005
+     atom    7 type  2   force =    -0.00005319   -0.00036216   -0.00006924
+     atom    8 type  2   force =    -0.00035688    0.00006195    0.00005824
+     atom    9 type  2   force =    -0.00006202    0.00005334   -0.00035557
+     atom   10 type  2   force =    -0.00014477   -0.00015007    0.00015031
+     atom   11 type  2   force =     0.00005685    0.00035551    0.00005509
+     atom   12 type  2   force =     0.00036164   -0.00006319   -0.00005288
+
+     Total force =     0.000975     Total SCF correction =     0.000020
+
+
+     Computing stress (Cartesian axis) and pressure
+
+          total   stress  (Ry/bohr**3)                   (kbar)     P=        0.02
+   0.00000015   0.00000273  -0.00000273            0.02        0.40       -0.40
+   0.00000273   0.00000015  -0.00000274            0.40        0.02       -0.40
+  -0.00000273  -0.00000274   0.00000014           -0.40       -0.40        0.02
+
+
+     Writing output data file ./tmp/BaMg3H8.save/
+
+     init_run     :     19.45s CPU     35.23s WALL (       2 calls)
+     electrons    :   2918.80s CPU   7274.20s WALL (      21 calls)
+     update_pot   :    113.61s CPU    114.57s WALL (      19 calls)
+     forces       :     82.36s CPU    110.60s WALL (      21 calls)
+     stress       :    241.15s CPU    436.68s WALL (      21 calls)
+
+     Called by init_run:
+     wfcinit      :      9.07s CPU     24.33s WALL (       2 calls)
+     potinit      :      3.82s CPU      3.87s WALL (       2 calls)
+     hinit0       :      6.01s CPU      6.14s WALL (       2 calls)
+
+     Called by electrons:
+     c_bands      :   2504.93s CPU   6313.26s WALL (     194 calls)
+     sum_band     :    298.72s CPU    814.04s WALL (     194 calls)
+     v_of_rho     :      8.74s CPU     12.90s WALL (     215 calls)
+     newd         :     44.08s CPU     70.27s WALL (     215 calls)
+     PAW_pot      :     78.49s CPU     78.85s WALL (     234 calls)
+     mix_rho      :      0.98s CPU      2.24s WALL (     194 calls)
+
+     Called by c_bands:
+     init_us_2    :     47.23s CPU     46.85s WALL (   50512 calls)
+     ccgdiagg     :   2059.96s CPU   5108.59s WALL (   21820 calls)
+     wfcrot       :    415.36s CPU   1122.37s WALL (   19692 calls)
+
+     Called by *cgdiagg:
+     h_psi        :   1922.97s CPU   5117.57s WALL (  982551 calls)
+     s_psi        :    156.34s CPU    294.43s WALL ( 1945410 calls)
+
+     Called by h_psi:
+     h_psi:calbec :    179.36s CPU    555.69s WALL (  982551 calls)
+     vloc_psi     :   1567.14s CPU   4210.71s WALL (  982551 calls)
+     add_vuspsi   :    170.41s CPU    341.92s WALL (  982551 calls)
+     hs_1psi      :   1623.71s CPU   4205.99s WALL (  962859 calls)
+     s_1psi       :    167.29s CPU    324.33s WALL (  962859 calls)
+
+     General routines
+     calbec       :    320.83s CPU    915.48s WALL ( 1981026 calls)
+     fft          :     10.13s CPU     31.52s WALL (    3297 calls)
+     ffts         :      0.50s CPU      3.18s WALL (     409 calls)
+     fftw         :   1662.33s CPU   4676.22s WALL ( 2907542 calls)
+     interpolate  :      0.58s CPU      0.63s WALL (     215 calls)
+
+     Parallel routines
+     fft_scatt_xy :     82.40s CPU    121.03s WALL ( 2911248 calls)
+     fft_scatt_yz :    999.00s CPU   3814.89s WALL ( 2911248 calls)
+
+     PWSCF        :  56m32.14s CPU      2h13m WALL
+
+
+   This run was terminated on:  18:19: 2  27Jun2026            
+
+=------------------------------------------------------------------------------=
+   JOB DONE.
+=------------------------------------------------------------------------------=

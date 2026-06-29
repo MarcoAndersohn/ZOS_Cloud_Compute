@@ -977,6 +977,20 @@ def main():
                     update_csv(name, "Rechnet Phononen (Test)...", e_fermi, round(dos_val, 4), "JA")
                     
                     if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
+                        
+                        # Die Trigger-Logik feuert NUR wenn ph.out WIRKLICH fehlt
+                        if not os.path.exists(ph_out):
+                            print("   🧹 User-Reset erkannt. Bereinige alte Phononen-Daten...")
+                            ph0_path = os.path.join(work_dir, "tmp", "_ph0")
+                            if os.path.exists(ph0_path):
+                                try: shutil.rmtree(ph0_path, ignore_errors=True)
+                                except: pass
+                            
+                            for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
+                                for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
+                                    try: os.remove(f)
+                                    except: pass
+
                         if not os.path.exists(ph_in):
                             with open(ph_in, "w") as f: 
                                 f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2, reduce_io=.true., recover=.true. /\n")
@@ -1104,17 +1118,18 @@ def main():
                     
                     if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                         
-                        # Die Trigger-Logik für manuelle El-Ph Neustarts
-                        print("   🧹 Bereinige alte Phononen-Daten. SCF-Speicherstand bleibt erhalten.")
-                        ph0_path = os.path.join(work_dir, "tmp", "_ph0")
-                        if os.path.exists(ph0_path):
-                            try: shutil.rmtree(ph0_path, ignore_errors=True)
-                            except: pass
-                        
-                        for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
-                            for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
-                                try: os.remove(f)
+                        # Die Trigger-Logik feuert NUR wenn ph.out WIRKLICH fehlt
+                        if not os.path.exists(ph_out):
+                            print("   🧹 User-Reset erkannt. Bereinige alte Phononen-Daten...")
+                            ph0_path = os.path.join(work_dir, "tmp", "_ph0")
+                            if os.path.exists(ph0_path):
+                                try: shutil.rmtree(ph0_path, ignore_errors=True)
                                 except: pass
+                            
+                            for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
+                                for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
+                                    try: os.remove(f)
+                                    except: pass
                         
                         if not os.path.exists(ph_in):
                             with open(ph_in, "w") as f: 

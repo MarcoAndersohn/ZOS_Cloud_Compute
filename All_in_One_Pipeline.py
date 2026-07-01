@@ -244,6 +244,49 @@ def get_cores_from_log(log_file, default_cores=4):
 # 3. SMART LOGIC & VALIDATION & CRASH ANALYSE
 # =============================================================================
 
+def is_xml_valid(xml_path):
+    if not os.path.exists(xml_path):
+        return False
+    try:
+        with open(xml_path, 'rb') as f:
+            try:
+                f.seek(-1000, 2) 
+            except:
+                f.seek(0)
+            tail = f.read().decode('utf-8', errors='ignore')
+        if "</qes:espresso>" in tail or "</qes:data-file-schema>" in tail:
+            return True
+        return False
+    except:
+        return False
+
+def check_and_fix_corrupt_files(work_dir):
+    tmp_dir = os.path.join(work_dir, "tmp")
+    if not os.path.exists(tmp_dir): 
+        return True
+    
+    scf_xml_files = glob.glob(os.path.join(tmp_dir, "*.save", "data-file-schema.xml"))
+    for xml in scf_xml_files:
+        if not is_xml_valid(xml):
+            return False 
+            
+    for root, _, files in os.walk(tmp_dir):
+        for file in files:
+            if file.endswith(".xml") or "a2Fsave" in file:
+                fpath = os.path.join(root, file)
+                if ".save/data-file-schema.xml" in fpath.replace("\\", "/"): 
+                    continue
+                try:
+                    with open(fpath, 'rb') as f:
+                        f.seek(max(0, os.path.getsize(fpath) - 1000))
+                        tail = f.read().decode('utf-8', errors='ignore').strip()
+                        if len(tail) > 0 and not tail.endswith('>'):
+                            print(f"      🧹 Repariere, Lösche korrupte Phonon-Datei {file}")
+                            os.remove(fpath)
+                except: 
+                    pass
+    return True
+
 def make_kpoints_dense(filepath):
     if not os.path.exists(filepath):
         return False
@@ -468,7 +511,6 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
 def execute_scf_block(name, scf_in, scf_out, work_dir, input_file, phase_label):
     tmp_dir = os.path.join(work_dir, "tmp")
     
-    # Sicherheitscheck für abgebrochene Fallbacks
     if os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read():
         if not os.path.exists(tmp_dir):
             print("      ⚠️ SCF.out meldet DONE, aber der tmp-Ordner fehlt! Mache SCF neu.")
@@ -563,22 +605,6 @@ def execute_scf_block(name, scf_in, scf_out, work_dir, input_file, phase_label):
                 time.sleep(2)
                 continue
     return "CRASH", current_cores
-        
-def is_xml_valid(xml_path):
-    if not os.path.exists(xml_path):
-        return False
-    try:
-        with open(xml_path, 'rb') as f:
-            try:
-                f.seek(-1000, 2) 
-            except:
-                f.seek(0)
-            tail = f.read().decode('utf-8', errors='ignore')
-        if "</qes:espresso>" in tail or "</qes:data-file-schema>" in tail:
-            return True
-        return False
-    except:
-        return False
 
 def is_recoverable_fragmentation_error(ph_output_file):
     if not os.path.exists(ph_output_file):
@@ -777,7 +803,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
 
     if "max_seconds" not in content.lower():
-        content = content.replace("&INPUTPH", "&INPUTPH\n max_seconds=25000,")
+        content = content.replace("&INPUTPH", "&INPUTPH\n max_seconds=14000,")
         
     with open(input_file, 'w') as f:
         f.write(content)
@@ -978,7 +1004,6 @@ def main():
                     
                     if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                         
-                        # Die Trigger-Logik feuert NUR wenn ph.out WIRKLICH fehlt
                         if not os.path.exists(ph_out):
                             print("   🧹 User-Reset erkannt. Bereinige alte Phononen-Daten...")
                             ph0_path = os.path.join(work_dir, "tmp", "_ph0")
@@ -1000,8 +1025,19 @@ def main():
                             shutil.copytree(os.path.join(work_dir, "tmp"), pristine_tmp)
 
                         ph_attempts = 0
+                        ph_res = ""
                         while ph_attempts < 4:
                             ph_attempts += 1
+                            
+                            scf_ok = check_and_fix_corrupt_files(work_dir)
+                            if not scf_ok:
+                                print("      🧨 SCF-Speicherstand irreparabel zerstört. Erzwinge kompletten Neustart!")
+                                shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
+                                shutil.rmtree(os.path.join(work_dir, "tmp_PRISTINE_PH"), ignore_errors=True)
+                                if os.path.exists(scf_out): os.remove(scf_out)
+                                ph_res = "SCF_CORRUPT"
+                                break
+
                             ph_res = run_monitored_ph(ph_in, ph_out, work_dir, scf_cores)
                             
                             if ph_res == "DONE":
@@ -1018,11 +1054,9 @@ def main():
                             print_error_tail(ph_out, 100)
                             
                             if crash_reason == "XML_ERROR" or crash_reason == "ELPH_CORRUPT":
-                                print("      🧨 Datenstruktur korrupt. Lade SCF-Status (behalte Phononen-Fortschritt)...")
+                                print("      🧨 Phonon-Datenstruktur korrupt. Lade SCF-Status (behalte Phononen-Fortschritt)...")
                                 if os.path.exists(pristine_tmp):
                                     for item in os.listdir(pristine_tmp):
-                                        if item == "_ph0":
-                                            continue 
                                         s = os.path.join(pristine_tmp, item)
                                         d = os.path.join(work_dir, "tmp", item)
                                         if os.path.isdir(s):
@@ -1031,6 +1065,7 @@ def main():
                                             shutil.copytree(s, d)
                                         else:
                                             shutil.copy2(s, d)
+                                            
                                 if os.path.exists(ph_out):
                                     try:
                                         os.remove(ph_out)
@@ -1061,10 +1096,14 @@ def main():
                                 except:
                                     pass
 
+                    if ph_res == "SCF_CORRUPT":
+                        update_csv(name, "SCF_RESET (Korrupte XML)")
+                        continue
+
                     if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                          print("      ❌ Test-Phononen endgültig fehlgeschlagen. Kein SCF-Neustart.")
                          update_csv(name, "SKIPPED (Phonon Crash)") 
-                         git_sync(f"Phonon Crash, {name}")
+                         git_sync(f"Phonon Crash {name}")
                          continue
 
                     min_f, stab = "-", "Unbekannt"
@@ -1127,7 +1166,6 @@ def main():
                     
                     if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                         
-                        # Die Trigger-Logik feuert NUR wenn ph.out WIRKLICH fehlt
                         if not os.path.exists(ph_out):
                             print("   🧹 User-Reset erkannt. Bereinige alte Phononen-Daten...")
                             ph0_path = os.path.join(work_dir, "tmp", "_ph0")
@@ -1149,8 +1187,19 @@ def main():
                             shutil.copytree(os.path.join(work_dir, "tmp"), pristine_tmp)
 
                         ph_attempts = 0
+                        ph_res = ""
                         while ph_attempts < 5:
                             ph_attempts += 1
+                            
+                            scf_ok = check_and_fix_corrupt_files(work_dir)
+                            if not scf_ok:
+                                print("      🧨 SCF-Speicherstand irreparabel zerstört. Erzwinge kompletten Neustart!")
+                                shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
+                                shutil.rmtree(os.path.join(work_dir, "tmp_PRISTINE_PH"), ignore_errors=True)
+                                if os.path.exists(scf_out): os.remove(scf_out)
+                                ph_res = "SCF_CORRUPT"
+                                break
+
                             ph_res = run_monitored_ph(ph_in, ph_out, work_dir, scf_cores)
                             
                             if ph_res == "DONE":
@@ -1167,11 +1216,9 @@ def main():
                             print_error_tail(ph_out, 100)
                             
                             if crash_reason == "XML_ERROR" or crash_reason == "ELPH_CORRUPT":
-                                print("      🧨 Datenstruktur korrupt. Lade SCF-Status (behalte Phononen-Fortschritt)...")
+                                print("      🧨 Phonon-Datenstruktur korrupt. Lade SCF-Status (behalte Phononen-Fortschritt)...")
                                 if os.path.exists(pristine_tmp):
                                     for item in os.listdir(pristine_tmp):
-                                        if item == "_ph0":
-                                            continue 
                                         s = os.path.join(pristine_tmp, item)
                                         d = os.path.join(work_dir, "tmp", item)
                                         if os.path.isdir(s):
@@ -1180,6 +1227,7 @@ def main():
                                             shutil.copytree(s, d)
                                         else:
                                             shutil.copy2(s, d)
+                                            
                                 if os.path.exists(ph_out):
                                     try:
                                         os.remove(ph_out)
@@ -1193,10 +1241,14 @@ def main():
                                 except:
                                     pass
 
+                    if ph_res == "SCF_CORRUPT":
+                        update_csv(name, "SCF_RESET (Korrupte XML)")
+                        continue
+
                     if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                          print("      ❌ Präzisions-Phononen endgültig fehlgeschlagen. Kein SCF-Neustart.")
                          update_csv(name, "SKIPPED (El-Ph Crash)") 
-                         git_sync(f"El-Ph Crash, {name}")
+                         git_sync(f"El-Ph Crash {name}")
                          continue
 
                     print("   ✅ El-Ph (Präzision) fertig. Starte Q2R und Matdyn...")
@@ -1219,7 +1271,7 @@ def main():
                         print(f"      ❌ Q2R fehlgeschlagen!")
                         print_error_tail(q2r_out, 100)
                         update_csv(name, "ERROR (Q2R Crash)")
-                        git_sync(f"Q2R Crash, {name}")
+                        git_sync(f"Q2R Crash {name}")
                         continue
 
                     update_csv(name, "Rechnet El-Ph (Matdyn)...", e_fermi, dos_val, "JA", min_f=min_f, stab=stab)
@@ -1235,7 +1287,7 @@ def main():
                         print(f"      ❌ Matdyn fehlgeschlagen!")
                         print_error_tail(matdyn_out, 100)
                         update_csv(name, "ERROR (Matdyn Crash)")
-                        git_sync(f"Matdyn Crash, {name}")
+                        git_sync(f"Matdyn Crash {name}")
                         continue
 
                     lam, wlog, tc = "-", "-", "-"

@@ -1018,10 +1018,19 @@ def main():
                             print_error_tail(ph_out, 100)
                             
                             if crash_reason == "XML_ERROR" or crash_reason == "ELPH_CORRUPT":
-                                print("      🧨 Datenstruktur korrupt. Lade sicheren SCF-Status...")
+                                print("      🧨 Datenstruktur korrupt. Lade SCF-Status (behalte Phononen-Fortschritt)...")
                                 if os.path.exists(pristine_tmp):
-                                    shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
-                                    shutil.copytree(pristine_tmp, os.path.join(work_dir, "tmp"))
+                                    for item in os.listdir(pristine_tmp):
+                                        if item == "_ph0":
+                                            continue 
+                                        s = os.path.join(pristine_tmp, item)
+                                        d = os.path.join(work_dir, "tmp", item)
+                                        if os.path.isdir(s):
+                                            if os.path.exists(d):
+                                                shutil.rmtree(d, ignore_errors=True)
+                                            shutil.copytree(s, d)
+                                        else:
+                                            shutil.copy2(s, d)
                                 if os.path.exists(ph_out):
                                     try:
                                         os.remove(ph_out)
@@ -1158,10 +1167,19 @@ def main():
                             print_error_tail(ph_out, 100)
                             
                             if crash_reason == "XML_ERROR" or crash_reason == "ELPH_CORRUPT":
-                                print("      🧨 Datenstruktur korrupt. Lade sicheren SCF-Status...")
+                                print("      🧨 Datenstruktur korrupt. Lade SCF-Status (behalte Phononen-Fortschritt)...")
                                 if os.path.exists(pristine_tmp):
-                                    shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
-                                    shutil.copytree(pristine_tmp, os.path.join(work_dir, "tmp"))
+                                    for item in os.listdir(pristine_tmp):
+                                        if item == "_ph0":
+                                            continue 
+                                        s = os.path.join(pristine_tmp, item)
+                                        d = os.path.join(work_dir, "tmp", item)
+                                        if os.path.isdir(s):
+                                            if os.path.exists(d):
+                                                shutil.rmtree(d, ignore_errors=True)
+                                            shutil.copytree(s, d)
+                                        else:
+                                            shutil.copy2(s, d)
                                 if os.path.exists(ph_out):
                                     try:
                                         os.remove(ph_out)

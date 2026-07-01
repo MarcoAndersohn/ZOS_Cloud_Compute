@@ -260,28 +260,36 @@ def is_xml_valid(xml_path):
     except:
         return False
 
-def check_and_fix_corrupt_files(work_dir):
+def check_and_fix_corrupt_files(work_dir, prefix):
     tmp_dir = os.path.join(work_dir, "tmp")
     if not os.path.exists(tmp_dir): 
         return True
     
-    scf_xml_files = glob.glob(os.path.join(tmp_dir, "*.save", "data-file-schema.xml"))
-    for xml in scf_xml_files:
-        if not is_xml_valid(xml):
-            return False 
+    main_scf_xml = os.path.join(tmp_dir, f"{prefix}.save", "data-file-schema.xml")
+    if not is_xml_valid(main_scf_xml):
+        return False 
             
     for root, _, files in os.walk(tmp_dir):
         for file in files:
-            if file.endswith(".xml") or "a2Fsave" in file:
-                fpath = os.path.join(root, file)
-                if ".save/data-file-schema.xml" in fpath.replace("\\", "/"): 
-                    continue
+            fpath = os.path.join(root, file)
+            
+            # Wir schützen exakt nur die Hauptdatei des SCF-Durchlaufs
+            if os.path.abspath(fpath) == os.path.abspath(main_scf_xml): 
+                continue
+
+            if os.path.getsize(fpath) == 0 and "_ph0" in fpath:
+                print(f"      🧹 Repariere, Lösche leere Datei {file}")
+                try: os.remove(fpath)
+                except: pass
+                continue
+
+            if file.endswith(".xml") or "a2Fsave" in file or "recover" in file or "dvscf" in file or "dyn" in file:
                 try:
                     with open(fpath, 'rb') as f:
                         f.seek(max(0, os.path.getsize(fpath) - 1000))
                         tail = f.read().decode('utf-8', errors='ignore').strip()
                         if len(tail) > 0 and not tail.endswith('>'):
-                            print(f"      🧹 Repariere, Lösche korrupte Phonon-Datei {file}")
+                            print(f"      🧹 Repariere, Lösche korrupte Zwischen-Datei {file}")
                             os.remove(fpath)
                 except: 
                     pass
@@ -493,18 +501,20 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                 print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
                 return "OOM"
 
+            try:
+                with open(output_file, 'r', errors='ignore') as f:
+                    out_content = f.read()
+                    if "JOB DONE" in out_content:
+                        return "DONE"
+            except:
+                pass
+
             if process.returncode != 0:
                 reason = analyze_crash_reason(output_file)
                 if reason == "LIKELY_OOM":
                     print("      💀 Logfile endet abrupt (Silent Death) -> OOM.")
                     return "OOM"
                 return "CRASH"
-
-            final_reason = analyze_crash_reason(output_file)
-            if final_reason == "DONE":
-                return "DONE"
-            elif final_reason == "LIKELY_OOM":
-                return "OOM"
             
             return "CRASH"
 
@@ -770,25 +780,6 @@ def fix_input_file(input_file, iteration_count=0):
         f.write(content)
     return True
 
-def get_last_iteration(output_file):
-    if not os.path.exists(output_file):
-        return 0
-    try:
-        file_size = os.path.getsize(output_file)
-        with open(output_file, 'rb') as f:
-            f.seek(max(0, file_size - 10000), 0) 
-            chunk = f.read().decode('utf-8', errors='ignore')
-        bfgs_matches = re.findall(r"number of bfgs steps\s*=\s*(\d+)", chunk)
-        scf_matches = re.findall(r"iteration #\s*(\d+)", chunk)
-        val = 0
-        if bfgs_matches:
-            val = int(bfgs_matches[-1])
-        elif scf_matches:
-            val = int(scf_matches[-1])
-        return val
-    except:
-        return 0
-
 # --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
@@ -847,6 +838,17 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
             print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
             return "OOM"
 
+        # Checken ob JOB DONE erreicht wurde VOR der Exit-Code Auswertung
+        try:
+            with open(output_file, 'r', errors='ignore') as f:
+                out_content = f.read()
+                if "JOB DONE" in out_content:
+                    if "STOP" in out_content or "max_seconds" in out_content.lower():
+                        return "TIMEOUT_STOP"
+                    return "DONE"
+        except:
+            pass
+
         if process.returncode != 0:
             reason = analyze_crash_reason(output_file)
             if reason == "WRONG_TRANS_ERROR":
@@ -855,13 +857,6 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
             if reason == "ELPH_CORRUPT" or reason == "XML_ERROR":
                 return reason
             return "CRASH"
-
-        try:
-            with open(output_file, 'r', errors='ignore') as f:
-                if "JOB DONE" in f.read():
-                    return "DONE"
-        except:
-            pass
         
         return "CRASH"
     
@@ -1029,7 +1024,7 @@ def main():
                         while ph_attempts < 4:
                             ph_attempts += 1
                             
-                            scf_ok = check_and_fix_corrupt_files(work_dir)
+                            scf_ok = check_and_fix_corrupt_files(work_dir, prefix)
                             if not scf_ok:
                                 print("      🧨 SCF-Speicherstand irreparabel zerstört. Erzwinge kompletten Neustart!")
                                 shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
@@ -1042,6 +1037,11 @@ def main():
                             
                             if ph_res == "DONE":
                                 break
+                                
+                            if ph_res == "TIMEOUT_STOP":
+                                print("      ⏱️ Zeitlimit erreicht. Setze Rechnung nahtlos fort...")
+                                ph_attempts -= 1
+                                continue
                                 
                             print(f"      ⚠️ Stop in Test-Phononen (Grund {ph_res}).")
                             crash_reason = analyze_crash_reason(ph_out)
@@ -1191,7 +1191,7 @@ def main():
                         while ph_attempts < 5:
                             ph_attempts += 1
                             
-                            scf_ok = check_and_fix_corrupt_files(work_dir)
+                            scf_ok = check_and_fix_corrupt_files(work_dir, prefix)
                             if not scf_ok:
                                 print("      🧨 SCF-Speicherstand irreparabel zerstört. Erzwinge kompletten Neustart!")
                                 shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
@@ -1204,6 +1204,11 @@ def main():
                             
                             if ph_res == "DONE":
                                 break
+                                
+                            if ph_res == "TIMEOUT_STOP":
+                                print("      ⏱️ Zeitlimit erreicht. Setze Rechnung nahtlos fort...")
+                                ph_attempts -= 1
+                                continue
                                 
                             print(f"      ⚠️ Stop in Präzisions-Phononen (Grund {ph_res}).")
                             crash_reason = analyze_crash_reason(ph_out)

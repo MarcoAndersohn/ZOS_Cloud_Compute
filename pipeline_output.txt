@@ -1356,3 +1356,224 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 🚀 NEUSTART SMART-PIPELINE
 ========================================
 
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   476f4c75..ec4bae99  main -> main
+⏩ Überspringe 01_HfH3_Top1 (Ist ein Isolator)
+⏩ Überspringe 01_LiTaH6Ru (Ist ein Isolator)
+⏩ Überspringe 01_SrMgGaB3H16 (Ist ein Isolator)
+
+💎 Job, 02_BaMg3H8 (Phase 2, Präzision)
+      ⚙️ Starte PHONONEN (Cores 4)...
+      🧨 XML-Struktur zerstört (Corruption).
+      ⚠️ Stop in Präzisions-Phononen (Grund XML_ERROR).
+      🧨 XML-Struktur zerstört (Corruption).
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+           Convergence has been achieved
+      
+      
+           Representation #  20 mode #  20
+      
+           Self-consistent Calculation
+      
+           Program PHONON v.6.7MaX starts on  1Jul2026 at  2: 5:27
+      
+           This program is part of the open-source Quantum ESPRESSO suite
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org",
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+           Reading xml data from directory:
+      
+           ./tmp/BaMg3H8.save/
+           file Ba.UPF: wavefunction(s)  5S 6S renormalized
+           file Mg.UPF: wavefunction(s)  3S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min         757     375    109                31205    11006    1720
+           Max         758     376    110                31206    11007    1722
+           Sum        3031    1503    437               124821    44027    6883
+      
+           Reading collected, re-writing distributed wavefunctions
+      
+           Saving dvscf to file. Distribute only q points, not irreducible represetations.
+              8 /   8 q-points for this run, from  1 to  8:
+             N       xq(1)         xq(2)         xq(3)
+             1   0.000000000   0.000000000   0.000000000
+             2   0.016645124   0.016645573  -0.502165173
+             3  -0.016645357  -0.502165270   0.016645560
+             4  -0.000000233  -0.485519697  -0.485519613
+             5  -0.502165859  -0.016645370   0.016645125
+             6  -0.485520735   0.000000202  -0.485520049
+             7  -0.518811216  -0.518810640   0.033290685
+             8  -0.502166092  -0.502165067  -0.468874488
+      
+      
+           Calculation of q =    0.0000000   0.0000000   0.0000000
+           Message from routine ph_restart_set_filename :
+           cannot open file for reading or writing
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+      At line 965 of file xmltools.f90
+      Fortran runtime error: Sequential READ or WRITE not allowed after EOF marker, possibly use REWIND or BACKSPACE
+      
+      Error termination. Backtrace:
+       end of file reached, tag PARTIAL_EL_PHON not found
+      #0  0x717fdd423960 in ???
+      #1  0x717fdd4244d9 in ???
+      #2  0x717fdd42510f in ???
+      #3  0x717fdd67b96d in ???
+      #4  0x61b07f714a2a in ???
+      #5  0x61b07f715413 in ???
+      #6  0x61b07f716946 in ???
+      #7  0x61b07f291dd5 in ???
+      #8  0x61b07f29e0ab in ???
+      #9  0x61b07f275b55 in ???
+      #10  0x61b07f242a6e in ???
+      #11  0x61b07f23c191 in ???
+      #12  0x61b07f23bffe in ???
+      #13  0x717fdd029d8f in ???
+      #14  0x717fdd029e3f in ???
+      #15  0x61b07f23c02d in ???
+      #16  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28769,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      -----------------------------------------
+
+
+      --- LETZTE 100 ZEILEN VON ph.out ---
+      
+           Convergence has been achieved
+      
+      
+           Representation #  20 mode #  20
+      
+           Self-consistent Calculation
+      
+           Program PHONON v.6.7MaX starts on  1Jul2026 at  2: 5:27
+      
+           This program is part of the open-source Quantum ESPRESSO suite
+           for quantum simulation of materials; please cite
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+               "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+                URL http://www.quantum-espresso.org",
+           in publications or presentations arising from this work. More details at
+           http://www.quantum-espresso.org/quote
+      
+           Parallel version (MPI), running on     4 processors
+      
+           MPI processes distributed on     1 nodes
+           R & G space division:  proc/nbgrp/npool/nimage =       4
+           Waiting for input...
+           Reading input from standard input
+      
+           Reading xml data from directory:
+      
+           ./tmp/BaMg3H8.save/
+           file Ba.UPF: wavefunction(s)  5S 6S renormalized
+           file Mg.UPF: wavefunction(s)  3S renormalized
+      
+           IMPORTANT: XC functional enforced from input :
+           Exchange-correlation= PBE
+                                 (   1   4   3   4   0   0   0)
+           Any further DFT definition will be discarded
+           Please, verify this is what you really want
+      
+      
+           Parallelization info
+           --------------------
+           sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+           Min         757     375    109                31205    11006    1720
+           Max         758     376    110                31206    11007    1722
+           Sum        3031    1503    437               124821    44027    6883
+      
+           Reading collected, re-writing distributed wavefunctions
+      
+           Saving dvscf to file. Distribute only q points, not irreducible represetations.
+              8 /   8 q-points for this run, from  1 to  8:
+             N       xq(1)         xq(2)         xq(3)
+             1   0.000000000   0.000000000   0.000000000
+             2   0.016645124   0.016645573  -0.502165173
+             3  -0.016645357  -0.502165270   0.016645560
+             4  -0.000000233  -0.485519697  -0.485519613
+             5  -0.502165859  -0.016645370   0.016645125
+             6  -0.485520735   0.000000202  -0.485520049
+             7  -0.518811216  -0.518810640   0.033290685
+             8  -0.502166092  -0.502165067  -0.468874488
+      
+      
+           Calculation of q =    0.0000000   0.0000000   0.0000000
+           Message from routine ph_restart_set_filename :
+           cannot open file for reading or writing
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+      At line 965 of file xmltools.f90
+      Fortran runtime error: Sequential READ or WRITE not allowed after EOF marker, possibly use REWIND or BACKSPACE
+      
+      Error termination. Backtrace:
+       end of file reached, tag PARTIAL_EL_PHON not found
+      #0  0x717fdd423960 in ???
+      #1  0x717fdd4244d9 in ???
+      #2  0x717fdd42510f in ???
+      #3  0x717fdd67b96d in ???
+      #4  0x61b07f714a2a in ???
+      #5  0x61b07f715413 in ???
+      #6  0x61b07f716946 in ???
+      #7  0x61b07f291dd5 in ???
+      #8  0x61b07f29e0ab in ???
+      #9  0x61b07f275b55 in ???
+      #10  0x61b07f242a6e in ???
+      #11  0x61b07f23c191 in ???
+      #12  0x61b07f23bffe in ???
+      #13  0x717fdd029d8f in ???
+      #14  0x717fdd029e3f in ???
+      #15  0x61b07f23c02d in ???
+      #16  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28769,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      -----------------------------------------
+      🧨 Datenstruktur korrupt. Lade sicheren SCF-Status...
+      ⚙️ Starte PHONONEN (Cores 4)...
+      ❤️ Git Heartbeat (Phonon)...

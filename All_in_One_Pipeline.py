@@ -331,7 +331,12 @@ def main():
     
     if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
     
+    # [HIER FEHLT DER START-TRIGGER FÜR DEINE LOGIC APP]
+    # requests.post("URL_ZUM_AKTIVIEREN_DER_LOGIC_APP")
+    
     input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
+    jobs_processed = 0
+    
     for input_file in input_files:
         name = os.path.basename(input_file).replace(".in", "")
         work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
@@ -339,6 +344,8 @@ def main():
         
         if "SKIPPED" in row_data.get('Status', '') or "Isolator" in row_data.get('Status', ''): continue
         if row_data.get('Stabilität', '') == "INSTABIL" or (row_data.get('Stabilität', '') == "STABIL" and row_data.get('Lambda', '').strip() != "-"): continue
+
+        jobs_processed += 1
 
         # --- PHASE 2 (Präzisions-Modus) ---
         if not os.path.exists(work_dir): os.makedirs(work_dir)
@@ -414,6 +421,18 @@ def main():
         with open(SIGNAL_FILE, "w") as f: f.write("Status, Fertig")
         
     git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")
-    if os.name != 'nt': os.system("sudo shutdown -h now")
+    
+    if jobs_processed == 0:
+        print("💡 Keine offene Berechnung gefunden. Alle Jobs sind bereits erledigt oder übersprungen.")
+
+    # [HIER FEHLT DER NOT-AUS-SCHALTER FÜR DEINE LOGIC APP VOR DEM SHUTDOWN]
+    # requests.post("URL_ZUM_DEAKTIVIEREN_DER_LOGIC_APP")
+
+    # Prüfen, ob wir interaktiv in der Konsole sind
+    if sys.stdout.isatty():
+        print("🖥️ Interaktive Bash-Session erkannt. Automatischer Shutdown der VM wird übersprungen.")
+    else:
+        if os.name != 'nt': 
+            os.system("sudo shutdown -h now") # ACHTUNG: Das deallokiert die VM nicht! Nutze dafür am besten den Logic App Webhook.
 
 if __name__ == "__main__": main()

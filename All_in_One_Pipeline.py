@@ -341,7 +341,6 @@ def main():
     
     if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
 
-    # 1. Start-Nachricht senden
     send_notification("🚀 Smart-Pipeline wurde gestartet!")
 
     # [HIER FEHLT DER START-TRIGGER FÜR DEINE LOGIC APP]
@@ -355,8 +354,13 @@ def main():
         work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
         row_data = get_csv_full_info(name)
         
+        # 1. FIX: Robuste CSV-Auswertung für das Überspringen
         if "SKIPPED" in row_data.get('Status', '') or "Isolator" in row_data.get('Status', ''): continue
-        if row_data.get('Stabilität', '') == "INSTABIL" or (row_data.get('Stabilität', '') == "STABIL" and row_data.get('Lambda', '').strip() != "-"): continue
+        if row_data.get('Stabilität', '') == "INSTABIL": continue
+        
+        lam_val = row_data.get('Lambda', '').strip()
+        # Nur überspringen, wenn STABIL und Lambda wirklich einen echten Wert (nicht leer, nicht "-") enthält
+        if row_data.get('Stabilität', '') == "STABIL" and lam_val != "" and lam_val != "-": continue
 
         jobs_processed += 1
 
@@ -370,15 +374,14 @@ def main():
         was_densified = make_kpoints_dense(scf_in)
         if was_densified:
             print("   🧹 Verdoppele K-Punkte für Präzision.")
-            for f in [scf_out, ph_out, ph_in]: 
-                if os.path.exists(f): os.remove(f)
+            # 2. FIX: Niemals ph_in oder ph_out automatisch löschen
+            if os.path.exists(scf_out): os.remove(scf_out) 
             shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
             shutil.rmtree(os.path.join(work_dir, "tmp_PRISTINE_PH"), ignore_errors=True)
             
         if os.path.exists(ph_in) and "electron_phonon" not in open(ph_in, errors='ignore').read():
-            print("   🧹 Wechsle in Phase 2: Lösche Test-Phononen für reinen El-Ph-Lauf.")
-            for f in [ph_out, ph_in]: 
-                if os.path.exists(f): os.remove(f)
+            print("   ℹ️ Phase 2 erkannt: Warte auf manuellen Reset (Löschen der ph.in/out durch dich), falls nötig.")
+            # Auch hier: Wir löschen die Dateien nicht mehr automatisch!
         
         print(f"\n💎 Job, {name} (Phase 2)")
         scf_res, scf_cores = execute_scf_block(name, scf_in, scf_out, work_dir, "Präzision")
@@ -390,9 +393,10 @@ def main():
         ph_res = "DONE"
         run_duration = 0
 
+        # 3. FIX: Manueller Reset greift nur, wenn du ph_out händisch löschst
         if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
             if not os.path.exists(ph_out):
-                print("   🧹 Manueller Reset. Bereinige Phononen-Daten...")
+                print("   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten...")
                 ph0_path = os.path.join(work_dir, "tmp", "_ph0")
                 if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
                 for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
@@ -400,6 +404,7 @@ def main():
                         try: os.remove(f)
                         except: pass
             
+            # Neue ph.in wird nur geschrieben, wenn du sie vorher gelöscht hast
             if not os.path.exists(ph_in):
                 with open(ph_in, "w") as f: f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., electron_phonon='interpolated' /\n")
             
@@ -433,12 +438,12 @@ def main():
              continue
 
         print("   ✅ El-Ph fertig. Starte Q2R und Matdyn...")
+        # (Hier fehlt später noch der Codeblock für Q2R und Matdyn, um Tc auszurechnen!)
         with open(SIGNAL_FILE, "w") as f: f.write("Status, Fertig")
         send_notification(f"✅ Job {name} (Phase 2) erfolgreich berechnet!")
         
     git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")
     
-    # 2. Abschluss-Nachricht senden
     if jobs_processed == 0:
         print("💡 Keine offene Berechnung gefunden. Alle Jobs sind bereits erledigt oder übersprungen.")
         send_notification("💡 Pipeline beendet: Keine offenen Berechnungen gefunden.")
@@ -448,7 +453,6 @@ def main():
     # [HIER FEHLT DER NOT-AUS-SCHALTER FÜR DEINE LOGIC APP VOR DEM SHUTDOWN]
     # requests.post("URL_ZUM_DEAKTIVIEREN_DER_LOGIC_APP")
 
-    # Prüfen, ob wir interaktiv in der Konsole sind
     if sys.stdout.isatty():
         print("🖥️ Interaktive Bash-Session erkannt. Automatischer Shutdown der VM wird übersprungen.")
     else:

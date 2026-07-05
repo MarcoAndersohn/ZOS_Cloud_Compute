@@ -18,7 +18,10 @@ from datetime import datetime
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
-TELEGRAM_TOKEN = open("/home/marco/.telegram_token").read().strip()
+try:
+    TELEGRAM_TOKEN = open("/home/marco/.telegram_token").read().strip()
+except:
+    TELEGRAM_TOKEN = ""
 TELEGRAM_CHAT_ID = "711461437"
 DOS_THRESHOLD = 0.05
 DEFAULT_CORES = "4"
@@ -44,8 +47,12 @@ MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
 # 1. HELFER, GIT & CLEANUP
 # =============================================================================
 def send_notification(message):
-    try: requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", data={"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC {message}"}, timeout=10)
-    except: pass
+    if not TELEGRAM_TOKEN: return
+    try: 
+        requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", 
+                      data={"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC {message}"}, timeout=10)
+    except: 
+        pass
 
 def ensure_gitignore():
     gi_path = os.path.join(WORK_DIR, ".gitignore")
@@ -73,7 +80,8 @@ def check_and_free_disk_space():
 def initial_git_pull():
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
-    try: subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60, capture_output=True)
+    try: 
+        subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60, capture_output=True)
     except: pass
 
 def git_sync(message):
@@ -256,7 +264,9 @@ def execute_scf_block(name, scf_in, scf_out, work_dir, phase_label):
         if res == "DONE": return "DONE", cores
         if res == "OOM" or res == "LIKELY_OOM":
             oom_level += 1
-            if oom_level > 4: return "SKIPPED", cores
+            if oom_level > 4: 
+                send_notification(f"❌ SCF übersprungen bei {name}: Maximales OOM-Level erreicht.")
+                return "SKIPPED", cores
             print(f"      ⚠️ OOM Fehler! Eskaliere auf Level {oom_level}")
             update_csv(name, f"Retrying (OOM Lvl {oom_level})")
             continue
@@ -330,7 +340,10 @@ def main():
     print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE\n{'='*40}\n")
     
     if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
-    
+
+    # 1. Start-Nachricht senden
+    send_notification("🚀 Smart-Pipeline wurde gestartet!")
+
     # [HIER FEHLT DER START-TRIGGER FÜR DEINE LOGIC APP]
     # requests.post("URL_ZUM_AKTIVIEREN_DER_LOGIC_APP")
     
@@ -415,15 +428,22 @@ def main():
                 restore_rolling_checkpoint(work_dir, prefix)
 
         if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
-             update_csv(name, "SKIPPED (Phonon Crash)"); continue
+             send_notification(f"❌ Job {name} wurde wegen eines Phonon-Crashes übersprungen.")
+             update_csv(name, "SKIPPED (Phonon Crash)")
+             continue
 
         print("   ✅ El-Ph fertig. Starte Q2R und Matdyn...")
         with open(SIGNAL_FILE, "w") as f: f.write("Status, Fertig")
+        send_notification(f"✅ Job {name} (Phase 2) erfolgreich berechnet!")
         
     git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")
     
+    # 2. Abschluss-Nachricht senden
     if jobs_processed == 0:
         print("💡 Keine offene Berechnung gefunden. Alle Jobs sind bereits erledigt oder übersprungen.")
+        send_notification("💡 Pipeline beendet: Keine offenen Berechnungen gefunden.")
+    else:
+        send_notification(f"🎉 Pipeline erfolgreich beendet! {jobs_processed} Job(s) verarbeitet. Starte Shutdown-Sequenz.")
 
     # [HIER FEHLT DER NOT-AUS-SCHALTER FÜR DEINE LOGIC APP VOR DEM SHUTDOWN]
     # requests.post("URL_ZUM_DEAKTIVIEREN_DER_LOGIC_APP")
@@ -433,6 +453,6 @@ def main():
         print("🖥️ Interaktive Bash-Session erkannt. Automatischer Shutdown der VM wird übersprungen.")
     else:
         if os.name != 'nt': 
-            os.system("sudo shutdown -h now") # ACHTUNG: Das deallokiert die VM nicht! Nutze dafür am besten den Logic App Webhook.
+            os.system("sudo shutdown -h now")
 
 if __name__ == "__main__": main()

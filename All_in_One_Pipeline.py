@@ -380,10 +380,18 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
     with open(input_file, 'r') as f:
         content = f.read()
         
-    if "recover=" in content.lower():
-        content = re.sub(r"recover\s*=\s*\.[a-zA-Z]+\.", "recover=.true.", content, flags=re.IGNORECASE)
+    # INTELLIGENTER SCHALTER FÜR RECOVER
+    # Prüft, ob es tatsächlich Daten zum Wiederherstellen gibt
+    ph0_dir = os.path.join(cwd, "tmp", "_ph0")
+    if os.path.exists(ph0_dir):
+        rec_mode = "recover=.true."
     else:
-        content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,\n")
+        rec_mode = "recover=.false."
+
+    if "recover=" in content.lower():
+        content = re.sub(r"recover\s*=\s*\.[a-zA-Z]+\.", rec_mode, content, flags=re.IGNORECASE)
+    else:
+        content = content.replace("&INPUTPH", f"&INPUTPH\n {rec_mode},\n")
         
     with open(input_file+".run", 'w') as f:
         f.write(content)
@@ -393,7 +401,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
     with open(input_file+".run", 'r') as f_in, open(output_file, file_mode) as f_out:
         process = subprocess.Popen(["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
-        print(f"      ⚙️ Starte PHONONEN ({active_cores} Cores)...")
+        print(f"      ⚙️ Starte PHONONEN ({active_cores} Cores, {rec_mode})...")
         try:
             while process.poll() is None:
                 time.sleep(2)
@@ -515,7 +523,7 @@ def main():
                         pass
             
             with open(ph_in, "w") as f:
-                f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.true., electron_phonon='interpolated' /\n")
+                f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.false., electron_phonon='interpolated' /\n")
             
             pristine = os.path.join(work_dir, "tmp_PRISTINE_PH")
             if not os.path.exists(pristine) and os.path.exists(os.path.join(work_dir, "tmp")):
@@ -534,6 +542,7 @@ def main():
                 # Exakter Stopp bei Fehlern - Dateien bleiben unangetastet
                 error_msg = f"🧨 ERROR Phonon-Crash ({ph_res}) bei Job {name}. Stoppe Job für manuelle Analyse!"
                 print(f"      {error_msg}")
+                print_error_tail(ph_out, 50) # Hängt das Ende der ph.out direkt ins Log!
                 with open(TXT_LOG_FILE, "a") as f:
                     f.write(f"\n{error_msg}\n      => Die Dateien ph.in und ph.out wurden NICHT gelöscht.\n")
                 break

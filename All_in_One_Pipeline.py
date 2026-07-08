@@ -380,8 +380,6 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
     with open(input_file, 'r') as f:
         content = f.read()
         
-    # INTELLIGENTER SCHALTER FÜR RECOVER
-    # Prüft, ob es tatsächlich Daten zum Wiederherstellen gibt
     ph0_dir = os.path.join(cwd, "tmp", "_ph0")
     if os.path.exists(ph0_dir):
         rec_mode = "recover=.true."
@@ -451,9 +449,6 @@ def main():
         f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE\n{'='*40}\n")
     print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE\n{'='*40}\n")
 
-    with open(SIGNAL_FILE, "w") as f:
-        f.write("Status, Rechnet")
-
     send_notification("🚀 Smart-Pipeline wurde gestartet!")
     
     input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
@@ -463,8 +458,11 @@ def main():
         name = os.path.basename(input_file).replace(".in", "")
         work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
         row_data = get_csv_full_info(name)
+        status_str = row_data.get('Status', '').upper()
         
-        if "SKIPPED" in row_data.get('Status', '') or "Isolator" in row_data.get('Status', ''):
+        # Geänderte Logik: Nur bei bewussten Einträgen wie "SKIPPED" oder "Isolator" wird die Rechnung übersprungen.
+        # Ein "FEHLER (...)" führt nun dazu, dass die Pipeline die Rechnung direkt fortsetzt.
+        if status_str == "SKIPPED" or "ISOLATOR" in status_str:
             continue
         if row_data.get('Stabilität', '') == "INSTABIL":
             continue
@@ -509,7 +507,6 @@ def main():
         ph_res = "DONE"
         run_duration = 0
 
-        # Manueller Reset - greift nur wenn ph.in UND ph.out durch dich gelöscht wurden
         if not os.path.exists(ph_in) and not os.path.exists(ph_out):
             print("   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten...")
             ph0_path = os.path.join(work_dir, "tmp", "_ph0")
@@ -529,7 +526,6 @@ def main():
             if not os.path.exists(pristine) and os.path.exists(os.path.join(work_dir, "tmp")):
                 shutil.copytree(os.path.join(work_dir, "tmp"), pristine)
 
-        # Phononen-Schleife ohne max_seconds Limit
         if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
             ph_attempts = 0
             while ph_attempts < 5:
@@ -539,17 +535,16 @@ def main():
                 if ph_res == "DONE":
                     break
                 
-                # Exakter Stopp bei Fehlern - Dateien bleiben unangetastet
                 error_msg = f"🧨 ERROR Phonon-Crash ({ph_res}) bei Job {name}. Stoppe Job für manuelle Analyse!"
                 print(f"      {error_msg}")
-                print_error_tail(ph_out, 50) # Hängt das Ende der ph.out direkt ins Log!
+                print_error_tail(ph_out, 50) 
                 with open(TXT_LOG_FILE, "a") as f:
                     f.write(f"\n{error_msg}\n      => Die Dateien ph.in und ph.out wurden NICHT gelöscht.\n")
                 break
 
         if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
              send_notification(f"❌ Job {name} pausiert wegen eines Phonon-Crashes ({ph_res}). Bitte manuell prüfen.")
-             update_csv(name, f"SKIPPED (Crash - {ph_res})")
+             update_csv(name, f"FEHLER ({ph_res})")
              continue
 
         print("   ✅ El-Ph fertig. Starte Q2R und Matdyn...")

@@ -29,7 +29,7 @@ DEFAULT_CORES = "4"
 SAFE_CORES = "2"
 MEMORY_LIMIT_PERCENT = 85.0
 MAX_BFGS_STEPS = 100 
-MAX_RETRIES_LEVEL = 3
+MAX_RETRIES_LEVEL = 5
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
@@ -73,6 +73,20 @@ def ensure_gitignore():
         for r in rules:
             if r not in existing:
                 f.write(r + "\n")
+
+def kill_zombie_processes():
+    """Beendet haengende MPI und QE Prozesse intelligent ohne Terminal-Eingriff"""
+    killed_any = False
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            if proc.info['name'] in ['mpirun', 'ph.x', 'pw.x']:
+                proc.kill()
+                killed_any = True
+        except:
+            pass
+    if killed_any:
+        print("      🧹 Zombie-Prozesse (mpirun/ph.x) wurden erfolgreich bereinigt.")
+        time.sleep(2)
 
 def check_and_free_disk_space():
     try:
@@ -127,49 +141,27 @@ def print_error_tail(log_file, lines=100):
     except:
         pass
 
-def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
-    try:
-        lam = float(lambda_ep)
-        wlog = float(omega_log_K)
-        if lam <= 0 or (lam - mu_star * (1.0 + 0.62 * lam)) <= 0:
-            return 0.0
-        return (wlog / 1.20) * math.exp(-1.04 * (1.0 + lam) / (lam - mu_star * (1.0 + 0.62 * lam)))
-    except:
-        return "-"
-
 def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-", lam="-", wlog="-", tc="-"):
     rows = list(csv.DictReader(open(CSV_FILE, 'r'))) if os.path.exists(CSV_FILE) else []
     found = False
     for row in rows:
         if row['Name'] == name:
             row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
-            if e_fermi != "-":
-                row['Fermi Energie (eV)'] = str(e_fermi)
-            if dos_val != "-":
-                row['DOS @ Fermi'] = str(dos_val)
-            if is_metal != "-":
-                row['Metall?'] = str(is_metal)
-            if min_f != "-":
-                row['Min Freq (THz)'] = str(min_f)
-            if stab != "-":
-                row['Stabilität'] = str(stab)
-            if lam != "-":
-                row['Lambda'] = str(lam)
-            if wlog != "-":
-                row['Omega_log (K)'] = str(wlog)
-            if tc != "-":
-                row['Tc (K)'] = str(tc)
+            if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
+            if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
+            if is_metal != "-": row['Metall?'] = str(is_metal)
+            if min_f != "-": row['Min Freq (THz)'] = str(min_f)
+            if stab != "-": row['Stabilität'] = str(stab)
+            if lam != "-": row['Lambda'] = str(lam)
+            if wlog != "-": row['Omega_log (K)'] = str(wlog)
+            if tc != "-": row['Tc (K)'] = str(tc)
             found = True
             break
     if not found:
         rows.append({
-            'Name': name, 
-            'Status': status, 
-            'Fermi Energie (eV)': str(e_fermi), 
-            'DOS @ Fermi': str(dos_val), 
-            'Metall?': str(is_metal), 
-            'Min Freq (THz)': str(min_f), 
-            'Stabilität': str(stab), 
+            'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 
+            'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 
+            'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 
             'Lambda': str(lam) if lam!="-" else "", 
             'Omega_log (K)': str(wlog) if wlog!="-" else "", 
             'Tc (K)': str(tc) if tc!="-" else "", 
@@ -229,6 +221,7 @@ def restore_rolling_checkpoint(work_dir, prefix):
             try:
                 shutil.copytree(bkp, tmp_dir)
                 if is_xml_valid(os.path.join(tmp_dir, f"{prefix}.save", "data-file-schema.xml")):
+                    print("      ✅ Checkpoint erfolgreich geladen.")
                     return True
             except:
                 pass
@@ -300,6 +293,7 @@ def analyze_crash_reason(output_file, start_size=0):
         return "HARD"
     
 def run_monitored_pw(input_file, output_file, cwd, active_cores):
+    kill_zombie_processes()
     with open(input_file, 'r') as f:
         content = f.read()
     if "pseudo_dir" in content:
@@ -372,6 +366,7 @@ def execute_scf_block(name, scf_in, scf_out, work_dir, phase_label):
         return "SKIPPED", cores
 
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
+    kill_zombie_processes()
     last_sync = time.time()
     last_cp = time.time()
     start_time = time.time()
@@ -410,13 +405,18 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                     git_sync("Heartbeat (Phonon Running)")
                     last_sync = time.time()
 
+                # Deadlock-Detection: Wenn mpirun läuft, aber ph.x tot ist (vom OOM Killer erwischt)
                 try:
-                    if psutil.virtual_memory().percent > MEMORY_LIMIT_PERCENT:
-                        print("      ⚠️ RAM NOT-AUS!")
-                        process.terminate()
-                        return "OOM", time.time() - start_time
-                except:
+                    if time.time() - start_time > 15:
+                        parent = psutil.Process(process.pid)
+                        children = parent.children(recursive=True)
+                        if not any(c.name() == 'ph.x' for c in children):
+                            print("      ⚠️ Deadlock erkannt! ph.x wurde beendet, aber mpirun haengt.")
+                            process.kill()
+                            return "OOM_DEADLOCK", time.time() - start_time
+                except psutil.NoSuchProcess:
                     pass
+
         except: 
             process.kill()
             return "CRASH", time.time() - start_time
@@ -442,6 +442,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 # =============================================================================
 def main():
     ensure_gitignore()
+    kill_zombie_processes()
     print("☁️ Führe initialen Git Pull aus...")
     initial_git_pull()
     
@@ -460,8 +461,6 @@ def main():
         row_data = get_csv_full_info(name)
         status_str = row_data.get('Status', '').upper()
         
-        # Geänderte Logik: Nur bei bewussten Einträgen wie "SKIPPED" oder "Isolator" wird die Rechnung übersprungen.
-        # Ein "FEHLER (...)" führt nun dazu, dass die Pipeline die Rechnung direkt fortsetzt.
         if status_str == "SKIPPED" or "ISOLATOR" in status_str:
             continue
         if row_data.get('Stabilität', '') == "INSTABIL":
@@ -492,9 +491,6 @@ def main():
             shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
             shutil.rmtree(os.path.join(work_dir, "tmp_PRISTINE_PH"), ignore_errors=True)
             
-        if os.path.exists(ph_in) and "electron_phonon" not in open(ph_in, errors='ignore').read():
-            print("   ℹ️ Phase 2 erkannt - Warte auf manuellen Reset (Löschen der ph.in UND ph.out durch dich) falls nötig.")
-        
         print(f"\n💎 Job, {name} (Phase 2)")
         scf_res, scf_cores = execute_scf_block(name, scf_in, scf_out, work_dir, "Präzision")
         if scf_res != "DONE":
@@ -514,10 +510,8 @@ def main():
                 shutil.rmtree(ph0_path, ignore_errors=True)
             for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
                 for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
-                    try:
-                        os.remove(f)
-                    except:
-                        pass
+                    try: os.remove(f)
+                    except: pass
             
             with open(ph_in, "w") as f:
                 f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2, recover=.false., electron_phonon='interpolated' /\n")
@@ -528,27 +522,46 @@ def main():
 
         if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
             ph_attempts = 0
-            while ph_attempts < 5:
+            current_ph_cores = int(DEFAULT_CORES)
+            
+            while ph_attempts < MAX_RETRIES_LEVEL:
                 ph_attempts += 1
-                ph_res, run_duration = run_monitored_ph(ph_in, ph_out, work_dir, scf_cores)
+                ph_res, run_duration = run_monitored_ph(ph_in, ph_out, work_dir, current_ph_cores)
                 
                 if ph_res == "DONE":
                     break
+                    
+                # Auto-Rollback bei Datenkorruption
+                if ph_res in ["XML_ERROR", "ELPH_CORRUPT"]:
+                    print(f"      ⚠️ Korrupte Datenbank erkannt ({ph_res})! Lade Checkpoint...")
+                    if restore_rolling_checkpoint(work_dir, prefix):
+                        continue # Startet naechste Runde automatisch mit recover=.true.
+                    else:
+                        print("      ⚠️ Kein Checkpoint gefunden. Fange Phononen von vorne an.")
+                        shutil.rmtree(os.path.join(work_dir, "tmp", "_ph0"), ignore_errors=True)
+                        continue
+
+                # Auto-Drosselung bei RAM-Überlauf (OOM) - Retter in der Not
+                if ph_res in ["OOM", "OOM_DEADLOCK", "LIKELY_OOM"]:
+                    print(f"      ⚠️ Arbeitsspeicherueberlauf (OOM) bei {current_ph_cores} Kernen erkannt!")
+                    current_ph_cores = int(SAFE_CORES) # Skript drosselt Kerne intern selbst fuer den Retry
+                    print(f"      🔄 Retter-Modus: Drossele intern auf {current_ph_cores} Kerne und lade Checkpoint...")
+                    restore_rolling_checkpoint(work_dir, prefix)
+                    continue
                 
-                error_msg = f"🧨 ERROR Phonon-Crash ({ph_res}) bei Job {name}. Stoppe Job für manuelle Analyse!"
+                # Wenn es ein anderer, unbekannter Crash ist
+                error_msg = f"🧨 ERROR Phonon-Crash ({ph_res}) bei Job {name}. Retry {ph_attempts}/{MAX_RETRIES_LEVEL}"
                 print(f"      {error_msg}")
                 print_error_tail(ph_out, 50) 
-                with open(TXT_LOG_FILE, "a") as f:
-                    f.write(f"\n{error_msg}\n      => Die Dateien ph.in und ph.out wurden NICHT gelöscht.\n")
-                break
+                
+                # WICHTIG: Das 'break' wurde hier geloescht! Die Schleife laeuft jetzt weiter.
 
         if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
-             send_notification(f"❌ Job {name} pausiert wegen eines Phonon-Crashes ({ph_res}). Bitte manuell prüfen.")
+             send_notification(f"❌ Job {name} abgebrochen nach {MAX_RETRIES_LEVEL} Versuchen ({ph_res}).")
              update_csv(name, f"FEHLER ({ph_res})")
              continue
 
         print("   ✅ El-Ph fertig. Starte Q2R und Matdyn...")
-        # Hier folgt später die Logik für Q2R und Matdyn zur Tc-Berechnung.
         send_notification(f"✅ Job {name} (Phase 2) erfolgreich berechnet!")
         
     git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")

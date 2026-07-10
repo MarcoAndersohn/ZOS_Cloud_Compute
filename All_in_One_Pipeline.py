@@ -32,7 +32,7 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-# Exakt wie von dir vorgegeben:
+# Exakt wie von dir vorgegeben (Keine Drosselung):
 DEFAULT_CORES = "4"
 SAFE_CORES = "2"
 MEMORY_LIMIT_PERCENT = 92.0
@@ -187,7 +187,9 @@ def restore_rolling_checkpoint(work_dir, prefix):
     tmp_dir = os.path.join(work_dir, "tmp")
     for bkp in [os.path.join(work_dir, "tmp_SAFE_1"), os.path.join(work_dir, "tmp_SAFE_2")]:
         if os.path.exists(bkp):
-            print(f"      🔄 Lade Checkpoint aus {os.path.basename(bkp)}...")
+            msg = f"      🔄 Lade Checkpoint aus {os.path.basename(bkp)}..."
+            print(msg)
+            with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg + "\n")
             shutil.rmtree(tmp_dir, ignore_errors=True)
             try:
                 shutil.copytree(bkp, tmp_dir)
@@ -241,7 +243,10 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
     file_mode = 'a' if ("recover=.true." in content.lower()) else 'w'
 
     with open(input_file+".run", 'r') as f_in, open(output_file, file_mode) as f_out:
-        print(f"      ⚙️ Starte PHONONEN ({active_cores} Cores, {rec_mode})...")
+        msg = f"      ⚙️ Starte PHONONEN ({active_cores} Cores, {rec_mode})..."
+        print(msg)
+        with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg + "\n")
+        
         process = subprocess.Popen(["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
         
         try:
@@ -279,13 +284,15 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 # 4. HAUPTPROGRAMM - EINGEBETTET IN DEINEN GLOBALEN TRY-EXCEPT
 # =============================================================================
 def main():
+    # ZUERST in die Datei schreiben, dann den Pull machen
+    with open(TXT_LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
+        f.write("☁️ Führe initialen Git Pull aus...\n")
+    
     print("☁️ Führe initialen Git Pull aus...")
     initial_git_pull()
     
     set_logic_app_state("Enabled")
-    with open(TXT_LOG_FILE, "a") as f:
-        f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
-    print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
     
     if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
     if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
@@ -314,7 +321,10 @@ def main():
             continue
         
         if not os.path.exists(work_dir): os.makedirs(work_dir)
-        print(f"\n💎 Job, {name}")
+        msg = f"\n💎 Job, {name}"
+        print(msg)
+        with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg + "\n")
+        
         scf_in = os.path.join(work_dir, "scf.in")
         ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
 
@@ -332,8 +342,12 @@ def main():
                 match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
                 if match: e_fermi = float(match.group(1))
 
+            # MANUELLER RESET: Wird NUR ausgelöst, wenn ph.in UND ph.out fehlen.
             if not os.path.exists(ph_in) and not os.path.exists(ph_out):
-                print("   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten...")
+                msg = "   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten..."
+                print(msg)
+                with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg + "\n")
+                
                 shutil.rmtree(os.path.join(work_dir, "tmp", "_ph0"), ignore_errors=True)
                 for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
                     for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
@@ -355,19 +369,25 @@ def main():
                     print_error_tail(ph_out, 50)
                     
                     if ph_res in ["XML_ERROR", "ELPH_CORRUPT"]:
-                        print(f"      ⚠️ Korrupte Datenbank erkannt ({ph_res})!")
+                        msg_err = f"      ⚠️ Korrupte Datenbank erkannt ({ph_res})!"
+                        print(msg_err)
+                        with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg_err + "\n")
+                        
                         if ph_attempts <= 2 and restore_rolling_checkpoint(work_dir, prefix):
-                            print("      🔄 Checkpoint geladen. Nächster Versuch...")
+                            msg_cp = "      🔄 Checkpoint geladen. Nächster Versuch..."
+                            print(msg_cp)
+                            with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg_cp + "\n")
                         else:
-                            print("      💥 Checkpoints nutzlos. Lösche korrupten Phonon-Cache komplett!")
-                            shutil.rmtree(os.path.join(work_dir, "tmp", "_ph0"), ignore_errors=True)
-                            for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
-                                for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
-                                    try: os.remove(f)
-                                    except: pass
+                            # HIER IST DEINE REGEL: Nicht mehr den _ph0 Ordner löschen!
+                            msg_abort = "      💥 Checkpoints nutzlos. ABBRUCH! Bitte ph.in UND ph.out manuell löschen für Reset."
+                            print(msg_abort)
+                            with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg_abort + "\n")
+                            break # Bricht die Schleife ab, geht zum nächsten System
                         continue
 
-                    print(f"      🧨 ERROR Phonon-Crash ({ph_res}) bei Job {name}. Retry {ph_attempts}/{MAX_RETRIES_LEVEL}")
+                    msg_retry = f"      🧨 ERROR Phonon-Crash ({ph_res}) bei Job {name}. Retry {ph_attempts}/{MAX_RETRIES_LEVEL}"
+                    print(msg_retry)
+                    with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg_retry + "\n")
 
             if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                 update_csv(name, "SKIPPED (Phonon Crash)") 

@@ -284,13 +284,17 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                         if is_xml_valid(xml_path):
                             print("      💾 XML valide -> Erstelle Checkpoint...")
                             try:
-                                if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
-                                shutil.copytree(tmp_dir, checkpoint_dir)
+                                # Sicherer Kopiervorgang ohne harten Crash falls Dateien gerade beschrieben werden
+                                if not os.path.exists(checkpoint_dir):
+                                    shutil.copytree(tmp_dir, checkpoint_dir)
+                                else:
+                                    shutil.copytree(tmp_dir, checkpoint_dir, dirs_exist_ok=True)
                                 last_checkpoint_time = time.time()
                                 print("      ✅ Checkpoint erstellt.")
                                 git_sync("Checkpoint & Log Update")
                                 last_git_sync = time.time() 
-                            except Exception as e: print(f"      ⚠️ Checkpoint fail, {e}")
+                            except Exception as e: 
+                                print(f"      ⚠️ Checkpoint fail (wird ignoriert), {e}")
 
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
@@ -645,8 +649,6 @@ def main():
                                 print("   📄 Phase 3.txt erkannt! Drossele Phononen hart auf 2 Kerne.")
                     except: pass
 
-                # Mismatch Prüfung wurde hier entfernt, da wf_collect=.true. SCF und Phonon auf verschiedenen Kernen erlaubt!
-
                 result = "DONE"
                 crash_counter = 0
 
@@ -679,7 +681,6 @@ def main():
                     else:
                         oom_level = file_level
 
-                    # SCF soll prinzipiell immer auf DEFAULT_CORES (4) laufen, außer OOM Level 4 drosselt hart.
                     current_cores = int(DEFAULT_CORES)
                     if oom_level >= 4: current_cores = int(SAFE_CORES)
                     
@@ -746,11 +747,12 @@ def main():
                     match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
                     prefix = match.group(1) if match else "calc"
                 
+                # BUGFIX: Lese die LETZTE Fermi-Energie statt der Ersten ein, verhindert Isolator-Fehlalarm!
                 e_fermi = "-"
                 if os.path.exists(scf_out):
                     with open(scf_out, 'r', errors='ignore') as f:
-                        match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
-                        if match: e_fermi = float(match.group(1))
+                        matches = re.findall(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
+                        if matches: e_fermi = float(matches[-1])
 
                 update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
                 if not os.path.exists(dos_out):
@@ -792,8 +794,10 @@ def main():
                             for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
                                 try: os.remove(f)
                                 except: pass
+                        
+                        # BUGFIX: Hier nur reine Phononen (Phase 1) ohne electron_phonon Flag!
                         with open(ph_in, "w") as f: 
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1=2, nq2=2, nq3=2 /\n")
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
                     
                     ph_cores = ph_cores_to_use
                     if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)

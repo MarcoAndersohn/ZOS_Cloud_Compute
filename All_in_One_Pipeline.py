@@ -21,29 +21,28 @@ sys.stderr.reconfigure(line_buffering=True)
 # =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
-try:
-    TELEGRAM_TOKEN = open("/home/marco/.telegram_token").read().strip()
-except:
-    TELEGRAM_TOKEN = ""
-    
+TELEGRAM_TOKEN = open("/home/marco/.telegram_token").read().strip()
 TELEGRAM_CHAT_ID = "711461437"
 
 LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
+# Angepasst an Standard D4s v5
 DEFAULT_CORES = "4"
 SAFE_CORES = "2"
 MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
-MAX_RETRIES_LEVEL = 5
+MAX_RETRIES_LEVEL = 3
+
+FORCE_RETRY_LIST = []
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")
 SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
-LOCK_FILE = os.path.join(WORK_DIR, "pipeline.lock")
+
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 
 PW_EXE = shutil.which("pw.x") or "/usr/bin/pw.x"
@@ -60,11 +59,16 @@ def send_notification(message):
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC, {message}"}
         requests.post(url, data=payload, timeout=10)
-    except:
-        pass
+    except: pass
+
+def set_logic_app_state(state="Enabled"):
+    if not shutil.which("az"): return
+    try:
+        subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True, timeout=30)
+    except: pass
 
 def kill_process_tree(pid):
-    """Der Stammbaum-Mörder - Beendet einen Prozess und alle seine Kinder."""
+    """Der Stammbaum-Mörder - Beendet zielgenau einen Prozess und alle seine Kinder"""
     try:
         parent = psutil.Process(pid)
         children = parent.children(recursive=True)
@@ -98,17 +102,6 @@ def git_sync(message):
     except Exception as e:
         print(f"⚠️ Git Fehler, {e}")
 
-def print_error_tail(log_file, lines=50):
-    if not os.path.exists(log_file):
-        return
-    try:
-        with open(log_file, 'r', errors='ignore') as f:
-            tail = f.readlines()[-lines:]
-        err = f"\n      --- LETZTE {lines} ZEILEN VON {os.path.basename(log_file)} ---\n" + "".join([f"      {l.rstrip()}" for l in tail])
-        print(err)
-    except:
-        pass
-
 def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
     try:
         lam = float(lambda_ep)
@@ -128,8 +121,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Lambda', 'Omega_log (K)', 'Tc (K)', 'Timestamp']
     rows = []
     if os.path.exists(CSV_FILE):
-        with open(CSV_FILE, 'r') as f:
-            rows = list(csv.DictReader(f))
+        with open(CSV_FILE, 'r') as f: rows = list(csv.DictReader(f))
     found = False
     for row in rows:
         if row['Name'] == name:
@@ -163,42 +155,27 @@ def get_csv_full_info(name):
             if row['Name'] == name: return row
     return {}
 
-# =============================================================================
-# 3. CRASH ANALYSE & ENGINES
-# =============================================================================
-def is_xml_valid(xml_path):
-    if not os.path.exists(xml_path): return False
+def count_job_attempts(log_file, job_name):
+    if not os.path.exists(log_file): return 1
+    count = 0
     try:
-        with open(xml_path, 'rb') as f:
-            f.seek(max(0, os.path.getsize(xml_path) - 1000))
-            tail = f.read().decode('utf-8', errors='ignore')
-        return "</qes:espresso>" in tail or "</qes:data-file-schema>" in tail
-    except: return False
+        with open(log_file, 'rb') as f:
+            f.seek(0, 2) 
+            size = f.tell()
+            f.seek(max(0, size - 50000), 0)
+            lines = f.read().decode('utf-8', errors='ignore').splitlines()
+        job_marker = f"💎 Job, {job_name}"
+        for line in reversed(lines):
+            if job_marker in line:
+                count += 1
+            elif "💎 Job," in line and job_name not in line:
+                break
+    except: return 1
+    return max(1, count)
 
-def manage_rolling_checkpoints(work_dir):
-    tmp_dir = os.path.join(work_dir, "tmp")
-    bkp1 = os.path.join(work_dir, "tmp_SAFE_1")
-    bkp2 = os.path.join(work_dir, "tmp_SAFE_2")
-    if not os.path.exists(tmp_dir): return
-    if os.path.exists(bkp1):
-        if os.path.exists(bkp2): shutil.rmtree(bkp2, ignore_errors=True)
-        try: shutil.move(bkp1, bkp2)
-        except: pass
-    try: shutil.copytree(tmp_dir, bkp1)
-    except: pass
-
-def restore_rolling_checkpoint(work_dir, prefix):
-    tmp_dir = os.path.join(work_dir, "tmp")
-    for bkp in [os.path.join(work_dir, "tmp_SAFE_1"), os.path.join(work_dir, "tmp_SAFE_2")]:
-        if os.path.exists(bkp):
-            print(f"      🔄 Lade Checkpoint aus {os.path.basename(bkp)}...")
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-            try:
-                shutil.copytree(bkp, tmp_dir)
-                if is_xml_valid(os.path.join(tmp_dir, f"{prefix}.save", "data-file-schema.xml")):
-                    return True
-            except: pass
-    return False
+# =============================================================================
+# 3. SMART LOGIC & VALIDATION & CRASH ANALYSE
+# =============================================================================
 
 def analyze_crash_reason(output_file):
     if not os.path.exists(output_file): return "NONE"
@@ -206,91 +183,354 @@ def analyze_crash_reason(output_file):
         with open(output_file, 'rb') as f:
             try: f.seek(-20000, 2)
             except OSError: f.seek(0)
-            lines = f.read().decode('utf-8', errors='ignore').lower()
+            lines = f.read().decode('utf-8', errors='ignore')
         
-        if "job done" in lines: return "DONE"
-        if "convergence not achieved" in lines: return "NON_CONVERGED"
-        if "fatal error reading xml" in lines or "tag root not found" in lines or "xmltools.f90" in lines: return "XML_ERROR"
-        if "not orthogonal" in lines and "d_s" in lines: return "SYMMETRY_ERROR"
-        if "mx dimension too small" in lines: return "PSEUDO_ERROR"
-        if "i/o past end of record" in lines or "end of file" in lines: return "ELPH_CORRUPT"
+        if "JOB DONE" in lines: return "DONE"
+        if "convergence NOT achieved" in lines: return "NON_CONVERGED"
+        
+        lines_lower = lines.lower()
+        
+        if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower:
+            print("      🧨 XML-Struktur zerstört (Corruption).")
+            return "XML_ERROR"
 
+        if "not orthogonal" in lines_lower and "d_s" in lines_lower:
+            print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
+            return "SYMMETRY_ERROR"
+
+        if "mx dimension too small" in lines_lower:
+            print("      🧨 Mismatch/Pseudo Error! Dimensionen stimmen nicht mit Kernanzahl überein.")
+            return "PSEUDO_ERROR"
+
+        ram_match = re.search(r"estimated total dynamical ram\s*>\s*([0-9\.]+)\s*(mb|gb)", lines_lower)
         error_keywords = ["error", "mpi_abort", "segmentation fault", "stopping", "fatal", "diagonalization failed"]
-        has_error_msg = any(key in lines for key in error_keywords)
-        if has_error_msg: return "HARD"
+        has_error_msg = any(key in lines_lower for key in error_keywords)
 
-        ram_match = re.search(r"estimated total dynamical ram\s*>\s*([0-9\.]+)\s*(mb|gb)", lines)
-        if ram_match and "self-consistent calculation" not in lines and "iteration #" not in lines: return "LIKELY_OOM"
-        if "iteration #" in lines or "diagonalization" in lines:
-            if not has_error_msg: return "LIKELY_OOM"
+        if has_error_msg: 
+            return "HARD"
+
+        if ram_match:
+            if "self-consistent calculation" not in lines_lower and "iteration #" not in lines_lower:
+                return "LIKELY_OOM"
+
+        if "iteration #" in lines_lower or "diagonalization" in lines_lower:
+            if not has_error_msg:
+                return "LIKELY_OOM"
         
         return "SOFT"
     except: return "HARD"
-
+    
 def run_monitored_pw(input_file, output_file, cwd, active_cores):
-    with open(input_file, 'r') as f: content = f.read()
-    if "pseudo_dir" in content: content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{PSEUDO_DIR}/'", content)
-    else: content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{PSEUDO_DIR}/',\n")
-    if "electron_maxstep" in content: content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 150", content)
-    else: content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 150,\n")
-    
-    tmp_dir = os.path.join(cwd, "tmp") 
-    prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
-    prefix = prefix_match.group(1) if prefix_match else "calc"
-    mode = 'restart' if os.path.exists(output_file) and is_xml_valid(os.path.join(tmp_dir, f"{prefix}.save", "data-file-schema.xml")) else 'from_scratch'
-    
-    if mode == 'from_scratch' and os.path.exists(tmp_dir): shutil.rmtree(tmp_dir, ignore_errors=True)
-    if "restart_mode" in content: content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
-    else: content = content.replace("&CONTROL", f"&CONTROL\n restart_mode='{mode}',\n")
-    
-    with open(input_file+".run", 'w') as f: f.write(content)
-    
-    file_mode = 'a' if mode == 'restart' else 'w'
-    with open(input_file+".run", 'r') as f_in, open(output_file, file_mode) as f_out:
-        print(f"      ⚙️ Starte PWSCF ({mode} {active_cores} Cores)...")
-        process = subprocess.Popen(["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE, "-ndiag", "1"], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
-        try:
-            while process.poll() is None: time.sleep(2)
-        except:
-            kill_process_tree(process.pid)
-            return "CRASH"
-        if process.returncode == -9: return "OOM"
-        return analyze_crash_reason(output_file)
+    fix_input_file(input_file, 0)
+    last_git_sync = time.time()
+    last_checkpoint_time = 0 
 
+    while True:
+        with open(input_file, 'r') as f: content = f.read()
+        tmp_dir = os.path.join(cwd, "tmp") 
+        checkpoint_dir = os.path.join(cwd, "tmp_SAFE_CHECKPOINT") 
+
+        if "wf_collect" in content:
+            content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
+        else:
+            content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
+
+        prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
+        current_prefix = prefix_match.group(1) if prefix_match else "calc"
+        xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")
+        
+        mode = 'from_scratch'
+        if os.path.exists(output_file) and is_xml_valid(xml_path):
+            mode = 'restart'
+            print("      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.")
+        elif os.path.exists(output_file) and os.path.exists(checkpoint_dir):
+            print("      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...")
+            try:
+                if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir)
+                shutil.copytree(checkpoint_dir, tmp_dir)
+                if is_xml_valid(xml_path):
+                    mode = 'restart'
+                    print("      ✅ Checkpoint erfolgreich geladen!")
+                else:
+                    print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
+            except Exception as e: print(f"      ❌ Fehler beim Laden des Checkpoints, {e}")
+        else:
+            print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
+
+        if mode == 'from_scratch':
+            if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir, ignore_errors=True)
+            if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir, ignore_errors=True)
+
+        if "restart_mode" in content:
+            content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
+        else:
+            content = content.replace("&CONTROL", f"&CONTROL\n restart_mode='{mode}',")
+        
+        run_input = input_file + ".run"
+        with open(run_input, 'w') as f: f.write(content)
+
+        file_mode = 'a' if mode == 'restart' else 'w'
+        
+        with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
+            cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE, "-ndiag", "1"]
+            print(f"      ⚙️ Starte PWSCF ({mode}, {active_cores} Cores, -ndiag 1)...")
+            process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
+            
+            try:
+                while process.poll() is None:
+                    time.sleep(5)
+                    
+                    if time.time() - last_checkpoint_time > 900: 
+                        if is_xml_valid(xml_path):
+                            print("      💾 XML valide -> Erstelle Checkpoint...")
+                            try:
+                                if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
+                                shutil.copytree(tmp_dir, checkpoint_dir)
+                                last_checkpoint_time = time.time()
+                                print("      ✅ Checkpoint erstellt.")
+                                git_sync("Checkpoint & Log Update")
+                                last_git_sync = time.time() 
+                            except Exception as e: print(f"      ⚠️ Checkpoint fail, {e}")
+
+                    if time.time() - last_git_sync > 3600:
+                        print("      ❤️ Git Heartbeat...")
+                        git_sync("Log Update (Heartbeat)")
+                        last_git_sync = time.time()
+
+                    try:
+                        mem_usage = psutil.virtual_memory().percent
+                        if mem_usage > MEMORY_LIMIT_PERCENT:
+                            print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
+                            kill_process_tree(process.pid)
+                            return "OOM" 
+                    except: pass
+
+                    cur_iter = get_last_iteration(output_file)
+                    if cur_iter >= MAX_BFGS_STEPS:
+                        print(f"      🛑 Limit erreicht ({cur_iter}/{MAX_BFGS_STEPS} BFGS Schritte). Breche ab.")
+                        kill_process_tree(process.pid)
+                        return "MAX_STEPS"
+                    
+                    if cur_iter > 30: fix_input_file(input_file, cur_iter)
+
+            except: 
+                kill_process_tree(process.pid)
+                return "CRASH"
+            
+            time.sleep(1.5)
+            
+            if process.returncode == -9:
+                print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
+                return "OOM"
+
+            if process.returncode != 0:
+                reason = analyze_crash_reason(output_file)
+                if reason == "LIKELY_OOM":
+                    print("      💀 Logfile endet abrupt (Silent Death) -> OOM.")
+                    return "OOM"
+                return "CRASH"
+
+            final_reason = analyze_crash_reason(output_file)
+            if final_reason == "DONE": return "DONE"
+            elif final_reason == "LIKELY_OOM": return "OOM"
+            
+            return "CRASH"
+        
+def is_xml_valid(xml_path):
+    if not os.path.exists(xml_path): return False
+    try:
+        with open(xml_path, 'rb') as f:
+            try: f.seek(-1000, 2) 
+            except: f.seek(0)
+            tail = f.read().decode('utf-8', errors='ignore')
+        if "</qes:espresso>" in tail or "</qes:data-file-schema>" in tail:
+            return True
+        return False
+    except:
+        return False
+
+def is_recoverable_fragmentation_error(ph_output_file):
+    if not os.path.exists(ph_output_file): return False
+    try:
+        with open(ph_output_file, 'r', errors='ignore') as f:
+            content = f.read()
+        if "mismatch in number of G-vectors" in content or ("error reading file" in content and "xml" not in content):
+            return True
+        return False
+    except: return False
+
+def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
+    print(f"      🚑 Starte RECOVERY-Modus (Collect Waves), Cores={cores_to_use}")
+    
+    with open(scf_input_file, 'r') as f: content = f.read()
+    
+    if "restart_mode" in content:
+        content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", "restart_mode='restart'", content)
+    else:
+        content = content.replace("&CONTROL", "&CONTROL\n restart_mode='restart',")
+        
+    if "wf_collect" in content:
+        content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
+    else:
+        content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
+
+    if "nstep" in content:
+        content = re.sub(r"nstep\s*=\s*\d+", "nstep=0", content)
+    else:
+        content = content.replace("&CONTROL", "&CONTROL\n nstep=0,")
+
+    recover_in = scf_input_file + ".recover"
+    recover_out = os.path.join(cwd, "scf_recover.out")
+    with open(recover_in, 'w') as f: f.write(content)
+    
+    with open(recover_in, 'r') as f_in, open(recover_out, 'w') as f_out:
+        cmd = ["mpirun", "--oversubscribe", "-np", str(cores_to_use), PW_EXE]
+        try:
+            subprocess.run(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd, timeout=300)
+            print("      ✅ Recovery-Lauf beendet. Daten sollten jetzt consolidated sein.")
+            return True
+        except Exception as e:
+            print(f"      ❌ Recovery fehlgeschlagen, {e}")
+            return False
+
+def disable_symmetries_and_reduce_grid(input_file):
+    if not os.path.exists(input_file): return
+    with open(input_file, 'r') as f: content = f.read()
+    
+    content = content.replace("noinv=.true.,", "")
+    content = content.replace("noinv=.true.", "")
+
+    if "&INPUTPH" in content:
+        if "search_sym" not in content:
+            content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
+    
+    content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
+    content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
+    content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
+
+    with open(input_file, 'w') as f: f.write(content)
+    print(f"      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.")
+
+def detect_oom_level(input_file):
+    if not os.path.exists(input_file): return 0
+    with open(input_file, 'r', errors='ignore') as f: content = f.read()
+    if "mixing_ndim = 2" in content or "mixing_ndim=2" in content: return 4
+    if "mixing_ndim = 3" in content or "mixing_ndim=3" in content: return 3
+    if "disk_io='low'" in content or 'disk_io="low"' in content: return 2
+    if "diagonalization='cg'" in content or 'diagonalization="cg"' in content: return 1
+    return 0
+
+def apply_oom_settings(input_file, level):
+    with open(input_file, 'r') as f: content = f.read()
+    diag = 'cg'; mix = 4; disk = None 
+    msg = "Standard (cg, mix=4)"
+
+    if level >= 1: disk = 'low'; msg = "Stufe 1 (cg, mix=4, disk_io='low')"
+    if level >= 2: mix = 3; msg = "Stufe 2 (cg, mix=3, disk_io='low')"
+    if level >= 3: mix = 2; msg = "Stufe 3 (cg, mix=2, disk_io='low')"
+    if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
+
+    print(f"      📉 Setze RAM-Strategie, {msg}")
+
+    if "diagonalization" in content:
+        content = re.sub(r"diagonalization\s*=\s*['\"].*['\"]", f"diagonalization='{diag}'", content)
+    else:
+        content = content.replace("&ELECTRONS", f"&ELECTRONS\n diagonalization='{diag}',")
+
+    if "mixing_ndim" in content:
+        content = re.sub(r"mixing_ndim\s*=\s*\d+", f"mixing_ndim = {mix}", content)
+    else:
+        content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_ndim = {mix},")
+
+    if disk == 'low':
+        if "disk_io" in content:
+            content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"]", "disk_io='low'", content)
+        else:
+            content = content.replace("&CONTROL", "&CONTROL\n disk_io='low',")
+    else:
+        if "disk_io='low'" in content or 'disk_io="low"' in content:
+             content = re.sub(r"disk_io\s*=\s*['\"]low['\"],?", "", content)
+
+    with open(input_file, 'w') as f: f.write(content)
+    return True
+
+def fix_input_file(input_file, iteration_count=0):
+    with open(input_file, 'r') as f: content = f.read()
+    corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
+    if "pseudo_dir" in content:
+        content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
+    else:
+        content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
+
+    if "ecutwfc" in content:
+        content = re.sub(r"ecutwfc\s*=\s*[0-9\.]+", "ecutwfc = 80.0", content)
+    if "ecutrho" in content:
+        content = re.sub(r"ecutrho\s*=\s*[0-9\.]+", "ecutrho = 800.0", content)
+
+    target_beta = 0.7
+    if iteration_count >= 30: target_beta = 0.4
+    if iteration_count >= 60: target_beta = 0.25
+    if iteration_count >= 90: target_beta = 0.15
+
+    if "mixing_beta" in content:
+        content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
+    
+    if "electron_maxstep" in content:
+        content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 150", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 150,")
+
+    with open(input_file, 'w') as f: f.write(content)
+    return True
+
+def get_last_iteration(output_file):
+    if not os.path.exists(output_file): return 0
+    try:
+        file_size = os.path.getsize(output_file)
+        with open(output_file, 'rb') as f:
+            f.seek(max(0, file_size - 10000), 0) 
+            chunk = f.read().decode('utf-8', errors='ignore')
+        bfgs_matches = re.findall(r"number of bfgs steps\s*=\s*(\d+)", chunk)
+        scf_matches = re.findall(r"iteration #\s*(\d+)", chunk)
+        val = 0
+        if bfgs_matches: val = int(bfgs_matches[-1])
+        elif scf_matches: val = int(scf_matches[-1])
+        return val
+    except: return 0
+
+
+# --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
-    last_cp = time.time()
 
     with open(input_file, 'r') as f: content = f.read()
-    ph0_dir = os.path.join(cwd, "tmp", "_ph0")
-    rec_mode = "recover=.true." if os.path.exists(ph0_dir) else "recover=.false."
+    if os.path.exists(output_file):
+        if "recover" not in content:
+            content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
+    
+    run_input = input_file + ".run"
+    with open(run_input, 'w') as f: f.write(content)
+    
+    file_mode = 'a' if "recover=.true." in content else 'w'
 
-    if "recover=" in content.lower():
-        content = re.sub(r"recover\s*=\s*\.[a-zA-Z]+\.", rec_mode, content, flags=re.IGNORECASE)
-    else:
-        content = content.replace("&INPUTPH", f"&INPUTPH\n {rec_mode},\n")
-        
-    with open(input_file+".run", 'w') as f: f.write(content)
-    file_mode = 'a' if ("recover=.true." in content.lower()) else 'w'
-
-    with open(input_file+".run", 'r') as f_in, open(output_file, file_mode) as f_out:
-        print(f"      ⚙️ Starte PHONONEN ({active_cores} Cores, {rec_mode})...")
-        
-        process = subprocess.Popen(["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
+    with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
+        cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
+        print(f"      ⚙️ Starte PHONONEN (Cores, {active_cores})...")
+        process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
         
         try:
             while process.poll() is None:
-                time.sleep(2)
-                if time.time() - last_cp > 1800:
-                    manage_rolling_checkpoints(cwd)
-                    last_cp = time.time()
+                time.sleep(5)
+                
                 if time.time() - last_git_sync > 1800:
+                    print("      ❤️ Git Heartbeat (Phonon)...")
                     git_sync("Log Update (Phonon Running)")
                     last_git_sync = time.time()
 
                 try:
-                    if psutil.virtual_memory().percent > MEMORY_LIMIT_PERCENT:
-                        print("      ⚠️ RAM NOT-AUS (Python Monitor)!")
+                    mem_usage = psutil.virtual_memory().percent
+                    if mem_usage > MEMORY_LIMIT_PERCENT:
+                        print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
                         kill_process_tree(process.pid)
                         return "OOM"
                 except: pass
@@ -299,195 +539,472 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
             kill_process_tree(process.pid)
             return "CRASH"
         
-        if process.returncode == -9: return "OOM"
+        time.sleep(1.5)
+        
+        if process.returncode == -9:
+            print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
+            return "OOM"
+
+        if process.returncode != 0:
+            return "CRASH"
 
         try:
             with open(output_file, 'r', errors='ignore') as f:
                 if "JOB DONE" in f.read(): return "DONE"
         except: pass
-
-        res = analyze_crash_reason(output_file)
-        return res if res != "NONE" else "CRASH"
+        
+        return "CRASH"
+    
+def deallocate_vm():
+    if not shutil.which("az"): 
+        print("🛑 Azure CLI nicht gefunden. Verlasse mich auf lokalen Shutdown.")
+        return
+    try:
+        result = subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], capture_output=True, text=True, timeout=60)
+        if result.returncode != 0:
+            print(f"⚠️ Azure CLI Deallocate Fehler, {result.stderr}")
+        else:
+            print("✅ VM erfolgreich deallokiert.")
+    except Exception as e: 
+        print(f"⚠️ Fehler beim Aufruf der Azure CLI, {e}")
 
 # =============================================================================
-# 4. HAUPTPROGRAMM - EINGEBETTET IN TRY-EXCEPT
+# 4. HAUPTPROGRAMM
 # =============================================================================
 def main():
-    if os.path.exists(LOCK_FILE):
-        print("🛑 Pipeline läuft bereits. Abbruch zum Schutz vor Dateikonflikten.")
-        sys.exit(0)
+    try:
+        print("☁️ Führe initialen Git Pull aus...")
+        initial_git_pull()
         
-    with open(LOCK_FILE, "w") as f:
-        f.write(str(os.getpid()))
-
-    print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
-    print("☁️ Führe initialen Git Pull aus...")
-    initial_git_pull()
-    
-    if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
-    if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
-    
-    input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
-    send_notification(f"Start, {len(input_files)} Jobs.")
-    git_sync("🚀 Start")
-
-    for input_file in input_files:
-        name = os.path.basename(input_file).replace(".in", "")
-        work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
-        scf_out = os.path.join(work_dir, "scf.out")
+        set_logic_app_state("Enabled")
+        with open(TXT_LOG_FILE, "a") as f:
+            f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
+        print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
-        row_data = get_csv_full_info(name)
-        last_status = row_data.get('Status', 'NEW')
-        stability = row_data.get('Stabilität', '-')
-
-        if "SKIPPED" in last_status or "Isolator" in last_status: continue
-        if "Metall" in last_status and stability in ["STABIL", "INSTABIL"]: continue
-
-        crash_type = analyze_crash_reason(scf_out)
-        if crash_type == "NON_CONVERGED": continue
+        if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
+        if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         
-        if not os.path.exists(work_dir): os.makedirs(work_dir)
-        print(f"\n💎 Job, {name}")
-        
-        scf_in = os.path.join(work_dir, "scf.in")
-        ph_in = os.path.join(work_dir, "ph.in")
-        ph_out = os.path.join(work_dir, "ph.out")
-        phase3_file = os.path.join(work_dir, "Phase 3.txt")
+        input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
+        send_notification(f"Start, {len(input_files)} Jobs.")
+        git_sync("🚀 Start")
 
-        if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
+        for input_file in input_files:
+            name = os.path.basename(input_file).replace(".in", "")
+            work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
+            scf_out = os.path.join(work_dir, "scf.out")
+            phase3_file = os.path.join(work_dir, "Phase 3.txt")
+            
+            if name in FORCE_RETRY_LIST:
+                print(f"🔄 ERZWUNGENER NEUSTART für {name} (Lösche korrupten RUN-Ordner)...")
+                if os.path.exists(work_dir):
+                    shutil.rmtree(work_dir, ignore_errors=True)
+                update_csv(name, "NEW", "-", "-", "-", "-", "-")
+            
+            row_data = get_csv_full_info(name)
+            last_status = row_data.get('Status', 'NEW')
+            stability = row_data.get('Stabilität', '-')
 
-        # Logik für Phase 3 auslesen
-        ph_cores_to_use = int(DEFAULT_CORES)
-        if os.path.exists(phase3_file):
-            try:
-                with open(phase3_file, "r", encoding="utf-8") as f3:
-                    content3 = f3.read()
-                    if "2" in content3 or "OOM" in content3 or "El-Ph" in content3:
-                        ph_cores_to_use = int(SAFE_CORES)
-                        print("   📄 Phase 3.txt erkannt! Drossele Phononen hart auf 2 Kerne.")
-            except: pass
-
-        # WICHTIG: Kern-Kompatibilität prüfen! 
-        # Wenn Phase 3 aktiv ist (2 Kerne), aber die alte scf.out auf 4 Kernen lief -> scf löschen!
-        if os.path.exists(scf_out) and ph_cores_to_use != int(DEFAULT_CORES):
-            with open(scf_out, 'r', errors='ignore') as f_scf:
-                if f"running on     {DEFAULT_CORES} processors" in f_scf.read():
-                    print("   🔄 Mismatch! SCF lief auf 4 Kernen, Phonon soll auf 2. Lösche SCF für sauberen 2-Kern Neustart.")
-                    os.remove(scf_out)
-                    shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
-
-        # 1. SCF Rechnung
-        if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
-            update_csv(name, "Rechnet SCF...")
-            result = run_monitored_pw(scf_in, scf_out, work_dir, ph_cores_to_use)
-            if result != "DONE":
-                print("   ❌ SCF Crash.")
-                update_csv(name, "SKIPPED (SCF Crash)")
+            if "SKIPPED" in last_status:
+                print(f"⏩ Überspringe {name} (Status, {last_status})")
+                continue
+            
+            if "Isolator" in last_status:
+                print(f"⏩ Überspringe {name} (Ist ein Isolator)")
                 continue
 
-        # 2. Phononen Rechnung
-        if os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read():
+            if "Metall" in last_status and stability in ["STABIL", "INSTABIL"]:
+                print(f"⏩ Überspringe {name} (Bereits vollständig analysiert, {stability})")
+                continue
+
+            if "Metall" in last_status and (stability == "-" or stability == "Unbekannt"):
+                print(f"🔄 Retry Phonon für {name} (Metall, aber Stabilität unbekannt)...")
+
+            crash_type = analyze_crash_reason(scf_out)
+            if crash_type == "NON_CONVERGED":
+                update_csv(name, "SKIPPED (Non-Conv)")
+                continue
+            elif crash_type == "DONE":
+                print(f"✅ {name} SCF ist fertig.")
             
-            with open(scf_in, 'r') as f: 
-                match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
-                prefix = match.group(1) if match else "calc"
-                
-            e_fermi = "-"
-            with open(scf_out, 'r', errors='ignore') as f:
-                match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
-                if match: e_fermi = float(match.group(1))
+            try:
+                if not os.path.exists(work_dir): os.makedirs(work_dir)
+                print(f"\n💎 Job, {name}")
+                scf_in = os.path.join(work_dir, "scf.in")
+                dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
+                ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
 
-            # Manueller Reset
-            if not os.path.exists(ph_in) and not os.path.exists(ph_out):
-                print("   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten...")
-                shutil.rmtree(os.path.join(work_dir, "tmp", "_ph0"), ignore_errors=True)
-                for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
-                    for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
-                        try: os.remove(f)
-                        except: pass
-                
-                with open(ph_in, "w") as f:
-                    f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1=2, nq2=2, nq3=2 /\n")
+                if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-            if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
-                ph_attempts = 0
-                
-                while ph_attempts < MAX_RETRIES_LEVEL:
-                    ph_attempts += 1
-                    ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores_to_use)
+                ph_cores_to_use = int(DEFAULT_CORES)
+                if os.path.exists(phase3_file):
+                    try:
+                        with open(phase3_file, "r", encoding="utf-8") as f3:
+                            content3 = f3.read()
+                            if "2" in content3 or "OOM" in content3 or "El-Ph" in content3:
+                                ph_cores_to_use = int(SAFE_CORES)
+                                print("   📄 Phase 3.txt erkannt! Drossele Phononen hart auf 2 Kerne.")
+                    except: pass
+
+                # Mismatch Prüfung: Verhindert PSEUDO_ERROR
+                if os.path.exists(scf_out):
+                    with open(scf_out, 'r', errors='ignore') as f_scf:
+                        scf_text = f_scf.read()
+                        match = re.search(r"running on\s+(\d+)\s+processors", scf_text)
+                        if match:
+                            scf_cores_used = int(match.group(1))
+                            if scf_cores_used != ph_cores_to_use:
+                                print(f"   🔄 Mismatch! SCF lief auf {scf_cores_used} Kernen, Phononen sollen auf {ph_cores_to_use} laufen.")
+                                print("   🧹 Lösche alte SCF-Daten für saubere Kompatibilität...")
+                                os.remove(scf_out)
+                                shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
+
+                result = "DONE"
+                crash_counter = 0
+
+                if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
+                    update_csv(name, "Rechnet SCF...")
                     
-                    if ph_res == "DONE": break
+                    file_level = detect_oom_level(scf_in)
+                    start_crash_reason = analyze_crash_reason(scf_out)
                     
-                    print_error_tail(ph_out, 50)
-                    
-                    if ph_res in ["XML_ERROR", "ELPH_CORRUPT"]:
-                        print(f"      ⚠️ Korrupte Datenbank erkannt ({ph_res})!")
-                        if ph_attempts <= 2 and restore_rolling_checkpoint(work_dir, prefix):
-                            print("      🔄 Checkpoint geladen. Nächster Versuch...")
+                    if start_crash_reason == "LIKELY_OOM":
+                        attempts = count_job_attempts(TXT_LOG_FILE, name)
+                        print(f"      🕵️ OOM-Signatur vom letzten Lauf erkannt. Versuch Nr. {attempts} auf diesem Level.")
+                        
+                        if os.path.exists(scf_out):
+                            timestamp = datetime.now().strftime("%H%M%S")
+                            new_name = f"{scf_out}.crash_{timestamp}"
+                            try:
+                                os.rename(scf_out, new_name)
+                                print(f"      👻 Ghost-Protection, Alte scf.out zu {os.path.basename(new_name)} verschoben.")
+                            except: pass
+
+                        if attempts >= MAX_RETRIES_LEVEL:
+                            oom_level = file_level + 1
+                            print(f"      ❗ Threshold ({MAX_RETRIES_LEVEL}) erreicht! Eskaliere HÄRTER (Level {file_level} -> {oom_level}).")
+                            update_csv(name, f"Recovering (Escalating to Lvl {oom_level})")
                         else:
-                            print("      💥 Checkpoints nutzlos. ABBRUCH! Bitte ph.in UND ph.out manuell löschen für Reset.")
+                            oom_level = file_level
+                            print(f"      🔄 Threshold noch nicht erreicht. Gebe Level {file_level} noch eine Chance.")
+                            update_csv(name, f"Retrying (Attempt {attempts}/{MAX_RETRIES_LEVEL})")
+                    else:
+                        oom_level = file_level
+
+                    current_cores = ph_cores_to_use
+                    if oom_level >= 4: current_cores = int(SAFE_CORES)
+                    
+                    crash_counter = 0  
+                    
+                    while True:
+                        apply_oom_settings(scf_in, oom_level)
+                        
+                        print(f"   1️⃣  SCF ({current_cores} Cores, OOM-Lvl {oom_level})")
+                        result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
+                        
+                        if result == "DONE": break 
+                        
+                        elif result == "MAX_STEPS":
+                            update_csv(name, "SKIPPED (Max BFGS Steps)")
+                            git_sync(f"Skipped {name}, >{MAX_BFGS_STEPS} BFGS Steps")
                             break
+
+                        elif result == "OOM":
+                            oom_level += 1
+                            crash_counter = 0 
+                            print(f"      ⚠️ OOM Fehler erkannt. Eskaliere zu Level {oom_level}...")
+                            
+                            if oom_level == 1: update_csv(name, "Retrying (OOM Lvl 1, CG)")
+                            elif oom_level == 2: update_csv(name, "Retrying (OOM Lvl 2, DiskIO)")
+                            elif oom_level == 3: update_csv(name, "Retrying (OOM Lvl 3, Mix3)")
+                            elif oom_level == 4:
+                                update_csv(name, "Retrying (OOM Lvl 4, 1Core)")
+                                current_cores = int(SAFE_CORES)
+                            else:
+                                update_csv(name, "SKIPPED (OOM Limit)")
+                                print("      ❌ System zu komplex für verfügbaren RAM. Skippe.")
+                                break
+                            continue
+
+                        elif result == "CRASH":
+                            reason = analyze_crash_reason(scf_out)
+                            if reason == "NON_CONVERGED":
+                                update_csv(name, "SKIPPED (Non-Conv)")
+                                break
+                            elif reason == "PSEUDO_ERROR":
+                                update_csv(name, "SKIPPED (Pseudo Limit)")
+                                print(f"      ❌ Skippe Job wegen inkompatiblem Pseudopotential.")
+                                git_sync(f"Skipped {name}, Pseudo Error")
+                                break
+                            else:
+                                crash_counter += 1
+                                if crash_counter >= 3:
+                                    print(f"      ❌ Zu viele unlösbare Abstürze ({crash_counter}). Skippe Job.")
+                                    update_csv(name, "SKIPPED (Permanent Crash)")
+                                    git_sync(f"Skipped {name}, Permanent Crash")
+                                    break
+                                
+                                update_csv(name, f"Retrying (Crash {crash_counter}/3)")
+                                time.sleep(2)
+                                continue 
+
+                if result == "MAX_STEPS" or result == "OOM" or crash_counter >= 3 or analyze_crash_reason(scf_out) == "PSEUDO_ERROR": continue 
+                if analyze_crash_reason(scf_out) != "DONE":
+                    git_sync(f"Failed, {name}")
+                    continue 
+
+                with open(scf_in, 'r') as f: 
+                    match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
+                    prefix = match.group(1) if match else "calc"
+                
+                e_fermi = "-"
+                if os.path.exists(scf_out):
+                    with open(scf_out, 'r', errors='ignore') as f:
+                        match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
+                        if match: e_fermi = float(match.group(1))
+
+                update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
+                if not os.path.exists(dos_out):
+                    with open(dos_in, "w") as f: 
+                        f.write(f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n")
+                    with open(dos_in, "r") as f_in, open(dos_out, "w") as f_out:
+                        subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+
+                is_metal, dos_val = False, 0.0
+                if os.path.exists(dos_out) and e_fermi != "-":
+                    closest_diff = 99.9
+                    with open(dos_out, 'r') as f:
+                        for line in f:
+                            if line.strip().startswith("#"): continue
+                            p = line.split()
+                            if len(p) >= 2:
+                                try:
+                                    e, d = float(p[0]), float(p[1])
+                                    if abs(e - e_fermi) < closest_diff:
+                                        closest_diff = abs(e - e_fermi)
+                                        dos_val = d
+                                except: continue
+                    is_metal = dos_val > DOS_THRESHOLD
+
+                if not is_metal:
+                    print(f"   🛑 Isolator (DOS={dos_val:.3f}).")
+                    update_csv(name, "Fertig (Isolator)", e_fermi, round(dos_val, 4), "NEIN")
+                    git_sync(f"Fertig, {name} (Isolator)")
+                    continue
+
+                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
+                update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
+                
+                if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
+                    if not os.path.exists(ph_in) and not os.path.exists(ph_out):
+                        print("   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten...")
+                        shutil.rmtree(os.path.join(work_dir, "tmp", "_ph0"), ignore_errors=True)
+                        for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
+                            for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
+                                try: os.remove(f)
+                                except: pass
+                        with open(ph_in, "w") as f: 
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1=2, nq2=2, nq3=2 /\n")
+                    
+                    ph_cores = ph_cores_to_use
+                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
+
+                    ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                    
+                    if ph_res != "DONE":
+                        print("      ⚠️ Crash/OOM!")
+                        crash_reason = analyze_crash_reason(ph_out)
+                        
+                        if crash_reason == "XML_ERROR":
+                            print("      🧨 FATAL, XML korrupt. Lösche .save und erzwinge SCF-Neustart im nächsten Durchlauf.")
+                            tmp_save_path = os.path.join(work_dir, "tmp")
+                            if os.path.exists(tmp_save_path): shutil.rmtree(tmp_save_path, ignore_errors=True)
+                            if os.path.exists(scf_out): os.remove(scf_out)
+                            update_csv(name, "SCF_RESET (XML Error)")
+                            continue
+
+                        if is_recoverable_fragmentation_error(ph_out):
+                            print("      🤕 Diagnose, Fragmentierung erkannt. Starte 'Collect-Recovery'...")
+                            if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
+                                print("      👍 Recovery erfolgreich.")
+                            else:
+                                print("      👎 Recovery fehlgeschlagen.")
+                        
+                        if crash_reason == "SYMMETRY_ERROR":
+                             print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
+
+                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, {SAFE_CORES} Cores...")
+                        
+                        disable_symmetries_and_reduce_grid(ph_in)
+                        
+                        tmp_path = os.path.join(work_dir, "tmp")
+                        ph0_path = os.path.join(tmp_path, "_ph0")
+                        
+                        if os.path.exists(ph0_path):
+                            try:
+                                shutil.rmtree(ph0_path, ignore_errors=True)
+                                print("      🧹 Defekten Phononen-Cache (_ph0) gelöscht.")
+                            except: pass
+                        
+                        if os.path.exists(ph_out):
+                            try: os.remove(ph_out)
+                            except: pass
+
+                        ph_res = run_monitored_ph(ph_in, ph_out, work_dir, int(SAFE_CORES))
+                    
+                    if ph_res != "DONE":
+                         print("      ❌ Phononen endgültig fehlgeschlagen.")
+                         update_csv(name, "SKIPPED (Phonon Crash)") 
+                         git_sync(f"Phonon Crash, {name}")
+                         continue
+
+                min_f, stab = "-", "Unbekannt"
+                if os.path.exists(ph_out):
+                      with open(ph_out, 'r') as f:
+                          content = f.read()
+                          if "JOB DONE" in content:
+                              freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
+                              if freqs:
+                                  min_f = min([float(f) for f in freqs])
+                                  stab = "STABIL" if min_f > -0.05 else "INSTABIL"
+
+                if stab == "INSTABIL":
+                    update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    git_sync(f"Fertig, {name} (INSTABIL)")
+                    continue
+
+                if stab == "STABIL":
+                    print(f"   ⚛️ PHASE 2 Vorbereitung für {name}...")
+                    
+                    is_resuming_phase2 = False
+                    if os.path.exists(ph_in):
+                        with open(ph_in, 'r') as f:
+                            if "electron_phonon" in f.read():
+                                is_resuming_phase2 = True
+
+                    tmp_path = os.path.join(work_dir, "tmp")
+                    if not is_resuming_phase2:
+                        print("   🧹 Erster Start von Phase 2, Lösche alte Phase 1 Dateien...")
+                        ph0_path = os.path.join(tmp_path, "_ph0")
+                        if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
+                        
+                        for f in glob.glob(os.path.join(work_dir, "*.dyn*")):
+                            try: os.remove(f)
+                            except: pass
+                        for f in glob.glob(os.path.join(tmp_path, "*.a2Fsave*")):
+                            try: os.remove(f)
+                            except: pass
+                        for f in glob.glob(os.path.join(tmp_path, "*.dvscf*")):
+                            try: os.remove(f)
+                            except: pass
+                        if os.path.exists(ph_out): os.remove(ph_out)
+                        
+                        c_nq1, c_nq2, c_nq3 = "2", "2", "2"
+                        if os.path.exists(ph_in):
+                            with open(ph_in, 'r') as f:
+                                c = f.read()
+                                m1 = re.search(r"nq1\s*=\s*(\d+)", c)
+                                m2 = re.search(r"nq2\s*=\s*(\d+)", c)
+                                m3 = re.search(r"nq3\s*=\s*(\d+)", c)
+                                if m1: c_nq1 = m1.group(1)
+                                if m2: c_nq2 = m2.group(1)
+                                if m3: c_nq3 = m3.group(1)
+                                
+                        with open(ph_in, "w") as f:
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3} /\n")
+
+                    update_csv(name, "Rechnet El-Ph (Phononen)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                    
+                    if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
+                        ph_cores = ph_cores_to_use
+                        if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
+                        print("   ⚛️ Starte Phase 2 (El-Ph)...")
+                        ph_res_2 = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
+                        
+                        if ph_res_2 != "DONE":
+                            print("   ❌ El-Ph Phononen fehlgeschlagen.")
+                            update_csv(name, "ERROR (El-Ph Crash)")
+                            git_sync(f"El-Ph Crash, {name}")
+                            continue
+
+                    q2r_in = os.path.join(work_dir, "q2r.in")
+                    q2r_out = os.path.join(work_dir, "q2r.out")
+                    matdyn_in = os.path.join(work_dir, "matdyn.in")
+                    matdyn_out = os.path.join(work_dir, "matdyn.out")
+
+                    update_csv(name, "Rechnet El-Ph (Q2R)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+
+                    if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
+                        print("   4️⃣  Q2R...")
+                        with open(q2r_in, "w") as f:
+                            f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
+                        with open(q2r_in, "r") as fi, open(q2r_out, "w") as fo:
+                            subprocess.run([Q2R_EXE], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=work_dir)
+
+                    if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
+                        print(f"      ❌ Q2R fehlgeschlagen!")
+                        update_csv(name, "ERROR (Q2R Crash)")
+                        git_sync(f"Q2R Crash, {name}")
                         continue
 
-                    print(f"      🧨 ERROR Phonon-Crash ({ph_res}) bei Job {name}. Retry {ph_attempts}/{MAX_RETRIES_LEVEL}")
+                    update_csv(name, "Rechnet El-Ph (Matdyn)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
 
-            if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
-                update_csv(name, "SKIPPED (Phonon Crash)") 
-                continue
+                    if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
+                        print("   5️⃣  Matdyn...")
+                        with open(matdyn_in, "w") as f:
+                            f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
+                        with open(matdyn_in, "r") as fi, open(matdyn_out, "w") as fo:
+                            subprocess.run([MATDYN_EXE], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=work_dir)
 
-            q2r_in, q2r_out = os.path.join(work_dir, "q2r.in"), os.path.join(work_dir, "q2r.out")
-            matdyn_in, matdyn_out = os.path.join(work_dir, "matdyn.in"), os.path.join(work_dir, "matdyn.out")
+                    if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
+                        print(f"      ❌ Matdyn fehlgeschlagen!")
+                        update_csv(name, "ERROR (Matdyn Crash)")
+                        git_sync(f"Matdyn Crash, {name}")
+                        continue
 
-            if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
-                print("   4️⃣  Q2R...")
-                with open(q2r_in, "w") as f: f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
-                with open(q2r_in, "r") as fi, open(q2r_out, "w") as fo:
-                    subprocess.run([Q2R_EXE], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=work_dir)
+                    lam, wlog, tc = "-", "-", "-"
+                    if os.path.exists(matdyn_out):
+                        with open(matdyn_out, 'r', errors='ignore') as f:
+                            mc = f.read()
+                            if "JOB DONE" in mc:
+                                ml = re.search(r"lambda\s*=\s*([0-9\.]+)", mc)
+                                mw = re.search(r"omega_log\s*=\s*([0-9\.]+)", mc)
+                                if ml and mw:
+                                    lam = ml.group(1)
+                                    wlog = mw.group(1)
+                                    tc_v = berechne_tc(wlog, lam)
+                                    if tc_v != "-": tc = round(tc_v, 3)
 
-            if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
-                print("   5️⃣  Matdyn...")
-                with open(matdyn_in, "w") as f: f.write(f"&input\n asr='simple',\n flfrc='{name}.fc',\n flfrq='{name}.freq',\n fildyn='{name}.dyn',\n dos=.true.,\n elph=.true.,\n fildos='{name}.phdos',\n nk1=10, nk2=10, nk3=10\n/\n")
-                with open(matdyn_in, "r") as fi, open(matdyn_out, "w") as fo:
-                    subprocess.run([MATDYN_EXE], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=work_dir)
+                    update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab, lam=lam, wlog=wlog, tc=tc)
+                    git_sync(f"Fertig, {name} (Tc={tc}K)")
 
-            lam, wlog, tc = "-", "-", "-"
-            if os.path.exists(matdyn_out):
-                with open(matdyn_out, 'r', errors='ignore') as f:
-                    mc = f.read()
-                    if "JOB DONE" in mc:
-                        ml = re.search(r"lambda\s*=\s*([0-9\.]+)", mc)
-                        mw = re.search(r"omega_log\s*=\s*([0-9\.]+)", mc)
-                        if ml and mw:
-                            lam, wlog = ml.group(1), mw.group(1)
-                            tc_v = berechne_tc(wlog, lam)
-                            if tc_v != "-": tc = round(tc_v, 3)
+            except Exception as job_err:
+                print(f"🚨 Fehler bei Job {name}, {job_err}")
+                update_csv(name, f"ERROR (Python, {str(job_err)[:30]})")
+                continue 
 
-            update_csv(name, "Fertig (Metall)", e_fermi, "-", "JA", stab="STABIL", lam=lam, wlog=wlog, tc=tc)
-            git_sync(f"Fertig, {name} (Tc={tc}K)")
+        send_notification("🎉 Alle Jobs erledigt.")
+        
+        with open(SIGNAL_FILE, "w") as f: f.write(f"Status, Fertig\nTimestamp, {time.ctime()}")
+        git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")
+        set_logic_app_state("Disabled")
+        print("🛑 Deallokiere VM über Azure CLI...")
+        deallocate_vm() 
+        
+        if os.name != 'nt': 
+            print("🛑 Fahre System herunter...")
+            os.system("sudo shutdown -h now")
 
-    send_notification("🎉 Alle Jobs erledigt.")
-    with open(SIGNAL_FILE, "w") as f: f.write(f"Status, Fertig\nTimestamp, {time.ctime()}")
-    git_sync("🏁 Finaler Sync vor Shutdown")
-    
-    print("🛑 Deallokiere VM über Azure CLI...")
-    if shutil.which("az"):
-        subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], timeout=60)
-    
-    if os.name != 'nt': os.system("sudo shutdown -h now")
-
-if __name__ == "__main__":
-    try:
-        main()
     except Exception as e:
         full_error = f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()})\n{e}\n{traceback.format_exc()}\n"
-        print(full_error)
+        with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
         git_sync("🚨 Notfall Sync nach Skript-Absturz")
         send_notification(f"🚨 KRITISCHER FEHLER, {e} -> Shutdown.")
         
-        if shutil.which("az"):
-            subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], timeout=60)
+        set_logic_app_state("Disabled")
+        print("🛑 Deallokiere VM über Azure CLI nach Crash...")
+        deallocate_vm()
         if os.name != 'nt': os.system("sudo shutdown -h now")
         sys.exit()
-    finally:
-        if os.path.exists(LOCK_FILE):
-            os.remove(LOCK_FILE)
+
+if __name__ == "__main__":
+    main()

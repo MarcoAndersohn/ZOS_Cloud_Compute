@@ -32,14 +32,11 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-# Exakt wie von dir vorgegeben (Keine Drosselung):
 DEFAULT_CORES = "4"
 SAFE_CORES = "2"
 MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 5
-
-FORCE_RETRY_LIST = []
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
@@ -56,7 +53,7 @@ Q2R_EXE = shutil.which("q2r.x") or "/usr/bin/q2r.x"
 MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
 
 # =============================================================================
-# 2. DEINE BEWÄHRTEN HELFER & GIT
+# 2. HELFER & GIT
 # =============================================================================
 def send_notification(message):
     try:
@@ -65,18 +62,22 @@ def send_notification(message):
         requests.post(url, data=payload, timeout=10)
     except: pass
 
-def set_logic_app_state(state="Enabled"):
-    if not shutil.which("az"): return
+def kill_process_tree(pid):
+    """Der Stammbaum-Mörder - Beendet einen Prozess und alle seine Kinder von unten nach oben."""
     try:
-        subprocess.run(["az", "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True, timeout=30)
-    except: pass
-
-def kill_zombie_processes():
-    for proc in psutil.process_iter(['name']):
-        try:
-            if proc.info['name'] in ['mpirun', 'ph.x', 'pw.x']:
-                proc.kill()
-        except: pass
+        parent = psutil.Process(pid)
+        children = parent.children(recursive=True)
+        for child in reversed(children):
+            try:
+                child.kill()
+            except psutil.NoSuchProcess:
+                pass
+        parent.kill()
+        msg = f"      🧹 Stammbaum-Mörder hat Prozessbaum (PID {pid}) sauber beendet."
+        print(msg)
+        with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg + "\n")
+    except psutil.NoSuchProcess:
+        pass
 
 def initial_git_pull():
     env = os.environ.copy()
@@ -160,7 +161,7 @@ def get_csv_full_info(name):
     return {}
 
 # =============================================================================
-# 3. CRASH ANALYSE & PHONON ENGINE
+# 3. CRASH ANALYSE & ENGINES
 # =============================================================================
 def is_xml_valid(xml_path):
     if not os.path.exists(xml_path): return False
@@ -226,7 +227,6 @@ def analyze_crash_reason(output_file):
     except: return "HARD"
 
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
-    kill_zombie_processes()
     last_git_sync = time.time()
     last_cp = time.time()
 
@@ -262,12 +262,12 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                 try:
                     if psutil.virtual_memory().percent > MEMORY_LIMIT_PERCENT:
                         print("      ⚠️ RAM NOT-AUS (Python Monitor)!")
-                        process.kill()
+                        kill_process_tree(process.pid)
                         return "OOM"
                 except: pass
 
         except: 
-            process.kill()
+            kill_process_tree(process.pid)
             return "CRASH"
         
         if process.returncode == -9: return "OOM"
@@ -281,18 +281,15 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         return res if res != "NONE" else "CRASH"
 
 # =============================================================================
-# 4. HAUPTPROGRAMM - EINGEBETTET IN DEINEN GLOBALEN TRY-EXCEPT
+# 4. HAUPTPROGRAMM - EINGEBETTET IN TRY-EXCEPT
 # =============================================================================
 def main():
-    # ZUERST in die Datei schreiben, dann den Pull machen
     with open(TXT_LOG_FILE, "a", encoding="utf-8") as f:
         f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         f.write("☁️ Führe initialen Git Pull aus...\n")
     
     print("☁️ Führe initialen Git Pull aus...")
     initial_git_pull()
-    
-    set_logic_app_state("Enabled")
     
     if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
     if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
@@ -327,10 +324,10 @@ def main():
         
         scf_in = os.path.join(work_dir, "scf.in")
         ph_in, ph_out = os.path.join(work_dir, "ph.in"), os.path.join(work_dir, "ph.out")
+        phase3_file = os.path.join(work_dir, "Phase 3.txt")
 
         if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-        # Die Phonon-Logik (Phase 2), wenn SCF schon existiert
         if os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read():
             
             with open(scf_in, 'r') as f: 
@@ -342,11 +339,24 @@ def main():
                 match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
                 if match: e_fermi = float(match.group(1))
 
-            # MANUELLER RESET: Wird NUR ausgelöst, wenn ph.in UND ph.out fehlen.
+            # Phase 3 Logik auswerten
+            ph_cores_to_use = int(DEFAULT_CORES)
+            if os.path.exists(phase3_file):
+                try:
+                    with open(phase3_file, "r", encoding="utf-8") as f3:
+                        content3 = f3.read()
+                        if "2" in content3 or "OOM" in content3 or "El-Ph" in content3:
+                            ph_cores_to_use = int(SAFE_CORES)
+                            msg3 = "   📄 Phase 3.txt erkannt! Drossele Phononen hart auf 2 Kerne."
+                            print(msg3)
+                            with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg3 + "\n")
+                except: pass
+
+            # Manueller Reset
             if not os.path.exists(ph_in) and not os.path.exists(ph_out):
-                msg = "   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten..."
-                print(msg)
-                with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg + "\n")
+                msg_reset = "   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten..."
+                print(msg_reset)
+                with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg_reset + "\n")
                 
                 shutil.rmtree(os.path.join(work_dir, "tmp", "_ph0"), ignore_errors=True)
                 for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
@@ -362,7 +372,7 @@ def main():
                 
                 while ph_attempts < MAX_RETRIES_LEVEL:
                     ph_attempts += 1
-                    ph_res = run_monitored_ph(ph_in, ph_out, work_dir, int(DEFAULT_CORES))
+                    ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores_to_use)
                     
                     if ph_res == "DONE": break
                     
@@ -378,11 +388,10 @@ def main():
                             print(msg_cp)
                             with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg_cp + "\n")
                         else:
-                            # HIER IST DEINE REGEL: Nicht mehr den _ph0 Ordner löschen!
                             msg_abort = "      💥 Checkpoints nutzlos. ABBRUCH! Bitte ph.in UND ph.out manuell löschen für Reset."
                             print(msg_abort)
                             with open(TXT_LOG_FILE, "a") as f_log: f_log.write(msg_abort + "\n")
-                            break # Bricht die Schleife ab, geht zum nächsten System
+                            break
                         continue
 
                     msg_retry = f"      🧨 ERROR Phonon-Crash ({ph_res}) bei Job {name}. Retry {ph_attempts}/{MAX_RETRIES_LEVEL}"

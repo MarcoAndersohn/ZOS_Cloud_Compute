@@ -1622,3 +1622,334 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 🚀 NEUSTART SMART-PIPELINE, 2026-07-10 02:02
 ========================================
 
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   b28ccd2a..ed0abc76  main -> main
+
+💎 Job, 02_BaMg3H8
+      ⚙️ Starte PHONONEN (4 Cores, recover=.true.)...
+
+      --- LETZTE 50 ZEILEN VON ph.out ---
+             1   0.000000000   0.000000000   0.000000000
+             2   0.016645124   0.016645573  -0.502165173
+             3  -0.016645357  -0.502165270   0.016645560
+             4  -0.000000233  -0.485519697  -0.485519613
+             5  -0.502165859  -0.016645370   0.016645125
+             6  -0.485520735   0.000000202  -0.485520049
+             7  -0.518811216  -0.518810640   0.033290685
+             8  -0.502166092  -0.502165067  -0.468874488
+      
+      
+           Calculation of q =    0.0000000   0.0000000   0.0000000
+           Message from routine ph_restart_set_filename :
+           cannot open file for reading or writing
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, tag PARTIAL_EL_PHON not found
+      At line 965 of file xmltools.f90
+      Fortran runtime error: Sequential READ or WRITE not allowed after EOF marker, possibly use REWIND or BACKSPACE
+      
+      Error termination. Backtrace:
+      #0  0x7e8bf2e23960 in ???
+      #1  0x7e8bf2e244d9 in ???
+      #2  0x7e8bf2e2510f in ???
+      #3  0x7e8bf307b96d in ???
+      #4  0x5bb53f617a2a in ???
+      #5  0x5bb53f618413 in ???
+      #6  0x5bb53f619946 in ???
+      #7  0x5bb53f194dd5 in ???
+      #8  0x5bb53f1a10ab in ???
+      #9  0x5bb53f178b55 in ???
+      #10  0x5bb53f145a6e in ???
+      #11  0x5bb53f13f191 in ???
+      #12  0x5bb53f13effe in ???
+      #13  0x7e8bf2a29d8f in ???
+      #14  0x7e8bf2a29e3f in ???
+      #15  0x5bb53f13f02d in ???
+      #16  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28691,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+
+
+      --- LETZTE 50 ZEILEN VON ph.out ---
+             1   0.000000000   0.000000000   0.000000000
+             2   0.016645124   0.016645573  -0.502165173
+             3  -0.016645357  -0.502165270   0.016645560
+             4  -0.000000233  -0.485519697  -0.485519613
+             5  -0.502165859  -0.016645370   0.016645125
+             6  -0.485520735   0.000000202  -0.485520049
+             7  -0.518811216  -0.518810640   0.033290685
+             8  -0.502166092  -0.502165067  -0.468874488
+      
+      
+           Calculation of q =    0.0000000   0.0000000   0.0000000
+           Message from routine ph_restart_set_filename :
+           cannot open file for reading or writing
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, tag PARTIAL_EL_PHON not found
+      At line 965 of file xmltools.f90
+      Fortran runtime error: Sequential READ or WRITE not allowed after EOF marker, possibly use REWIND or BACKSPACE
+      
+      Error termination. Backtrace:
+      #0  0x7e8bf2e23960 in ???
+      #1  0x7e8bf2e244d9 in ???
+      #2  0x7e8bf2e2510f in ???
+      #3  0x7e8bf307b96d in ???
+      #4  0x5bb53f617a2a in ???
+      #5  0x5bb53f618413 in ???
+      #6  0x5bb53f619946 in ???
+      #7  0x5bb53f194dd5 in ???
+      #8  0x5bb53f1a10ab in ???
+      #9  0x5bb53f178b55 in ???
+      #10  0x5bb53f145a6e in ???
+      #11  0x5bb53f13f191 in ???
+      #12  0x5bb53f13effe in ???
+      #13  0x7e8bf2a29d8f in ???
+      #14  0x7e8bf2a29e3f in ???
+      #15  0x5bb53f13f02d in ???
+      #16  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28691,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      ⚠️ Korrupte Datenbank erkannt (XML_ERROR)!
+      🔄 Lade Checkpoint aus tmp_SAFE_1...
+      🔄 Checkpoint geladen. Nächster Versuch...
+      ⚙️ Starte PHONONEN (4 Cores, recover=.true.)...
+
+      --- LETZTE 50 ZEILEN VON ph.out ---
+             1   0.000000000   0.000000000   0.000000000
+             2   0.016645124   0.016645573  -0.502165173
+             3  -0.016645357  -0.502165270   0.016645560
+             4  -0.000000233  -0.485519697  -0.485519613
+             5  -0.502165859  -0.016645370   0.016645125
+             6  -0.485520735   0.000000202  -0.485520049
+             7  -0.518811216  -0.518810640   0.033290685
+             8  -0.502166092  -0.502165067  -0.468874488
+      
+      
+           Calculation of q =    0.0000000   0.0000000   0.0000000
+           Message from routine ph_restart_set_filename :
+           cannot open file for reading or writing
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, tag PARTIAL_EL_PHON not found
+      At line 965 of file xmltools.f90
+      Fortran runtime error: Sequential READ or WRITE not allowed after EOF marker, possibly use REWIND or BACKSPACE
+      
+      Error termination. Backtrace:
+      #0  0x700a67223960 in ???
+      #1  0x700a672244d9 in ???
+      #2  0x700a6722510f in ???
+      #3  0x700a6747b96d in ???
+      #4  0x643551f7ca2a in ???
+      #5  0x643551f7d413 in ???
+      #6  0x643551f7e946 in ???
+      #7  0x643551af9dd5 in ???
+      #8  0x643551b060ab in ???
+      #9  0x643551addb55 in ???
+      #10  0x643551aaaa6e in ???
+      #11  0x643551aa4191 in ???
+      #12  0x643551aa3ffe in ???
+      #13  0x700a66e29d8f in ???
+      #14  0x700a66e29e3f in ???
+      #15  0x643551aa402d in ???
+      #16  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28787,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+
+
+      --- LETZTE 50 ZEILEN VON ph.out ---
+             1   0.000000000   0.000000000   0.000000000
+             2   0.016645124   0.016645573  -0.502165173
+             3  -0.016645357  -0.502165270   0.016645560
+             4  -0.000000233  -0.485519697  -0.485519613
+             5  -0.502165859  -0.016645370   0.016645125
+             6  -0.485520735   0.000000202  -0.485520049
+             7  -0.518811216  -0.518810640   0.033290685
+             8  -0.502166092  -0.502165067  -0.468874488
+      
+      
+           Calculation of q =    0.0000000   0.0000000   0.0000000
+           Message from routine ph_restart_set_filename :
+           cannot open file for reading or writing
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, tag PARTIAL_EL_PHON not found
+      At line 965 of file xmltools.f90
+      Fortran runtime error: Sequential READ or WRITE not allowed after EOF marker, possibly use REWIND or BACKSPACE
+      
+      Error termination. Backtrace:
+      #0  0x700a67223960 in ???
+      #1  0x700a672244d9 in ???
+      #2  0x700a6722510f in ???
+      #3  0x700a6747b96d in ???
+      #4  0x643551f7ca2a in ???
+      #5  0x643551f7d413 in ???
+      #6  0x643551f7e946 in ???
+      #7  0x643551af9dd5 in ???
+      #8  0x643551b060ab in ???
+      #9  0x643551addb55 in ???
+      #10  0x643551aaaa6e in ???
+      #11  0x643551aa4191 in ???
+      #12  0x643551aa3ffe in ???
+      #13  0x700a66e29d8f in ???
+      #14  0x700a66e29e3f in ???
+      #15  0x643551aa402d in ???
+      #16  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28787,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      ⚠️ Korrupte Datenbank erkannt (XML_ERROR)!
+      🔄 Lade Checkpoint aus tmp_SAFE_1...
+      🔄 Checkpoint geladen. Nächster Versuch...
+      ⚙️ Starte PHONONEN (4 Cores, recover=.true.)...
+
+      --- LETZTE 50 ZEILEN VON ph.out ---
+             1   0.000000000   0.000000000   0.000000000
+             2   0.016645124   0.016645573  -0.502165173
+             3  -0.016645357  -0.502165270   0.016645560
+             4  -0.000000233  -0.485519697  -0.485519613
+             5  -0.502165859  -0.016645370   0.016645125
+             6  -0.485520735   0.000000202  -0.485520049
+             7  -0.518811216  -0.518810640   0.033290685
+             8  -0.502166092  -0.502165067  -0.468874488
+      
+      
+           Calculation of q =    0.0000000   0.0000000   0.0000000
+           Message from routine ph_restart_set_filename :
+           cannot open file for reading or writing
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, tag PARTIAL_EL_PHON not found
+      At line 965 of file xmltools.f90
+      Fortran runtime error: Sequential READ or WRITE not allowed after EOF marker, possibly use REWIND or BACKSPACE
+      
+      Error termination. Backtrace:
+      #0  0x79a042c23960 in ???
+      #1  0x79a042c244d9 in ???
+      #2  0x79a042c2510f in ???
+      #3  0x79a042e7b96d in ???
+      #4  0x5c06a42d0a2a in ???
+      #5  0x5c06a42d1413 in ???
+      #6  0x5c06a42d2946 in ???
+      #7  0x5c06a3e4ddd5 in ???
+      #8  0x5c06a3e5a0ab in ???
+      #9  0x5c06a3e31b55 in ???
+      #10  0x5c06a3dfea6e in ???
+      #11  0x5c06a3df8191 in ???
+      #12  0x5c06a3df7ffe in ???
+      #13  0x79a042829d8f in ???
+      #14  0x79a042829e3f in ???
+      #15  0x5c06a3df802d in ???
+      #16  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28759,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+
+
+      --- LETZTE 50 ZEILEN VON ph.out ---
+             1   0.000000000   0.000000000   0.000000000
+             2   0.016645124   0.016645573  -0.502165173
+             3  -0.016645357  -0.502165270   0.016645560
+             4  -0.000000233  -0.485519697  -0.485519613
+             5  -0.502165859  -0.016645370   0.016645125
+             6  -0.485520735   0.000000202  -0.485520049
+             7  -0.518811216  -0.518810640   0.033290685
+             8  -0.502166092  -0.502165067  -0.468874488
+      
+      
+           Calculation of q =    0.0000000   0.0000000   0.0000000
+           Message from routine ph_restart_set_filename :
+           cannot open file for reading or writing
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, closing tag not found
+      warning: file closed at level 1 with tag Root open
+       end of file reached, tag PARTIAL_EL_PHON not found
+      At line 965 of file xmltools.f90
+      Fortran runtime error: Sequential READ or WRITE not allowed after EOF marker, possibly use REWIND or BACKSPACE
+      
+      Error termination. Backtrace:
+      #0  0x79a042c23960 in ???
+      #1  0x79a042c244d9 in ???
+      #2  0x79a042c2510f in ???
+      #3  0x79a042e7b96d in ???
+      #4  0x5c06a42d0a2a in ???
+      #5  0x5c06a42d1413 in ???
+      #6  0x5c06a42d2946 in ???
+      #7  0x5c06a3e4ddd5 in ???
+      #8  0x5c06a3e5a0ab in ???
+      #9  0x5c06a3e31b55 in ???
+      #10  0x5c06a3dfea6e in ???
+      #11  0x5c06a3df8191 in ???
+      #12  0x5c06a3df7ffe in ???
+      #13  0x79a042829d8f in ???
+      #14  0x79a042829e3f in ???
+      #15  0x5c06a3df802d in ???
+      #16  0xffffffffffffffff in ???
+      --------------------------------------------------------------------------
+      Primary job  terminated normally, but 1 process returned
+      a non-zero exit code. Per user-direction, the job has been aborted.
+      --------------------------------------------------------------------------
+      --------------------------------------------------------------------------
+      mpirun detected that one or more processes exited with non-zero status, thus causing
+      the job to be terminated. The first process to do so was:
+      
+        Process name: [[28759,1],0]
+        Exit code:    2
+      --------------------------------------------------------------------------
+      ⚠️ Korrupte Datenbank erkannt (XML_ERROR)!
+      💥 Checkpoints nutzlos. Lösche korrupten Phonon-Cache komplett!
+      ⚙️ Starte PHONONEN (4 Cores, recover=.false.)...

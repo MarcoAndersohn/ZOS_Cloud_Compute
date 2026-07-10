@@ -645,18 +645,7 @@ def main():
                                 print("   📄 Phase 3.txt erkannt! Drossele Phononen hart auf 2 Kerne.")
                     except: pass
 
-                # Mismatch Prüfung: Verhindert PSEUDO_ERROR
-                if os.path.exists(scf_out):
-                    with open(scf_out, 'r', errors='ignore') as f_scf:
-                        scf_text = f_scf.read()
-                        match = re.search(r"running on\s+(\d+)\s+processors", scf_text)
-                        if match:
-                            scf_cores_used = int(match.group(1))
-                            if scf_cores_used != ph_cores_to_use:
-                                print(f"   🔄 Mismatch! SCF lief auf {scf_cores_used} Kernen, Phononen sollen auf {ph_cores_to_use} laufen.")
-                                print("   🧹 Lösche alte SCF-Daten für saubere Kompatibilität...")
-                                os.remove(scf_out)
-                                shutil.rmtree(os.path.join(work_dir, "tmp"), ignore_errors=True)
+                # Mismatch Prüfung wurde hier entfernt, da wf_collect=.true. SCF und Phonon auf verschiedenen Kernen erlaubt!
 
                 result = "DONE"
                 crash_counter = 0
@@ -690,7 +679,8 @@ def main():
                     else:
                         oom_level = file_level
 
-                    current_cores = ph_cores_to_use
+                    # SCF soll prinzipiell immer auf DEFAULT_CORES (4) laufen, außer OOM Level 4 drosselt hart.
+                    current_cores = int(DEFAULT_CORES)
                     if oom_level >= 4: current_cores = int(SAFE_CORES)
                     
                     crash_counter = 0  

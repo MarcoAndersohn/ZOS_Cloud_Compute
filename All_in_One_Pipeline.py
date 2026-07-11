@@ -1000,12 +1000,12 @@ def main():
         except: pass
         
         git_sync("🚨 Notfall Sync nach Skript-Absturz")
-        send_notification(f"🚨 KRITISCHER FEHLER, {e} -> Shutdown blockiert für Debugging.")
+        send_notification(f"🚨 KRITISCHER FEHLER, {e} -> Shutdown.")
         
         set_logic_app_state("Disabled")
         print("🛑 Deallokiere VM über Azure CLI nach Crash...")
         deallocate_vm()
-        # if os.name != 'nt': os.system("sudo shutdown -h now")
+        if os.name != 'nt': os.system("sudo shutdown -h now")
         sys.exit()
 
 if __name__ == "__main__":

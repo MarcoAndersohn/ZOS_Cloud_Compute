@@ -993,14 +993,19 @@ def main():
 
     except Exception as e:
         full_error = f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()})\n{e}\n{traceback.format_exc()}\n"
-        with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
+        print(full_error) 
+        
+        try:
+            with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
+        except: pass
+        
         git_sync("🚨 Notfall Sync nach Skript-Absturz")
-        send_notification(f"🚨 KRITISCHER FEHLER, {e} -> Shutdown.")
+        send_notification(f"🚨 KRITISCHER FEHLER, {e} -> Shutdown blockiert für Debugging.")
         
         set_logic_app_state("Disabled")
         print("🛑 Deallokiere VM über Azure CLI nach Crash...")
         deallocate_vm()
-        if os.name != 'nt': os.system("sudo shutdown -h now")
+        # if os.name != 'nt': os.system("sudo shutdown -h now")
         sys.exit()
 
 if __name__ == "__main__":

@@ -32,3 +32,112 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    ce060f97..24ef29c0  main -> main
       💾 XML valide -> Erstelle Checkpoint...
       ✅ Checkpoint erstellt.
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   24ef29c0..30b12ae8  main -> main
+   ⚡ Metall (DOS=0.740). Berechne Phononen...
+   🧹 Manueller Reset (oder Start) erkannt. Bereinige Phononen-Daten...
+      ⚙️ Starte PHONONEN (Cores, 2)...
+      ⚠️ Crash/OOM in Phononen erkannt!
+
+--- Letzte 20 Zeilen von ph.out ---
+     Please, verify this is what you really want
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        3060    1217    340               179147    45315    6765
+     Max        3061    1218    341               179148    45316    6768
+     Sum        6121    2435    681               358295    90631   13533
+
+     Reading collected, re-writing distributed wavefunctions
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine phq_readin (1):
+     El-ph needs a DeltaVscf file
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     stopping ...
+[Supraleiter-HPC-Knoten:01367] [[29025,0],0] ORTE_ERROR_LOG: Data unpack had inadequate space in file ../../../orte/util/show_help.c at line 513
+[Supraleiter-HPC-Knoten:01367] [[29025,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+
+-----------------------------------------
+
+
+--- Letzte 20 Zeilen von ph.out ---
+     Please, verify this is what you really want
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        3060    1217    340               179147    45315    6765
+     Max        3061    1218    341               179148    45316    6768
+     Sum        6121    2435    681               358295    90631   13533
+
+     Reading collected, re-writing distributed wavefunctions
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine phq_readin (1):
+     El-ph needs a DeltaVscf file
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     stopping ...
+[Supraleiter-HPC-Knoten:01367] [[29025,0],0] ORTE_ERROR_LOG: Data unpack had inadequate space in file ../../../orte/util/show_help.c at line 513
+[Supraleiter-HPC-Knoten:01367] [[29025,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+
+-----------------------------------------
+      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, 2 Cores...
+      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.
+      🧹 Defekten Phononen-Cache (_ph0) gelöscht.
+      ⚙️ Starte PHONONEN (Cores, 2)...
+      ❌ Phononen endgültig fehlgeschlagen.
+
+--- Letzte 20 Zeilen von ph.out ---
+     Sum        6121    2435    681               358295    90631   13533
+
+     Reading collected, re-writing distributed wavefunctions
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine phq_readin (1):
+     El-ph needs a DeltaVscf file
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     stopping ...
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01381] 1 more process has sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01381] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+
+-----------------------------------------
+
+
+--- Letzte 20 Zeilen von ph.out ---
+     Sum        6121    2435    681               358295    90631   13533
+
+     Reading collected, re-writing distributed wavefunctions
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     Error in routine phq_readin (1):
+     El-ph needs a DeltaVscf file
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     stopping ...
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[Supraleiter-HPC-Knoten:01381] 1 more process has sent help message help-mpi-api.txt / mpi-abort
+[Supraleiter-HPC-Knoten:01381] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+
+-----------------------------------------

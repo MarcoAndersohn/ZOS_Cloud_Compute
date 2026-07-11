@@ -102,6 +102,18 @@ def git_sync(message):
     except Exception as e:
         print(f"⚠️ Git Fehler, {e}")
 
+def print_error_tail(output_file, lines=20):
+    """Gibt die letzten Zeilen einer gecrashten Output-Datei aus"""
+    if not os.path.exists(output_file): return
+    try:
+        with open(output_file, 'r', errors='ignore') as f:
+            content = f.readlines()
+            tail = "".join(content[-lines:])
+            msg = f"\n--- Letzte {lines} Zeilen von {os.path.basename(output_file)} ---\n{tail}\n-----------------------------------------\n"
+            print(msg)
+            with open(TXT_LOG_FILE, "a") as log: log.write(msg)
+    except: pass
+
 def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
     try:
         lam = float(lambda_ep)
@@ -284,7 +296,6 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                         if is_xml_valid(xml_path):
                             print("      💾 XML valide -> Erstelle Checkpoint...")
                             try:
-                                # Sicherer Kopiervorgang ohne harten Crash falls Dateien gerade beschrieben werden
                                 if not os.path.exists(checkpoint_dir):
                                     shutil.copytree(tmp_dir, checkpoint_dir)
                                 else:
@@ -502,7 +513,6 @@ def get_last_iteration(output_file):
         return val
     except: return 0
 
-
 # --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
@@ -639,15 +649,10 @@ def main():
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
-                ph_cores_to_use = int(DEFAULT_CORES)
-                if os.path.exists(phase3_file):
-                    try:
-                        with open(phase3_file, "r", encoding="utf-8") as f3:
-                            content3 = f3.read()
-                            if "2" in content3 or "OOM" in content3 or "El-Ph" in content3:
-                                ph_cores_to_use = int(SAFE_CORES)
-                                print("   📄 Phase 3.txt erkannt! Drossele Phononen hart auf 2 Kerne.")
-                    except: pass
+                wants_phase3_direct = os.path.exists(phase3_file)
+                ph_cores_to_use = int(SAFE_CORES) if wants_phase3_direct else int(DEFAULT_CORES)
+                if wants_phase3_direct:
+                    print("   📄 Phase 3.txt erkannt! Überspringe Standard-Phononen und setze Kerne auf 2.")
 
                 result = "DONE"
                 crash_counter = 0
@@ -717,6 +722,7 @@ def main():
                             continue
 
                         elif result == "CRASH":
+                            print_error_tail(scf_out)
                             reason = analyze_crash_reason(scf_out)
                             if reason == "NON_CONVERGED":
                                 update_csv(name, "SKIPPED (Non-Conv)")
@@ -747,7 +753,6 @@ def main():
                     match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
                     prefix = match.group(1) if match else "calc"
                 
-                # BUGFIX: Lese die LETZTE Fermi-Energie statt der Ersten ein, verhindert Isolator-Fehlalarm!
                 e_fermi = "-"
                 if os.path.exists(scf_out):
                     with open(scf_out, 'r', errors='ignore') as f:
@@ -786,18 +791,20 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
                 update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
+                # --- PHONONEN (KOMBINIERT FÜR PHASE 3) ---
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
-                    if not os.path.exists(ph_in) and not os.path.exists(ph_out):
-                        print("   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten...")
+                    if not os.path.exists(ph_in):
+                        print("   🧹 Manueller Reset (oder Start) erkannt. Bereinige Phononen-Daten...")
                         shutil.rmtree(os.path.join(work_dir, "tmp", "_ph0"), ignore_errors=True)
                         for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
                             for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
                                 try: os.remove(f)
                                 except: pass
                         
-                        # BUGFIX: Hier nur reine Phononen (Phase 1) ohne electron_phonon Flag!
+                        # Direkter Einbau von Phase 3 (El-Ph), wenn die Textdatei existiert!
+                        elph_flag = ", electron_phonon='interpolated'" if wants_phase3_direct else ""
                         with open(ph_in, "w") as f: 
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., nq1=2, nq2=2, nq3=2 /\n")
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true.{elph_flag}, nq1=2, nq2=2, nq3=2 /\n")
                     
                     ph_cores = ph_cores_to_use
                     if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
@@ -805,7 +812,8 @@ def main():
                     ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                     
                     if ph_res != "DONE":
-                        print("      ⚠️ Crash/OOM!")
+                        print("      ⚠️ Crash/OOM in Phononen erkannt!")
+                        print_error_tail(ph_out)
                         crash_reason = analyze_crash_reason(ph_out)
                         
                         if crash_reason == "XML_ERROR":
@@ -847,6 +855,7 @@ def main():
                     
                     if ph_res != "DONE":
                          print("      ❌ Phononen endgültig fehlgeschlagen.")
+                         print_error_tail(ph_out)
                          update_csv(name, "SKIPPED (Phonon Crash)") 
                          git_sync(f"Phonon Crash, {name}")
                          continue
@@ -867,30 +876,18 @@ def main():
                     continue
 
                 if stab == "STABIL":
-                    print(f"   ⚛️ PHASE 2 Vorbereitung für {name}...")
-                    
-                    is_resuming_phase2 = False
+                    # Wenn wir hier ankommen, prüfen wir, ob El-Ph (Phase 3) schon erledigt ist.
+                    # Das passiert automatisch, wenn Phase 3.txt vorlag!
+                    is_elph_done = False
                     if os.path.exists(ph_in):
                         with open(ph_in, 'r') as f:
                             if "electron_phonon" in f.read():
-                                is_resuming_phase2 = True
-
-                    tmp_path = os.path.join(work_dir, "tmp")
-                    if not is_resuming_phase2:
-                        print("   🧹 Erster Start von Phase 2, Lösche alte Phase 1 Dateien...")
-                        ph0_path = os.path.join(tmp_path, "_ph0")
-                        if os.path.exists(ph0_path): shutil.rmtree(ph0_path, ignore_errors=True)
-                        
-                        for f in glob.glob(os.path.join(work_dir, "*.dyn*")):
-                            try: os.remove(f)
-                            except: pass
-                        for f in glob.glob(os.path.join(tmp_path, "*.a2Fsave*")):
-                            try: os.remove(f)
-                            except: pass
-                        for f in glob.glob(os.path.join(tmp_path, "*.dvscf*")):
-                            try: os.remove(f)
-                            except: pass
-                        if os.path.exists(ph_out): os.remove(ph_out)
+                                is_elph_done = True
+                                
+                    if not is_elph_done:
+                        # Fallback für Leute, die keine Phase 3.txt gesetzt haben,
+                        # aber trotzdem El-Ph noch machen müssen.
+                        print(f"   ⚛️ Erweitere auf Phase 3 (El-Ph) für {name}...")
                         
                         c_nq1, c_nq2, c_nq3 = "2", "2", "2"
                         if os.path.exists(ph_in):
@@ -906,16 +903,17 @@ def main():
                         with open(ph_in, "w") as f:
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3} /\n")
 
-                    update_csv(name, "Rechnet El-Ph (Phononen)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
-                    
-                    if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
+                        update_csv(name, "Rechnet El-Ph (Phononen)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
+                        
+                        # Starte nochmal mit recover
                         ph_cores = ph_cores_to_use
                         if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
-                        print("   ⚛️ Starte Phase 2 (El-Ph)...")
+                        print("   ⚛️ Starte Phase 3 (El-Ph Nachzügler)...")
                         ph_res_2 = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                         
                         if ph_res_2 != "DONE":
                             print("   ❌ El-Ph Phononen fehlgeschlagen.")
+                            print_error_tail(ph_out)
                             update_csv(name, "ERROR (El-Ph Crash)")
                             git_sync(f"El-Ph Crash, {name}")
                             continue
@@ -936,6 +934,7 @@ def main():
 
                     if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
                         print(f"      ❌ Q2R fehlgeschlagen!")
+                        print_error_tail(q2r_out)
                         update_csv(name, "ERROR (Q2R Crash)")
                         git_sync(f"Q2R Crash, {name}")
                         continue
@@ -951,6 +950,7 @@ def main():
 
                     if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
                         print(f"      ❌ Matdyn fehlgeschlagen!")
+                        print_error_tail(matdyn_out)
                         update_csv(name, "ERROR (Matdyn Crash)")
                         git_sync(f"Matdyn Crash, {name}")
                         continue

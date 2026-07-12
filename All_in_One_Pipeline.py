@@ -101,8 +101,20 @@ def git_sync(message):
     except Exception as e:
         print(f"⚠️ Git Fehler, {e}")
 
-def print_error_tail(output_file, lines=20):
-    """Gibt die letzten Zeilen einer gecrashten Output-Datei aus"""
+def print_error_tail(output_file, lines=50):
+    """Gibt die letzten Zeilen einer gecrashten Output-Datei aus und prueft die CRASH-Datei"""
+    cwd = os.path.dirname(output_file)
+    crash_file = os.path.join(cwd, "CRASH")
+    
+    if os.path.exists(crash_file):
+        try:
+            with open(crash_file, 'r', errors='ignore') as f:
+                crash_content = f.read()
+                msg = f"\n--- Inhalt der CRASH-Datei ---\n{crash_content}\n-----------------------------------------\n"
+                print(msg)
+                with open(TXT_LOG_FILE, "a") as log: log.write(msg)
+        except: pass
+
     if not os.path.exists(output_file): return
     try:
         with open(output_file, 'r', errors='ignore') as f:
@@ -407,7 +419,7 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
             print(f"      ❌ Recovery fehlgeschlagen, {e}")
             return False
 
-def disable_symmetries_and_reduce_grid(input_file):
+def disable_symmetries(input_file):
     if not os.path.exists(input_file): return
     with open(input_file, 'r') as f: content = f.read()
     
@@ -417,13 +429,9 @@ def disable_symmetries_and_reduce_grid(input_file):
     if "&INPUTPH" in content:
         if "search_sym" not in content:
             content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
-    
-    content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
-    content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
-    content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
 
     with open(input_file, 'w') as f: f.write(content)
-    print(f"      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.")
+    print("      🛡️ Symmetrien deaktiviert (Grid bleibt für El-Ph erhalten).")
 
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
@@ -842,9 +850,9 @@ def main():
                         if crash_reason == "SYMMETRY_ERROR":
                              print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
 
-                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Grid=1x1x1, Sym=OFF, {SAFE_CORES} Cores...")
+                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Sym=OFF, {SAFE_CORES} Cores...")
                         
-                        disable_symmetries_and_reduce_grid(phase2_in)
+                        disable_symmetries(phase2_in)
                         
                         tmp_path = os.path.join(work_dir, "tmp")
                         ph0_path = os.path.join(tmp_path, "_ph0")

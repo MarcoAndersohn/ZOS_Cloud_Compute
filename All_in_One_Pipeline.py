@@ -28,6 +28,7 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
+# Angepasst an Standard D4s v5
 DEFAULT_CORES = "4"
 SAFE_CORES = "2"
 MEMORY_LIMIT_PERCENT = 92.0
@@ -148,7 +149,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
+            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H,%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -160,7 +161,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             found = True
             break
     if not found:
-        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
+        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H,%M")}
         if lam != "-": new_row['Lambda'] = str(lam)
         if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
         if tc != "-": new_row['Tc (K)'] = str(tc)
@@ -222,10 +223,11 @@ def analyze_crash_reason(output_file):
             return "SYMMETRY_ERROR"
 
         if "mx dimension too small" in lines_lower:
-            print("      🧨 Mismatch/Pseudo Error! Dimensionen stimmen nicht mit Kernanzahl überein.")
+            print("      🧨 FATAL, Pseudopotential übersteigt QE-Limit. Neues Pseudo (PAW) benötigt!")
             return "PSEUDO_ERROR"
 
         ram_match = re.search(r"estimated total dynamical ram\s*>\s*([0-9\.]+)\s*(mb|gb)", lines_lower)
+
         error_keywords = ["error", "mpi_abort", "segmentation fault", "stopping", "fatal", "diagonalization failed"]
         has_error_msg = any(key in lines_lower for key in error_keywords)
 
@@ -307,16 +309,13 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                         if is_xml_valid(xml_path):
                             print("      💾 XML valide -> Erstelle Checkpoint...")
                             try:
-                                if not os.path.exists(checkpoint_dir):
-                                    shutil.copytree(tmp_dir, checkpoint_dir)
-                                else:
-                                    shutil.copytree(tmp_dir, checkpoint_dir, dirs_exist_ok=True)
+                                if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
+                                shutil.copytree(tmp_dir, checkpoint_dir)
                                 last_checkpoint_time = time.time()
                                 print("      ✅ Checkpoint erstellt.")
                                 git_sync("Checkpoint & Log Update")
                                 last_git_sync = time.time() 
-                            except Exception as e: 
-                                print(f"      ⚠️ Checkpoint fail (wird ignoriert), {e}")
+                            except Exception as e: print(f"      ⚠️ Checkpoint fail, {e}")
 
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
@@ -520,6 +519,7 @@ def get_last_iteration(output_file):
         return val
     except: return 0
 
+
 # --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
@@ -612,7 +612,6 @@ def main():
         for input_file in input_files:
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
-            
             scf_out = os.path.join(work_dir, "scf.out")
             phase3_file = os.path.join(work_dir, "Phase 3.txt")
             
@@ -651,24 +650,14 @@ def main():
             try:
                 if not os.path.exists(work_dir): os.makedirs(work_dir)
                 print(f"\n💎 Job, {name}")
-                
                 scf_in = os.path.join(work_dir, "scf.in")
-                dos_in = os.path.join(work_dir, "dos.in")
-                dos_out = os.path.join(work_dir, f"{name}.dos")
+                dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
                 
+                # Dateien konsequent getrennt
                 phase2_in = os.path.join(work_dir, "ph_phase2.in")
                 phase2_out = os.path.join(work_dir, "ph_phase2.out")
                 phase3_in = os.path.join(work_dir, "ph_phase3_elph.in")
                 phase3_out = os.path.join(work_dir, "ph_phase3_elph.out")
-
-                legacy_ph_in = os.path.join(work_dir, "ph.in")
-                legacy_ph_out = os.path.join(work_dir, "ph.out")
-                if os.path.exists(legacy_ph_out):
-                    try: os.remove(legacy_ph_out)
-                    except: pass
-                if os.path.exists(legacy_ph_in):
-                    try: os.remove(legacy_ph_in)
-                    except: pass
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
@@ -740,7 +729,6 @@ def main():
                             continue
 
                         elif result == "CRASH":
-                            print_error_tail(scf_out)
                             reason = analyze_crash_reason(scf_out)
                             if reason == "NON_CONVERGED":
                                 update_csv(name, "SKIPPED (Non-Conv)")
@@ -774,8 +762,8 @@ def main():
                 e_fermi = "-"
                 if os.path.exists(scf_out):
                     with open(scf_out, 'r', errors='ignore') as f:
-                        matches = re.findall(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
-                        if matches: e_fermi = float(matches[-1])
+                        match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
+                        if match: e_fermi = float(match.group(1))
 
                 update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
                 if not os.path.exists(dos_out):
@@ -806,8 +794,8 @@ def main():
                     git_sync(f"Fertig, {name} (Isolator)")
                     continue
 
-                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Standard-Phononen (Phase 2)...")
-                update_csv(name, "Rechnet Phononen (Phase 2)...", e_fermi, round(dos_val, 4), "JA")
+                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
+                update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
                 
                 # --- PHASE 2 STANDARD PHONONEN ---
                 if not os.path.exists(phase2_out) or "JOB DONE" not in open(phase2_out, errors='ignore').read():
@@ -822,12 +810,12 @@ def main():
                         with open(phase2_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2 /\n")
                     
-                    ph_cores_p2 = int(DEFAULT_CORES)
-                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores_p2 = int(SAFE_CORES)
+                    ph_cores = int(DEFAULT_CORES)
+                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
 
-                    ph_res_2 = run_monitored_ph(phase2_in, phase2_out, work_dir, ph_cores_p2)
+                    ph_res = run_monitored_ph(phase2_in, phase2_out, work_dir, ph_cores)
                     
-                    if ph_res_2 != "DONE":
+                    if ph_res != "DONE":
                         print("      ⚠️ Crash/OOM in Phase 2 Phononen erkannt!")
                         print_error_tail(phase2_out)
                         crash_reason = analyze_crash_reason(phase2_out)
@@ -867,11 +855,10 @@ def main():
                             try: os.remove(phase2_out)
                             except: pass
 
-                        ph_res_2 = run_monitored_ph(phase2_in, phase2_out, work_dir, int(SAFE_CORES))
+                        ph_res = run_monitored_ph(phase2_in, phase2_out, work_dir, int(SAFE_CORES))
                     
-                    if ph_res_2 != "DONE":
-                         print("      ❌ Phononen Phase 2 endgültig fehlgeschlagen.")
-                         print_error_tail(phase2_out)
+                    if ph_res != "DONE":
+                         print("      ❌ Phononen endgültig fehlgeschlagen.")
                          update_csv(name, "SKIPPED (Phonon Crash)") 
                          git_sync(f"Phonon Crash, {name}")
                          continue
@@ -908,7 +895,7 @@ def main():
                                 if m3: c_nq3 = m3.group(1)
                                 
                         with open(phase3_in, "w") as f:
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', recover=.true., nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3} /\n")
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', trans=.false., recover=.true., nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3} /\n")
 
                         update_csv(name, "Rechnet El-Ph (Phase 3)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                         
@@ -977,7 +964,8 @@ def main():
                                     lam = ml.group(1)
                                     wlog = mw.group(1)
                                     tc_v = berechne_tc(wlog, lam)
-                                    if tc_v != "-": tc = round(tc_v, 3)
+                                    if tc_v != "-":
+                                        tc = round(tc_v, 3)
 
                     update_csv(name, "Fertig (Metall)", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab, lam=lam, wlog=wlog, tc=tc)
                     git_sync(f"Fertig, {name} (Tc={tc}K)")
@@ -1001,12 +989,7 @@ def main():
 
     except Exception as e:
         full_error = f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()})\n{e}\n{traceback.format_exc()}\n"
-        print(full_error) 
-        
-        try:
-            with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
-        except: pass
-        
+        with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
         git_sync("🚨 Notfall Sync nach Skript-Absturz")
         send_notification(f"🚨 KRITISCHER FEHLER, {e} -> Shutdown.")
         

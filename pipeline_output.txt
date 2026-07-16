@@ -22,3 +22,70 @@
 🚀 NEUSTART SMART-PIPELINE, 2026-07-16 0955
 ========================================
 
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   8ac476cf..35b7d1ae  main -> main
+⏩ Überspringe 01_HfH3_Top1 (Ist ein Isolator)
+⏩ Überspringe 01_LiTaH6Ru (Ist ein Isolator)
+⏩ Überspringe 01_SrMgGaB3H16 (Ist ein Isolator)
+✅ 02_BaMg3H8 SCF ist fertig.
+
+💎 Job 02_BaMg3H8
+   ⚡ Metall (DOS=0.740). Berechne Phononen...
+      ⚙️ Starte PHONONEN (Cores 2)...
+      ⚠️ Crash/OOM in Phase 2 Phononen erkannt!
+
+--- Letzte 50 Zeilen von ph_phase2.out ---
+
+
+     Representation #   5 mode #   5
+
+     Self-consistent Calculation
+At line 126 of file write_rec.f90 (unit = 99, file = './tmp/_ph0/BaMg3H8.recover')
+Fortran runtime error: Unformatted file structure has been corrupted
+
+Error termination. Backtrace:
+#0  0x78db0a423960 in ???
+#1  0x78db0a4244d9 in ???
+#2  0x78db0a42510f in ???
+#3  0x78db0a67c8ee in ???
+#4  0x78db0a677b7a in ???
+#0  0x70d289023960 in ???
+#1  0x70d2890244d9 in ???
+#2  0x70d28902510f in ???
+#3  0x70d28927c8ee in ???
+#4  0x70d289277b7a in ???
+#5  0x61fb99e141af in ???
+#6  0x61fb99e06fdc in ???
+#7  0x61fb99df159a in ???
+#8  0x61fb99d8eba6 in ???
+#9  0x61fb99d88191 in ???
+#10  0x61fb99d87ffe in ???
+#11  0x70d288c29d8f in ???
+#12  0x70d288c29e3f in ???
+#13  0x61fb99d8802d in ???
+#14  0xffffffffffffffff in ???
+#5  0x55fe9269d1af in ???
+#6  0x55fe9268ffdc in ???
+#7  0x55fe9267a59a in ???
+#8  0x55fe92617ba6 in ???
+#9  0x55fe92611191 in ???
+#10  0x55fe92610ffe in ???
+#11  0x78db0a029d8f in ???
+#12  0x78db0a029e3f in ???
+#13  0x55fe9261102d in ???
+#14  0xffffffffffffffff in ???
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[28693,1],0]
+  Exit code:    2
+--------------------------------------------------------------------------
+
+-----------------------------------------
+
+      ❌ Phononen fehlgeschlagen. Notfallmodus ist deaktiviert.

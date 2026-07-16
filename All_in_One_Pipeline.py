@@ -28,8 +28,8 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-DEFAULT_CORES = "2"
-SAFE_CORES = "1"
+DEFAULT_CORES = "4"
+SAFE_CORES = "2"
 MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
@@ -155,7 +155,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H%M")})
+            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -167,7 +167,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             found = True
             break
     if not found:
-        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H%M")}
+        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
         if lam != "-": new_row['Lambda'] = str(lam)
         if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
         if tc != "-": new_row['Tc (K)'] = str(tc)
@@ -418,20 +418,6 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
             print(f"      ❌ Recovery fehlgeschlagen {e}")
             return False
 
-def disable_symmetries(input_file):
-    if not os.path.exists(input_file): return
-    with open(input_file, 'r') as f: content = f.read()
-    
-    content = content.replace("noinv=.true.,", "")
-    content = content.replace("noinv=.true.", "")
-
-    if "&INPUTPH" in content:
-        if "search_sym" not in content:
-            content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
-
-    with open(input_file, 'w') as f: f.write(content)
-    print("      🛡️ Symmetrien deaktiviert (Grid bleibt intakt).")
-
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
     with open(input_file, 'r', errors='ignore') as f: content = f.read()
@@ -614,9 +600,7 @@ def main():
         initial_git_pull()
         
         set_logic_app_state("Enabled")
-        with open(TXT_LOG_FILE, "a") as f:
-            f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H%M')}\n{'='*40}\n")
-        print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H%M')}\n{'='*40}\n")
+        print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
         if os.path.exists(SIGNAL_FILE): os.remove(SIGNAL_FILE)
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
@@ -826,8 +810,7 @@ def main():
                         with open(phase2_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2 /\n")
                     
-                    ph_cores = int(DEFAULT_CORES)
-                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
+                    ph_cores = int(DEFAULT_CORES) # Immer 4 Cores für Phase 2
 
                     ph_res = run_monitored_ph(phase2_in, phase2_out, work_dir, ph_cores)
                     
@@ -895,8 +878,6 @@ def main():
                         ph_cores_p3 = int(DEFAULT_CORES)
                         if os.path.exists(phase3_file):
                             print("   📄 Phase 3.txt erkannt! Drossele Phase 3 hart auf 2 Kerne.")
-                            ph_cores_p3 = int(SAFE_CORES)
-                        elif count_job_attempts(TXT_LOG_FILE, name) > 2:
                             ph_cores_p3 = int(SAFE_CORES)
 
                         print(f"   ⚛️ Starte Phase 3 (El-Ph) auf {ph_cores_p3} Kernen...")

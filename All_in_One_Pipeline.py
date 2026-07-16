@@ -28,8 +28,8 @@ LOGIC_APP_NAME = "AutoRestart-Supraleiter"
 RESOURCE_GROUP = "Supraleiter-HPC-Knoten_group"
 DOS_THRESHOLD = 0.05
 
-DEFAULT_CORES = "4"
-SAFE_CORES = "2"
+DEFAULT_CORES = "2"
+SAFE_CORES = "1"
 MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
@@ -121,7 +121,6 @@ def print_error_tail(output_file, lines=50):
                 crash_content = f.read()
                 msg = f"\n--- Inhalt der CRASH-Datei ---\n{crash_content}\n-----------------------------------------\n"
                 print(msg)
-                with open(TXT_LOG_FILE, "a") as log: log.write(msg)
         except: pass
 
     if not os.path.exists(output_file): return
@@ -131,7 +130,6 @@ def print_error_tail(output_file, lines=50):
             tail = "".join(content[-lines:])
             msg = f"\n--- Letzte {lines} Zeilen von {os.path.basename(output_file)} ---\n{tail}\n-----------------------------------------\n"
             print(msg)
-            with open(TXT_LOG_FILE, "a") as log: log.write(msg)
     except: pass
 
 def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
@@ -445,10 +443,10 @@ def detect_oom_level(input_file):
 
 def apply_oom_settings(input_file, level):
     with open(input_file, 'r') as f: content = f.read()
-    diag = 'cg'; mix = 4; disk = None 
-    msg = "Standard (cg, mix=4)"
+    diag = 'cg'; mix = 6; disk = None 
+    msg = "Standard (cg, mix=6, david=2)"
 
-    if level >= 1: disk = 'low'; msg = "Stufe 1 (cg, mix=4, disk_io='low')"
+    if level >= 1: disk = 'low'; msg = "Stufe 1 (cg, mix=6, disk_io='low')"
     if level >= 2: mix = 3; msg = "Stufe 2 (cg, mix=3, disk_io='low')"
     if level >= 3: mix = 2; msg = "Stufe 3 (cg, mix=2, disk_io='low')"
     if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
@@ -464,6 +462,11 @@ def apply_oom_settings(input_file, level):
         content = re.sub(r"mixing_ndim\s*=\s*\d+", f"mixing_ndim = {mix}", content)
     else:
         content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_ndim = {mix},")
+        
+    if "diago_david_ndim" in content:
+        content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n diago_david_ndim = 2,")
 
     if disk == 'low':
         if "disk_io" in content:
@@ -497,6 +500,16 @@ def fix_input_file(input_file, iteration_count=0):
 
     if "mixing_beta" in content:
         content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
+        
+    if "mixing_ndim" in content:
+        content = re.sub(r"mixing_ndim\s*=\s*\d+", "mixing_ndim = 6", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 6,")
+        
+    if "diago_david_ndim" in content:
+        content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
+    else:
+        content = content.replace("&ELECTRONS", "&ELECTRONS\n diago_david_ndim = 2,")
     
     if "electron_maxstep" in content:
         content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 150", content)
@@ -831,40 +844,11 @@ def main():
                             update_csv(name, "SCF_RESET (XML Error)")
                             continue
 
-                        if is_recoverable_fragmentation_error(phase2_out):
-                            print("      🤕 Diagnose, Fragmentierung erkannt. Starte 'Collect-Recovery'...")
-                            if run_cleanup_scf(scf_in, work_dir, int(DEFAULT_CORES)):
-                                print("      👍 Recovery erfolgreich.")
-                            else:
-                                print("      👎 Recovery fehlgeschlagen.")
-                        
-                        if crash_reason == "SYMMETRY_ERROR":
-                             print("      🧩 Symmetrie-Problem (Keine automatische Heilung in ph.x möglich)!")
-
-                        print(f"      🛡️ Aktiviere NOTFALL-MODUS, Sym=OFF, {SAFE_CORES} Cores...")
-                        
-                        disable_symmetries(phase2_in)
-                        
-                        tmp_path = os.path.join(work_dir, "tmp")
-                        ph0_path = os.path.join(tmp_path, "_ph0")
-                        
-                        if os.path.exists(ph0_path):
-                            try:
-                                shutil.rmtree(ph0_path, ignore_errors=True)
-                                print("      🧹 Defekten Phononen-Cache (_ph0) gelöscht.")
-                            except: pass
-                        
-                        if os.path.exists(phase2_out):
-                            try: os.remove(phase2_out)
-                            except: pass
-
-                        ph_res = run_monitored_ph(phase2_in, phase2_out, work_dir, int(SAFE_CORES))
-                    
-                    if ph_res != "DONE":
-                         print("      ❌ Phononen endgültig fehlgeschlagen.")
-                         update_csv(name, "SKIPPED (Phonon Crash)") 
-                         git_sync(f"Phonon Crash {name}")
-                         continue
+                        # Notfallmodus deaktiviert laut Anweisung
+                        print("      ❌ Phononen fehlgeschlagen. Notfallmodus ist deaktiviert.")
+                        update_csv(name, "SKIPPED (Phonon Crash)") 
+                        git_sync(f"Phonon Crash {name}")
+                        continue
 
                 min_f, stab = "-", "Unbekannt"
                 if os.path.exists(phase2_out):
@@ -886,6 +870,11 @@ def main():
                     if not os.path.exists(phase3_out) or "JOB DONE" not in open(phase3_out, errors='ignore').read():
                         print(f"   ⚛️ Bereite Phase 3 (El-Ph) für {name} vor...")
                         
+                        print("      🧹 Lösche eventuelle a2Fsave-Leichen vor Phase 3...")
+                        for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")):
+                            try: os.remove(f)
+                            except: pass
+                            
                         c_nq1, c_nq2, c_nq3 = "2", "2", "2"
                         if os.path.exists(phase2_in):
                             with open(phase2_in, 'r') as f:

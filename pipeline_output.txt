@@ -89,3 +89,66 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    a3bcced4..9d66feaf  main -> main
       ❤️ Git Heartbeat (Phonon)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   9d66feaf..b8bfd3a1  main -> main
+   ⚛️ Bereite Phase 3 (El-Ph) für 02_BaMg3H8 vor...
+      🧹 Lösche eventuelle a2Fsave-Leichen vor Phase 3...
+   📄 Phase 3.txt erkannt! Drossele Phase 3 hart auf 2 Kerne.
+   ⚛️ Starte Phase 3 (El-Ph) auf 2 Kernen...
+      ⚙️ Starte PHONONEN (Cores 2)...
+   ❌ El-Ph Phononen fehlgeschlagen.
+
+--- Letzte 50 Zeilen von ph_phase3_elph.out ---
+     freq (   15) =      22.455370 [THz] =     749.030502 [cm-1]
+     freq (   16) =      22.680864 [THz] =     756.552178 [cm-1]
+     freq (   17) =      22.682396 [THz] =     756.603299 [cm-1]
+     freq (   18) =      24.487609 [THz] =     816.818726 [cm-1]
+     freq (   19) =      26.628560 [THz] =     888.233163 [cm-1]
+     freq (   20) =      26.630887 [THz] =     888.310772 [cm-1]
+     freq (   21) =      26.823162 [THz] =     894.724383 [cm-1]
+     freq (   22) =      27.561695 [THz] =     919.359195 [cm-1]
+     freq (   23) =      27.561880 [THz] =     919.365344 [cm-1]
+     freq (   24) =      28.975514 [THz] =     966.519113 [cm-1]
+     freq (   25) =      28.976722 [THz] =     966.559416 [cm-1]
+     freq (   26) =      30.125251 [THz] =    1004.870205 [cm-1]
+     freq (   27) =      33.877733 [THz] =    1130.039545 [cm-1]
+     freq (   28) =      41.988971 [THz] =    1400.601312 [cm-1]
+     freq (   29) =      41.989701 [THz] =    1400.625670 [cm-1]
+     freq (   30) =      44.663144 [THz] =    1489.802110 [cm-1]
+     freq (   31) =      45.487644 [THz] =    1517.304471 [cm-1]
+     freq (   32) =      49.814912 [THz] =    1661.646604 [cm-1]
+     freq (   33) =      49.815216 [THz] =    1661.656757 [cm-1]
+     freq (   34) =      52.724684 [THz] =    1758.706142 [cm-1]
+     freq (   35) =      52.725525 [THz] =    1758.734211 [cm-1]
+     freq (   36) =      53.991124 [THz] =    1800.950032 [cm-1]
+ **************************************************************************
+     electron-phonon interaction  ...
+
+#0  0x7609b0c23960 in ???
+#1  0x7609b0c244d9 in ???
+#2  0x7609b0c2510f in ???
+#3  0x7609b0e7817b in ???
+#4  0x7609b0e71684 in ???
+#5  0x7609b0e722aa in ???
+#6  0x57cba1278a71 in ???
+#7  0x57cba1263c32 in ???
+#8  0x57cba125d191 in ???
+#9  0x57cba125cffe in ???
+#10  0x7609b0829d8f in ???
+#11  0x7609b0829e3f in ???
+#12  0x57cba125d02d in ???
+#13  0xffffffffffffffff in ???
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[25859,1],0]
+  Exit code:    2
+--------------------------------------------------------------------------
+
+-----------------------------------------
+

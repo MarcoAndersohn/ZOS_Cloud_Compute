@@ -57,7 +57,7 @@ MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
 def send_notification(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {"chat_id" TELEGRAM_CHAT_ID, "text" f"🛡️ HPC {message}"}
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC {message}"}
         requests.post(url, data=payload, timeout=10)
     except Exception: pass
 
@@ -156,7 +156,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({'Status' status, 'Timestamp' datetime.now().strftime("%Y-%m-%d %H%M")})
+            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -168,7 +168,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             found = True
             break
     if not found:
-        new_row = {'Name' name, 'Status' status, 'Fermi Energie (eV)' str(e_fermi), 'DOS @ Fermi' str(dos_val), 'Metall?' str(is_metal), 'Min Freq (THz)' str(min_f), 'Stabilität' str(stab), 'Timestamp' datetime.now().strftime("%Y-%m-%d %H%M")}
+        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
         if lam != "-": new_row['Lambda'] = str(lam)
         if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
         if tc != "-": new_row['Tc (K)'] = str(tc)
@@ -817,7 +817,6 @@ def main():
                     
                     if ph_res != "DONE":
                         print("      ⚠️ Crash/OOM in Phase 2 Phononen erkannt!")
-                        print_error_tail(phase2_out)
                         crash_reason = analyze_crash_reason(phase2_out)
                         
                         if crash_reason == "XML_ERROR":
@@ -887,7 +886,6 @@ def main():
                         
                         if ph_res_3 != "DONE":
                             print("   ❌ El-Ph Phononen fehlgeschlagen.")
-                            print_error_tail(phase3_out)
                             update_csv(name, "ERROR (El-Ph Crash)")
                             git_sync(f"El-Ph Crash {name}")
                             continue
@@ -908,7 +906,6 @@ def main():
 
                     if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
                         print(f"      ❌ Q2R fehlgeschlagen!")
-                        print_error_tail(q2r_out)
                         update_csv(name, "ERROR (Q2R Crash)")
                         git_sync(f"Q2R Crash {name}")
                         continue
@@ -924,7 +921,6 @@ def main():
 
                     if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
                         print(f"      ❌ Matdyn fehlgeschlagen!")
-                        print_error_tail(matdyn_out)
                         update_csv(name, "ERROR (Matdyn Crash)")
                         git_sync(f"Matdyn Crash {name}")
                         continue

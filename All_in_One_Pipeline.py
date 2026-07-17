@@ -43,11 +43,11 @@ CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 
-PW_EXE = "/home/marco/q-e-qe-7.4/bin/pw.x"
-PH_EXE = "/home/marco/q-e-qe-7.4/bin/ph.x"
-DOS_EXE = "/home/marco/q-e-qe-7.4/bin/dos.x"
-Q2R_EXE = "/home/marco/q-e-qe-7.4/bin/q2r.x"
-MATDYN_EXE = "/home/marco/q-e-qe-7.4/bin/matdyn.x"
+PW_EXE = "/home/marco/qe-7.4/bin/pw.x"
+PH_EXE = "/home/marco/qe-7.4/bin/ph.x"
+DOS_EXE = "/home/marco/qe-7.4/bin/dos.x"
+Q2R_EXE = "/home/marco/qe-7.4/bin/q2r.x"
+MATDYN_EXE = "/home/marco/qe-7.4/bin/matdyn.x"
 
 # =============================================================================
 # 2. HELFER & GIT
@@ -339,15 +339,18 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
 
             except Exception: 
                 kill_process_tree(process.pid)
+                print_error_tail(output_file)
                 return "CRASH"
             
             time.sleep(1.5)
             
             if process.returncode == -9:
                 print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
+                print_error_tail(output_file)
                 return "OOM"
 
             if process.returncode != 0:
+                print_error_tail(output_file)
                 reason = analyze_crash_reason(output_file)
                 if reason == "LIKELY_OOM":
                     print("      💀 Logfile endet abrupt (Silent Death) -> OOM.")
@@ -356,8 +359,11 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
 
             final_reason = analyze_crash_reason(output_file)
             if final_reason == "DONE": return "DONE"
-            elif final_reason == "LIKELY_OOM": return "OOM"
+            elif final_reason == "LIKELY_OOM": 
+                print_error_tail(output_file)
+                return "OOM"
             
+            print_error_tail(output_file)
             return "CRASH"
         
 def is_xml_valid(xml_path):
@@ -473,7 +479,6 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    # AUTOMATISCHE LA2F INJEKTION FÜR ANSATZ 1
     if "la2f" not in content.lower():
         if "&ELECTRONS" in content:
             content = content.replace("&ELECTRONS", "&ELECTRONS\n la2f=.true.,")
@@ -524,8 +529,6 @@ def get_last_iteration(output_file):
         return val
     except Exception: return 0
 
-
-# --- ROBUSTE PHONON WRAPPER OHNE EXTERNE CHECKPOINTS ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
 
@@ -558,20 +561,24 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                     if mem_usage > MEMORY_LIMIT_PERCENT:
                         print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
                         kill_process_tree(process.pid)
+                        print_error_tail(output_file)
                         return "OOM"
                 except Exception: pass
 
         except Exception: 
             kill_process_tree(process.pid)
+            print_error_tail(output_file)
             return "CRASH"
         
         time.sleep(1.5)
         
         if process.returncode == -9:
             print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
+            print_error_tail(output_file)
             return "OOM"
 
         if process.returncode != 0:
+            print_error_tail(output_file)
             return "CRASH"
 
         try:
@@ -579,6 +586,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                 if "JOB DONE" in f.read(): return "DONE"
         except Exception: pass
         
+        print_error_tail(output_file)
         return "CRASH"
     
 def deallocate_vm():
@@ -587,7 +595,7 @@ def deallocate_vm():
         print("🛑 Azure CLI nicht gefunden. Verlasse mich auf lokalen Shutdown.")
         return
     try:
-        result = subprocess.run([az_cmd, "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], capture_output=True, text=True, timeout=60)
+        result = subprocess.run([az_cmd, "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], capture_output=True, text=True, timeout=300)
         if result.returncode != 0:
             print(f"⚠️ Azure CLI Deallocate Fehler {result.stderr}")
         else:

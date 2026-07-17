@@ -384,40 +384,6 @@ def is_recoverable_fragmentation_error(ph_output_file):
         return False
     except Exception: return False
 
-def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
-    print(f"      🚑 Starte RECOVERY-Modus (Collect Waves), Cores {cores_to_use}")
-    
-    with open(scf_input_file, 'r') as f: content = f.read()
-    
-    if "restart_mode" in content:
-        content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", "restart_mode='restart'", content)
-    else:
-        content = content.replace("&CONTROL", "&CONTROL\n restart_mode='restart',")
-        
-    if "wf_collect" in content:
-        content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
-    else:
-        content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
-
-    if "nstep" in content:
-        content = re.sub(r"nstep\s*=\s*\d+", "nstep=0", content)
-    else:
-        content = content.replace("&CONTROL", "&CONTROL\n nstep=0,")
-
-    recover_in = scf_input_file + ".recover"
-    recover_out = os.path.join(cwd, "scf_recover.out")
-    with open(recover_in, 'w') as f: f.write(content)
-    
-    with open(recover_in, 'r') as f_in, open(recover_out, 'w') as f_out:
-        cmd = ["mpirun", "--oversubscribe", "-np", str(cores_to_use), PW_EXE]
-        try:
-            subprocess.run(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd, timeout=300)
-            print("      ✅ Recovery-Lauf beendet. Daten sollten jetzt consolidated sein.")
-            return True
-        except Exception as e:
-            print(f"      ❌ Recovery fehlgeschlagen {e}")
-            return False
-
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
     with open(input_file, 'r', errors='ignore') as f: content = f.read()
@@ -473,6 +439,10 @@ def fix_input_file(input_file, iteration_count=0):
         content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
+
+    # Handbuch Option 1 Anforderung: la2f=.true. im SCF Lauf
+    if "la2f" not in content.lower():
+        content = content.replace("&CONTROL", "&CONTROL\n la2f=.true.,")
 
     if "ecutwfc" in content:
         content = re.sub(r"ecutwfc\s*=\s*[0-9\.]+", "ecutwfc = 80.0", content)
@@ -537,7 +507,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
         cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
-        print(f"      ⚙️ Starte PHONONEN (Cores {active_cores})...")
+        print(f"      ⚙️ Starte PHONONEN & El-Ph (Cores {active_cores})...")
         process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
         
         try:
@@ -613,7 +583,6 @@ def main():
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             scf_out = os.path.join(work_dir, "scf.out")
-            phase3_file = os.path.join(work_dir, "Phase 3.txt")
             
             if name in FORCE_RETRY_LIST:
                 print(f"🔄 ERZWUNGENER NEUSTART für {name} (Lösche korrupten RUN-Ordner)...")
@@ -653,10 +622,8 @@ def main():
                 scf_in = os.path.join(work_dir, "scf.in")
                 dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
                 
-                phase2_in = os.path.join(work_dir, "ph_phase2.in")
-                phase2_out = os.path.join(work_dir, "ph_phase2.out")
-                phase3_in = os.path.join(work_dir, "ph_phase3_elph.in")
-                phase3_out = os.path.join(work_dir, "ph_phase3_elph.out")
+                ph_in = os.path.join(work_dir, "ph.in")
+                ph_out = os.path.join(work_dir, "ph.out")
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
@@ -793,31 +760,31 @@ def main():
                     git_sync(f"Fertig {name} (Isolator)")
                     continue
 
-                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
-                update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
+                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen & El-Ph (Option C)...")
+                update_csv(name, "Rechnet Phononen (Option C)...", e_fermi, round(dos_val, 4), "JA")
                 
-                # --- PHASE 2 REINE PHONONEN (Option B) ---
-                if not os.path.exists(phase2_out) or "JOB DONE" not in open(phase2_out, errors='ignore').read():
-                    if not os.path.exists(phase2_in):
-                        print("   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten für Phase 2...")
+                # --- OPTION C (Ansatz 1) ---
+                if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
+                    if not os.path.exists(ph_in):
+                        print("   🧹 Erstelle neues Setup für Phononen & El-Ph (Option C)...")
                         shutil.rmtree(os.path.join(work_dir, "tmp", "_ph0"), ignore_errors=True)
                         for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
                             for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
                                 try: os.remove(f)
                                 except Exception: pass
                         
-                        # Nur noch Standard Phononen (kein electron_phonon Flag)
-                        with open(phase2_in, "w") as f: 
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2 /\n")
+                        with open(ph_in, "w") as f: 
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1=2, nq2=2, nq3=2 /\n")
                     
                     ph_cores = int(DEFAULT_CORES)
+                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
 
-                    ph_res = run_monitored_ph(phase2_in, phase2_out, work_dir, ph_cores)
+                    ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                     
                     if ph_res != "DONE":
-                        print("      ⚠️ Crash/OOM in Phase 2 Phononen erkannt!")
-                        print_error_tail(phase2_out)
-                        crash_reason = analyze_crash_reason(phase2_out)
+                        print("      ⚠️ Crash in Phononen/El-Ph (Option C) erkannt!")
+                        print_error_tail(ph_out)
+                        crash_reason = analyze_crash_reason(ph_out)
                         
                         if crash_reason == "XML_ERROR":
                             print("      🧨 FATAL XML korrupt. Lösche .save und erzwinge SCF-Neustart im nächsten Durchlauf.")
@@ -827,14 +794,13 @@ def main():
                             update_csv(name, "SCF_RESET (XML Error)")
                             continue
 
-                        print("      ❌ Phononen fehlgeschlagen. Notfallmodus ist deaktiviert.")
-                        update_csv(name, "SKIPPED (Phonon Crash)") 
-                        git_sync(f"Phonon Crash {name}")
+                        update_csv(name, "SKIPPED (Phonon/El-Ph Crash)") 
+                        git_sync(f"Phonon/El-Ph Crash {name}")
                         continue
 
                 min_f, stab = "-", "Unbekannt"
-                if os.path.exists(phase2_out):
-                      with open(phase2_out, 'r') as f:
+                if os.path.exists(ph_out):
+                      with open(ph_out, 'r') as f:
                           content = f.read()
                           if "JOB DONE" in content:
                               freqs = re.findall(r"freq\s+\(\s*\d+\)\s+=\s+([0-9\.\-]+)\s+\[THz\]", content)
@@ -848,45 +814,6 @@ def main():
                     continue
 
                 if stab == "STABIL":
-                    # --- PHASE 3 ELECTRON-PHONON (Option B) ---
-                    if not os.path.exists(phase3_out) or "JOB DONE" not in open(phase3_out, errors='ignore').read():
-                        print(f"   ⚛️ Bereite Phase 3 (El-Ph) für {name} vor...")
-                        
-                        print("      🧹 Lösche eventuelle a2Fsave-Leichen vor Phase 3...")
-                        for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")):
-                            try: os.remove(f)
-                            except Exception: pass
-                            
-                        c_nq1, c_nq2, c_nq3 = "2", "2", "2"
-                        if os.path.exists(phase2_in):
-                            with open(phase2_in, 'r') as f:
-                                c = f.read()
-                                m1 = re.search(r"nq1\s*=\s*(\d+)", c)
-                                m2 = re.search(r"nq2\s*=\s*(\d+)", c)
-                                m3 = re.search(r"nq3\s*=\s*(\d+)", c)
-                                if m1: c_nq1 = m1.group(1)
-                                if m2: c_nq2 = m2.group(1)
-                                if m3: c_nq3 = m3.group(1)
-                                
-                        with open(phase3_in, "w") as f:
-                            # OPTION B LOGIK: recover=.true. nutzt fertige _ph0 Ordner, trans=.false. MUSS WEG
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', recover=.true., nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3} /\n")
-
-                        update_csv(name, "Rechnet El-Ph (Phase 3)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
-                        
-                        # Wir gehen wieder auf die Standard 4 Kerne hoch, da es kein OOM Fehler war
-                        ph_cores_p3 = int(DEFAULT_CORES)
-
-                        print(f"   ⚛️ Starte Phase 3 (El-Ph) auf {ph_cores_p3} Kernen...")
-                        ph_res_3 = run_monitored_ph(phase3_in, phase3_out, work_dir, ph_cores_p3)
-                        
-                        if ph_res_3 != "DONE":
-                            print("   ❌ El-Ph Phononen fehlgeschlagen.")
-                            print_error_tail(phase3_out)
-                            update_csv(name, "ERROR (El-Ph Crash)")
-                            git_sync(f"El-Ph Crash {name}")
-                            continue
-
                     q2r_in = os.path.join(work_dir, "q2r.in")
                     q2r_out = os.path.join(work_dir, "q2r.out")
                     matdyn_in = os.path.join(work_dir, "matdyn.in")

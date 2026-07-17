@@ -43,7 +43,6 @@ CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 
-# Korrekte feste Pfade zu QE 7.4
 PW_EXE = "/home/marco/qe-7.4/bin/pw.x"
 PH_EXE = "/home/marco/qe-7.4/bin/ph.x"
 DOS_EXE = "/home/marco/qe-7.4/bin/dos.x"
@@ -391,6 +390,40 @@ def is_recoverable_fragmentation_error(ph_output_file):
         return False
     except Exception: return False
 
+def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
+    print(f"      🚑 Starte RECOVERY-Modus (Collect Waves), Cores {cores_to_use}")
+    
+    with open(scf_input_file, 'r') as f: content = f.read()
+    
+    if "restart_mode" in content:
+        content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", "restart_mode='restart'", content)
+    else:
+        content = content.replace("&CONTROL", "&CONTROL\n restart_mode='restart',")
+        
+    if "wf_collect" in content:
+        content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
+    else:
+        content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
+
+    if "nstep" in content:
+        content = re.sub(r"nstep\s*=\s*\d+", "nstep=0", content)
+    else:
+        content = content.replace("&CONTROL", "&CONTROL\n nstep=0,")
+
+    recover_in = scf_input_file + ".recover"
+    recover_out = os.path.join(cwd, "scf_recover.out")
+    with open(recover_in, 'w') as f: f.write(content)
+    
+    with open(recover_in, 'r') as f_in, open(recover_out, 'w') as f_out:
+        cmd = ["mpirun", "--oversubscribe", "-np", str(cores_to_use), PW_EXE]
+        try:
+            subprocess.run(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd, timeout=300)
+            print("      ✅ Recovery-Lauf beendet. Daten sollten jetzt consolidated sein.")
+            return True
+        except Exception as e:
+            print(f"      ❌ Recovery fehlgeschlagen {e}")
+            return False
+
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
     with open(input_file, 'r', errors='ignore') as f: content = f.read()
@@ -446,10 +479,6 @@ def fix_input_file(input_file, iteration_count=0):
         content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
-
-    # Handbuch Option 1 Anforderung: la2f=.true. im SCF Lauf muss in &CONTROL
-    if "la2f" not in content.lower():
-        content = re.sub(r"&(CONTROL|control)", r"&\1\n la2f=.true.,", content, count=1)
 
     if "ecutwfc" in content:
         content = re.sub(r"ecutwfc\s*=\s*[0-9\.]+", "ecutwfc = 80.0", content)

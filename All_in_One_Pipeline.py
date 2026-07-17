@@ -763,8 +763,8 @@ def main():
                 e_fermi = "-"
                 if os.path.exists(scf_out):
                     with open(scf_out, 'r', errors='ignore') as f:
-                        match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
-                        if match: e_fermi = float(match.group(1))
+                        matches = re.findall(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
+                        if matches: e_fermi = float(matches[-1])
 
                 update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
                 if not os.path.exists(dos_out):

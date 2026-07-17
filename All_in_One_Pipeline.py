@@ -43,11 +43,11 @@ CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 
-PW_EXE = shutil.which("pw.x") or "/usr/bin/pw.x"
-PH_EXE = shutil.which("ph.x") or "/usr/bin/ph.x"
-DOS_EXE = shutil.which("dos.x") or "/usr/bin/dos.x"
-Q2R_EXE = shutil.which("q2r.x") or "/usr/bin/q2r.x"
-MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
+PW_EXE = "/home/marco/q-e-qe-7.4/bin/pw.x"
+PH_EXE = "/home/marco/q-e-qe-7.4/bin/ph.x"
+DOS_EXE = "/home/marco/q-e-qe-7.4/bin/dos.x"
+Q2R_EXE = "/home/marco/q-e-qe-7.4/bin/q2r.x"
+MATDYN_EXE = "/home/marco/q-e-qe-7.4/bin/matdyn.x"
 
 # =============================================================================
 # 2. HELFER & GIT

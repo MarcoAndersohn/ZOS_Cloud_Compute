@@ -43,6 +43,7 @@ CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
 
+# Korrekte feste Pfade zu QE 7.4
 PW_EXE = "/home/marco/qe-7.4/bin/pw.x"
 PH_EXE = "/home/marco/qe-7.4/bin/ph.x"
 DOS_EXE = "/home/marco/qe-7.4/bin/dos.x"
@@ -326,6 +327,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                         if mem_usage > MEMORY_LIMIT_PERCENT:
                             print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
                             kill_process_tree(process.pid)
+                            print_error_tail(output_file)
                             return "OOM" 
                     except Exception: pass
 
@@ -359,7 +361,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
 
             final_reason = analyze_crash_reason(output_file)
             if final_reason == "DONE": return "DONE"
-            elif final_reason == "LIKELY_OOM": 
+            elif final_reason == "LIKELY_OOM":
                 print_error_tail(output_file)
                 return "OOM"
             
@@ -388,40 +390,6 @@ def is_recoverable_fragmentation_error(ph_output_file):
             return True
         return False
     except Exception: return False
-
-def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
-    print(f"      🚑 Starte RECOVERY-Modus (Collect Waves), Cores {cores_to_use}")
-    
-    with open(scf_input_file, 'r') as f: content = f.read()
-    
-    if "restart_mode" in content:
-        content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", "restart_mode='restart'", content)
-    else:
-        content = content.replace("&CONTROL", "&CONTROL\n restart_mode='restart',")
-        
-    if "wf_collect" in content:
-        content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
-    else:
-        content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
-
-    if "nstep" in content:
-        content = re.sub(r"nstep\s*=\s*\d+", "nstep=0", content)
-    else:
-        content = content.replace("&CONTROL", "&CONTROL\n nstep=0,")
-
-    recover_in = scf_input_file + ".recover"
-    recover_out = os.path.join(cwd, "scf_recover.out")
-    with open(recover_in, 'w') as f: f.write(content)
-    
-    with open(recover_in, 'r') as f_in, open(recover_out, 'w') as f_out:
-        cmd = ["mpirun", "--oversubscribe", "-np", str(cores_to_use), PW_EXE]
-        try:
-            subprocess.run(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd, timeout=300)
-            print("      ✅ Recovery-Lauf beendet. Daten sollten jetzt consolidated sein.")
-            return True
-        except Exception as e:
-            print(f"      ❌ Recovery fehlgeschlagen {e}")
-            return False
 
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
@@ -479,9 +447,9 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
+    # Handbuch Option 1 Anforderung: la2f=.true. im SCF Lauf muss in &CONTROL
     if "la2f" not in content.lower():
-        if "&ELECTRONS" in content:
-            content = content.replace("&ELECTRONS", "&ELECTRONS\n la2f=.true.,")
+        content = re.sub(r"&(CONTROL|control)", r"&\1\n la2f=.true.,", content, count=1)
 
     if "ecutwfc" in content:
         content = re.sub(r"ecutwfc\s*=\s*[0-9\.]+", "ecutwfc = 80.0", content)
@@ -529,6 +497,8 @@ def get_last_iteration(output_file):
         return val
     except Exception: return 0
 
+
+# --- ROBUSTE PHONON WRAPPER OHNE EXTERNE CHECKPOINTS ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
 
@@ -544,7 +514,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
         cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
-        print(f"      ⚙️ Starte PHONONEN (Cores {active_cores})...")
+        print(f"      ⚙️ Starte PHONONEN & El-Ph (Cores {active_cores})...")
         process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
         
         try:
@@ -595,7 +565,7 @@ def deallocate_vm():
         print("🛑 Azure CLI nicht gefunden. Verlasse mich auf lokalen Shutdown.")
         return
     try:
-        result = subprocess.run([az_cmd, "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], capture_output=True, text=True, timeout=300)
+        result = subprocess.run([az_cmd, "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], capture_output=True, text=True, timeout=60)
         if result.returncode != 0:
             print(f"⚠️ Azure CLI Deallocate Fehler {result.stderr}")
         else:
@@ -657,6 +627,9 @@ def main():
                 print(f"\n💎 Job {name}")
                 scf_in = os.path.join(work_dir, "scf.in")
                 dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
+                
+                ph_in = os.path.join(work_dir, "ph.in")
+                ph_out = os.path.join(work_dir, "ph.out")
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
@@ -793,40 +766,30 @@ def main():
                     git_sync(f"Fertig {name} (Isolator)")
                     continue
 
-                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen...")
-                update_csv(name, "Rechnet Phononen...", e_fermi, round(dos_val, 4), "JA")
+                print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen & El-Ph (Option C)...")
+                update_csv(name, "Rechnet Phononen (Option C)...", e_fermi, round(dos_val, 4), "JA")
                 
-                # --- KOMBINIERTER PHONONEN-LAUF (Option C / Ansatz 1) ---
-                ph_in = os.path.join(work_dir, "ph_combined.in")
-                ph_out = os.path.join(work_dir, "ph_combined.out")
-                
+                # --- OPTION C (Ansatz 1) ---
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
-                        print("   🧹 Manueller Reset erkannt. Bereinige Phononen-Daten...")
+                        print("   🧹 Erstelle neues Setup für Phononen & El-Ph (Option C)...")
                         shutil.rmtree(os.path.join(work_dir, "tmp", "_ph0"), ignore_errors=True)
-                        for ext in ["*.dvscf*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
+                        for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
                             for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
                                 try: os.remove(f)
                                 except Exception: pass
                         
-                        print("   🧹 Lösche eventuelle a2Fsave-Leichen vor kombiniertem Lauf...")
-                        for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")):
-                            try: os.remove(f)
-                            except Exception: pass
-                    
-                    with open(ph_in, "w") as f: 
-                        f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1=2, nq2=2, nq3=2 /\n")
+                        with open(ph_in, "w") as f: 
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', nq1=2, nq2=2, nq3=2 /\n")
                     
                     ph_cores = int(DEFAULT_CORES)
-                    if count_job_attempts(TXT_LOG_FILE, name) > 2:
-                        print(f"   📄 Erhöhtes Risiko erkannt! Drossele Phase 3 auf {PHASE3_OOM_CORES} Core(s), um MPI-Speicher zu sparen.")
-                        ph_cores = int(PHASE3_OOM_CORES)
+                    if count_job_attempts(TXT_LOG_FILE, name) > 1: ph_cores = int(SAFE_CORES)
 
-                    print(f"   ⚛️ Starte kombinierten El-Ph Lauf auf {ph_cores} Kernen...")
                     ph_res = run_monitored_ph(ph_in, ph_out, work_dir, ph_cores)
                     
                     if ph_res != "DONE":
-                        print("      ⚠️ Crash/OOM in Phononen erkannt!")
+                        print("      ⚠️ Crash in Phononen/El-Ph (Option C) erkannt!")
+                        print_error_tail(ph_out)
                         crash_reason = analyze_crash_reason(ph_out)
                         
                         if crash_reason == "XML_ERROR":
@@ -837,9 +800,8 @@ def main():
                             update_csv(name, "SCF_RESET (XML Error)")
                             continue
 
-                        print("      ❌ Phononen fehlgeschlagen. Notfallmodus ist deaktiviert.")
-                        update_csv(name, "SKIPPED (Phonon Crash)") 
-                        git_sync(f"Phonon Crash {name}")
+                        update_csv(name, "SKIPPED (Phonon/El-Ph Crash)") 
+                        git_sync(f"Phonon/El-Ph Crash {name}")
                         continue
 
                 min_f, stab = "-", "Unbekannt"
@@ -874,6 +836,7 @@ def main():
 
                     if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
                         print(f"      ❌ Q2R fehlgeschlagen!")
+                        print_error_tail(q2r_out)
                         update_csv(name, "ERROR (Q2R Crash)")
                         git_sync(f"Q2R Crash {name}")
                         continue
@@ -889,6 +852,7 @@ def main():
 
                     if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
                         print(f"      ❌ Matdyn fehlgeschlagen!")
+                        print_error_tail(matdyn_out)
                         update_csv(name, "ERROR (Matdyn Crash)")
                         git_sync(f"Matdyn Crash {name}")
                         continue
@@ -911,13 +875,13 @@ def main():
                     git_sync(f"Fertig {name} (Tc={tc}K)")
 
             except Exception as job_err:
-                print(f"🚨 Fehler bei Job {name} {job_err}")
+                print(f"🚨 Fehler bei Job {name}: {job_err}")
                 update_csv(name, f"ERROR (Python {str(job_err)[:30]})")
                 continue 
 
         send_notification("🎉 Alle Jobs erledigt.")
         
-        with open(SIGNAL_FILE, "w") as f: f.write(f"Status Fertig\nTimestamp {time.ctime()}")
+        with open(SIGNAL_FILE, "w") as f: f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")
         git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")
         set_logic_app_state("Disabled")
         print("🛑 Deallokiere VM über Azure CLI...")

@@ -35,8 +35,6 @@ MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
 
-FORCE_RETRY_LIST = []
-
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUTS_DIR = os.path.join(WORK_DIR, "Inputs")
 PSEUDO_DIR = os.path.join(WORK_DIR, "pseudo")
@@ -619,12 +617,6 @@ def main():
             name = os.path.basename(input_file).replace(".in", "")
             work_dir = os.path.join(WORK_DIR, f"RUN_{name}")
             scf_out = os.path.join(work_dir, "scf.out")
-            
-            if name in FORCE_RETRY_LIST:
-                print(f"🔄 ERZWUNGENER NEUSTART für {name} (Lösche korrupten RUN-Ordner)...")
-                if os.path.exists(work_dir):
-                    shutil.rmtree(work_dir, ignore_errors=True)
-                update_csv(name, "NEW", "-", "-", "-", "-", "-")
             
             row_data = get_csv_full_info(name)
             last_status = row_data.get('Status', 'NEW')

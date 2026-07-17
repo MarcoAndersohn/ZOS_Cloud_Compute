@@ -30,7 +30,6 @@ DOS_THRESHOLD = 0.05
 
 DEFAULT_CORES = "4"
 SAFE_CORES = "2"
-PHASE3_OOM_CORES = "1" 
 MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
@@ -811,12 +810,13 @@ def main():
                         with open(phase2_in, "w") as f: 
                             f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', nq1=2, nq2=2, nq3=2 /\n")
                     
-                    ph_cores = int(DEFAULT_CORES) # Immer 4 Cores für Phase 2
+                    ph_cores = int(DEFAULT_CORES)
 
                     ph_res = run_monitored_ph(phase2_in, phase2_out, work_dir, ph_cores)
                     
                     if ph_res != "DONE":
                         print("      ⚠️ Crash/OOM in Phase 2 Phononen erkannt!")
+                        print_error_tail(phase2_out)
                         crash_reason = analyze_crash_reason(phase2_out)
                         
                         if crash_reason == "XML_ERROR":
@@ -827,7 +827,6 @@ def main():
                             update_csv(name, "SCF_RESET (XML Error)")
                             continue
 
-                        # Notfallmodus deaktiviert laut Anweisung
                         print("      ❌ Phononen fehlgeschlagen. Notfallmodus ist deaktiviert.")
                         update_csv(name, "SKIPPED (Phonon Crash)") 
                         git_sync(f"Phonon Crash {name}")
@@ -849,7 +848,7 @@ def main():
                     continue
 
                 if stab == "STABIL":
-                    # --- PHASE 3 ELECTRON-PHONON (Option B, kein recover, neuer Job) ---
+                    # --- PHASE 3 ELECTRON-PHONON (Option B) ---
                     if not os.path.exists(phase3_out) or "JOB DONE" not in open(phase3_out, errors='ignore').read():
                         print(f"   ⚛️ Bereite Phase 3 (El-Ph) für {name} vor...")
                         
@@ -870,22 +869,20 @@ def main():
                                 if m3: c_nq3 = m3.group(1)
                                 
                         with open(phase3_in, "w") as f:
-                            # OPTION B: recover=.false. sorgt dafür, dass QE aus den .dyn Dateien liest, statt aus _ph0
-                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', trans=.false., recover=.false., nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3} /\n")
+                            # OPTION B LOGIK: recover=.true. nutzt fertige _ph0 Ordner, trans=.false. MUSS WEG
+                            f.write(f"Phonons\n&INPUTPH\n tr2_ph=1.0d-14, prefix='{prefix}', outdir='./tmp', fildyn='{name}.dyn', ldisp=.true., fildvscf='dvscf', electron_phonon='interpolated', recover=.true., nq1={c_nq1}, nq2={c_nq2}, nq3={c_nq3} /\n")
 
                         update_csv(name, "Rechnet El-Ph (Phase 3)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                         
+                        # Wir gehen wieder auf die Standard 4 Kerne hoch, da es kein OOM Fehler war
                         ph_cores_p3 = int(DEFAULT_CORES)
-                        # Sobald Phase 3 zum OOM Problem wird, nutzen wir die streng limitierte Kern-Zahl (1)
-                        if os.path.exists(phase3_file) or count_job_attempts(TXT_LOG_FILE, name) > 2:
-                            print(f"   📄 Erhöhtes Risiko erkannt! Drossele Phase 3 hart auf {PHASE3_OOM_CORES} Core(s), um MPI-Speicher zu sparen.")
-                            ph_cores_p3 = int(PHASE3_OOM_CORES)
 
                         print(f"   ⚛️ Starte Phase 3 (El-Ph) auf {ph_cores_p3} Kernen...")
                         ph_res_3 = run_monitored_ph(phase3_in, phase3_out, work_dir, ph_cores_p3)
                         
                         if ph_res_3 != "DONE":
                             print("   ❌ El-Ph Phononen fehlgeschlagen.")
+                            print_error_tail(phase3_out)
                             update_csv(name, "ERROR (El-Ph Crash)")
                             git_sync(f"El-Ph Crash {name}")
                             continue
@@ -906,6 +903,7 @@ def main():
 
                     if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
                         print(f"      ❌ Q2R fehlgeschlagen!")
+                        print_error_tail(q2r_out)
                         update_csv(name, "ERROR (Q2R Crash)")
                         git_sync(f"Q2R Crash {name}")
                         continue
@@ -921,6 +919,7 @@ def main():
 
                     if not (os.path.exists(matdyn_out) and "JOB DONE" in open(matdyn_out, errors='ignore').read()):
                         print(f"      ❌ Matdyn fehlgeschlagen!")
+                        print_error_tail(matdyn_out)
                         update_csv(name, "ERROR (Matdyn Crash)")
                         git_sync(f"Matdyn Crash {name}")
                         continue
@@ -943,13 +942,13 @@ def main():
                     git_sync(f"Fertig {name} (Tc={tc}K)")
 
             except Exception as job_err:
-                print(f"🚨 Fehler bei Job {name} {job_err}")
+                print(f"🚨 Fehler bei Job {name}: {job_err}")
                 update_csv(name, f"ERROR (Python {str(job_err)[:30]})")
                 continue 
 
         send_notification("🎉 Alle Jobs erledigt.")
         
-        with open(SIGNAL_FILE, "w") as f: f.write(f"Status Fertig\nTimestamp {time.ctime()}")
+        with open(SIGNAL_FILE, "w") as f: f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")
         git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")
         set_logic_app_state("Disabled")
         print("🛑 Deallokiere VM über Azure CLI...")

@@ -516,7 +516,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
         cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
-        print(f"      ⚙️ Starte PHONONEN (Cores {active_cores})...")
+        print(f"      ⚙️ Starte PHONONEN & El-Ph (Cores {active_cores})...")
         process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
         
         try:
@@ -733,12 +733,12 @@ def main():
                     match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
                     prefix = match.group(1) if match else "calc"
                 
-                # --- FIX FERMI ENERGY AUSLESE ---
+                # --- HIER IST DIE ALTE, FUNKTIONIERENDE RE.SEARCH LOGIK WIEDER EINGEBAUT ---
                 e_fermi = "-"
                 if os.path.exists(scf_out):
                     with open(scf_out, 'r', errors='ignore') as f:
-                        matches = re.findall(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
-                        if matches: e_fermi = float(matches[-1])
+                        match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
+                        if match: e_fermi = float(match.group(1))
 
                 update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
                 if not os.path.exists(dos_out):
@@ -833,7 +833,6 @@ def main():
                     if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
                         print("   4️⃣  Q2R...")
                         with open(q2r_in, "w") as f:
-                            # HIER WIRD DIE .a2Fsave DATEI GENERIERT
                             f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
                         with open(q2r_in, "r") as fi, open(q2r_out, "w") as fo:
                             subprocess.run([Q2R_EXE], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=work_dir)

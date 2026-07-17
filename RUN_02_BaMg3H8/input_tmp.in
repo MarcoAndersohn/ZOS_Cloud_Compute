@@ -1,0 +1,60 @@
+&CONTROL
+ restart_mode='from_scratch',
+ wf_collect=.true.,
+  calculation = 'vc-relax'
+  prefix = 'BaMg3H8'
+  outdir = './tmp/'
+  pseudo_dir='/home/marco/ZOS_Cloud_Compute/pseudo/'
+  forc_conv_thr = 1.0d-3
+  tstress = .true.
+  tprnfor = .true.
+/
+&SYSTEM
+ nosym=.true.,
+  ibrav = 0
+  nat = 12
+  ntyp = 3
+  ecutwfc = 80.0
+  ecutrho = 800.0
+  occupations = 'smearing'
+  smearing = 'methfessel-paxton'
+  degauss = 0.02
+/
+&ELECTRONS
+ electron_maxstep = 150,
+ la2f=.true.,
+ diago_david_ndim = 2,
+ mixing_ndim = 6,
+ diagonalization='cg',
+  conv_thr = 1.0d-6
+/
+&IONS
+  ion_dynamics = 'bfgs'
+/
+&CELL
+  cell_dynamics = 'bfgs'
+  press = 0.0
+/
+ATOMIC_SPECIES
+  Ba  1.00  Ba.UPF
+  H  1.00  H.UPF
+  Mg  1.00  Mg.UPF
+ATOMIC_POSITIONS (angstrom)
+  Mg  2.515004  2.515005  0.138620
+  Ba  2.653625  0.000000  2.653624
+  Mg  0.000000  2.653625  2.653624
+  Mg  -0.000000  0.000000  -0.000000
+  H  0.150002  4.405459  1.839388
+  H  4.242065  1.588441  1.065184
+  H  1.890455  0.952857  5.018628
+  H  3.467862  2.803627  3.555414
+  H  5.018628  0.763170  3.606481
+  H  0.926564  3.580189  4.380685
+  H  3.278175  4.215773  0.427241
+  H  1.700768  2.365004  1.890454
+K_POINTS automatic
+  2 2 2 0 0 0
+CELL_PARAMETERS (angstrom)
+  5.168629  -0.138620  0.138620
+  -0.138620  5.168630  0.138620
+  0.138620  0.138620  5.168629

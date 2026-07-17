@@ -275,12 +275,15 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
             print("      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.")
         elif os.path.exists(output_file) and os.path.exists(checkpoint_dir):
             print("      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...")
-            if sync_checkpoint(checkpoint_dir, tmp_dir):
+            try:
+                if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir)
+                shutil.copytree(checkpoint_dir, tmp_dir)
                 if is_xml_valid(xml_path):
                     mode = 'restart'
                     print("      ✅ Checkpoint erfolgreich geladen!")
                 else:
                     print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
+            except Exception as e: print(f"      ❌ Fehler beim Laden des Checkpoints {e}")
         else:
             print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
 
@@ -309,12 +312,15 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                     
                     if time.time() - last_checkpoint_time > 900: 
                         if is_xml_valid(xml_path):
-                            print("      💾 XML valide -> Erstelle Checkpoint per rsync...")
-                            if sync_checkpoint(tmp_dir, checkpoint_dir):
+                            print("      💾 XML valide -> Erstelle Checkpoint...")
+                            try:
+                                if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir)
+                                shutil.copytree(tmp_dir, checkpoint_dir)
                                 last_checkpoint_time = time.time()
                                 print("      ✅ Checkpoint erstellt.")
                                 git_sync("Checkpoint & Log Update")
                                 last_git_sync = time.time() 
+                            except Exception as e: print(f"      ⚠️ Checkpoint fail {e}")
 
                     if time.time() - last_git_sync > 3600:
                         print("      ❤️ Git Heartbeat...")
@@ -325,7 +331,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                         mem_usage = psutil.virtual_memory().percent
                         if mem_usage > MEMORY_LIMIT_PERCENT:
                             print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
-                            kill_process_tree(process.pid)
+                            process.kill()
                             print_error_tail(output_file)
                             return "OOM" 
                     except Exception: pass
@@ -333,13 +339,14 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter >= MAX_BFGS_STEPS:
                         print(f"      🛑 Limit erreicht ({cur_iter}/{MAX_BFGS_STEPS} BFGS Schritte). Breche ab.")
-                        kill_process_tree(process.pid)
+                        process.kill()
+                        print_error_tail(output_file)
                         return "MAX_STEPS"
                     
                     if cur_iter > 30: fix_input_file(input_file, cur_iter)
 
             except Exception: 
-                kill_process_tree(process.pid)
+                process.kill()
                 print_error_tail(output_file)
                 return "CRASH"
             
@@ -389,40 +396,6 @@ def is_recoverable_fragmentation_error(ph_output_file):
             return True
         return False
     except Exception: return False
-
-def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
-    print(f"      🚑 Starte RECOVERY-Modus (Collect Waves), Cores {cores_to_use}")
-    
-    with open(scf_input_file, 'r') as f: content = f.read()
-    
-    if "restart_mode" in content:
-        content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", "restart_mode='restart'", content)
-    else:
-        content = content.replace("&CONTROL", "&CONTROL\n restart_mode='restart',")
-        
-    if "wf_collect" in content:
-        content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
-    else:
-        content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
-
-    if "nstep" in content:
-        content = re.sub(r"nstep\s*=\s*\d+", "nstep=0", content)
-    else:
-        content = content.replace("&CONTROL", "&CONTROL\n nstep=0,")
-
-    recover_in = scf_input_file + ".recover"
-    recover_out = os.path.join(cwd, "scf_recover.out")
-    with open(recover_in, 'w') as f: f.write(content)
-    
-    with open(recover_in, 'r') as f_in, open(recover_out, 'w') as f_out:
-        cmd = ["mpirun", "--oversubscribe", "-np", str(cores_to_use), PW_EXE]
-        try:
-            subprocess.run(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd, timeout=300)
-            print("      ✅ Recovery-Lauf beendet. Daten sollten jetzt consolidated sein.")
-            return True
-        except Exception as e:
-            print(f"      ❌ Recovery fehlgeschlagen {e}")
-            return False
 
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
@@ -527,7 +500,7 @@ def get_last_iteration(output_file):
     except Exception: return 0
 
 
-# --- ROBUSTE PHONON WRAPPER OHNE EXTERNE CHECKPOINTS ---
+# --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
 
@@ -543,7 +516,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
 
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
         cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
-        print(f"      ⚙️ Starte PHONONEN & El-Ph (Cores {active_cores})...")
+        print(f"      ⚙️ Starte PHONONEN (Cores {active_cores})...")
         process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
         
         try:
@@ -559,13 +532,13 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                     mem_usage = psutil.virtual_memory().percent
                     if mem_usage > MEMORY_LIMIT_PERCENT:
                         print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
-                        kill_process_tree(process.pid)
+                        process.kill()
                         print_error_tail(output_file)
                         return "OOM"
                 except Exception: pass
 
         except Exception: 
-            kill_process_tree(process.pid)
+            process.kill()
             print_error_tail(output_file)
             return "CRASH"
         
@@ -657,8 +630,8 @@ def main():
                 scf_in = os.path.join(work_dir, "scf.in")
                 dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
                 
-                ph_in = os.path.join(work_dir, "ph.in")
-                ph_out = os.path.join(work_dir, "ph.out")
+                ph_in = os.path.join(work_dir, "ph_combined.in")
+                ph_out = os.path.join(work_dir, "ph_combined.out")
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
 
@@ -760,6 +733,7 @@ def main():
                     match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
                     prefix = match.group(1) if match else "calc"
                 
+                # --- FIX FERMI ENERGY AUSLESE ---
                 e_fermi = "-"
                 if os.path.exists(scf_out):
                     with open(scf_out, 'r', errors='ignore') as f:
@@ -859,6 +833,7 @@ def main():
                     if not (os.path.exists(q2r_out) and "JOB DONE" in open(q2r_out, errors='ignore').read()):
                         print("   4️⃣  Q2R...")
                         with open(q2r_in, "w") as f:
+                            # HIER WIRD DIE .a2Fsave DATEI GENERIERT
                             f.write(f"&input\n fildyn='{name}.dyn',\n zasr='simple',\n flfrc='{name}.fc',\n la2F=.true.\n/\n")
                         with open(q2r_in, "r") as fi, open(q2r_out, "w") as fo:
                             subprocess.run([Q2R_EXE], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=work_dir)

@@ -30,6 +30,7 @@ DOS_THRESHOLD = 0.05
 
 DEFAULT_CORES = "4"
 SAFE_CORES = "2"
+PHASE3_OOM_CORES = "1" 
 MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
@@ -56,16 +57,16 @@ MATDYN_EXE = shutil.which("matdyn.x") or "/usr/bin/matdyn.x"
 def send_notification(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🛡️ HPC {message}"}
+        payload = {"chat_id" TELEGRAM_CHAT_ID, "text" f"🛡️ HPC {message}"}
         requests.post(url, data=payload, timeout=10)
-    except: pass
+    except Exception: pass
 
 def set_logic_app_state(state="Enabled"):
     az_cmd = shutil.which("az") or "/usr/bin/az"
     if not os.path.exists(az_cmd): return
     try:
         subprocess.run([az_cmd, "logic", "workflow", "set-state", "--resource-group", RESOURCE_GROUP, "--name", LOGIC_APP_NAME, "--state", state], capture_output=True, timeout=30)
-    except: pass
+    except Exception: pass
 
 def kill_process_tree(pid):
     try:
@@ -121,7 +122,7 @@ def print_error_tail(output_file, lines=50):
                 crash_content = f.read()
                 msg = f"\n--- Inhalt der CRASH-Datei ---\n{crash_content}\n-----------------------------------------\n"
                 print(msg)
-        except: pass
+        except Exception: pass
 
     if not os.path.exists(output_file): return
     try:
@@ -130,7 +131,7 @@ def print_error_tail(output_file, lines=50):
             tail = "".join(content[-lines:])
             msg = f"\n--- Letzte {lines} Zeilen von {os.path.basename(output_file)} ---\n{tail}\n-----------------------------------------\n"
             print(msg)
-    except: pass
+    except Exception: pass
 
 def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
     try:
@@ -144,7 +145,7 @@ def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
         if nenner <= 0:
             return 0.0
         return vorfaktor * math.exp(zaehler / nenner)
-    except:
+    except Exception:
         return "-"
 
 def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", stab="-", lam="-", wlog="-", tc="-"):
@@ -155,7 +156,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     found = False
     for row in rows:
         if row['Name'] == name:
-            row.update({'Status': status, 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")})
+            row.update({'Status' status, 'Timestamp' datetime.now().strftime("%Y-%m-%d %H%M")})
             if e_fermi != "-": row['Fermi Energie (eV)'] = str(e_fermi)
             if dos_val != "-": row['DOS @ Fermi'] = str(dos_val)
             if is_metal != "-": row['Metall?'] = str(is_metal)
@@ -167,7 +168,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
             found = True
             break
     if not found:
-        new_row = {'Name': name, 'Status': status, 'Fermi Energie (eV)': str(e_fermi), 'DOS @ Fermi': str(dos_val), 'Metall?': str(is_metal), 'Min Freq (THz)': str(min_f), 'Stabilität': str(stab), 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")}
+        new_row = {'Name' name, 'Status' status, 'Fermi Energie (eV)' str(e_fermi), 'DOS @ Fermi' str(dos_val), 'Metall?' str(is_metal), 'Min Freq (THz)' str(min_f), 'Stabilität' str(stab), 'Timestamp' datetime.now().strftime("%Y-%m-%d %H%M")}
         if lam != "-": new_row['Lambda'] = str(lam)
         if wlog != "-": new_row['Omega_log (K)'] = str(wlog)
         if tc != "-": new_row['Tc (K)'] = str(tc)
@@ -200,7 +201,7 @@ def count_job_attempts(log_file, job_name):
                 count += 1
             elif "💎 Job" in line and job_name not in line:
                 break
-    except: return 1
+    except Exception: return 1
     return max(1, count)
 
 # =============================================================================
@@ -249,7 +250,7 @@ def analyze_crash_reason(output_file):
                 return "LIKELY_OOM"
         
         return "SOFT"
-    except: return "HARD"
+    except Exception: return "HARD"
     
 def run_monitored_pw(input_file, output_file, cwd, active_cores):
     fix_input_file(input_file, 0)
@@ -328,7 +329,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                             print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
                             kill_process_tree(process.pid)
                             return "OOM" 
-                    except: pass
+                    except Exception: pass
 
                     cur_iter = get_last_iteration(output_file)
                     if cur_iter >= MAX_BFGS_STEPS:
@@ -338,7 +339,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
                     
                     if cur_iter > 30: fix_input_file(input_file, cur_iter)
 
-            except: 
+            except Exception: 
                 kill_process_tree(process.pid)
                 return "CRASH"
             
@@ -366,12 +367,12 @@ def is_xml_valid(xml_path):
     try:
         with open(xml_path, 'rb') as f:
             try: f.seek(-1000, 2) 
-            except: f.seek(0)
+            except Exception: f.seek(0)
             tail = f.read().decode('utf-8', errors='ignore')
         if "</qes:espresso>" in tail or "</qes:data-file-schema>" in tail:
             return True
         return False
-    except:
+    except Exception:
         return False
 
 def is_recoverable_fragmentation_error(ph_output_file):
@@ -382,7 +383,7 @@ def is_recoverable_fragmentation_error(ph_output_file):
         if "mismatch in number of G-vectors" in content or ("error reading file" in content and "xml" not in content):
             return True
         return False
-    except: return False
+    except Exception: return False
 
 def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
     print(f"      🚑 Starte RECOVERY-Modus (Collect Waves), Cores {cores_to_use}")
@@ -518,7 +519,7 @@ def get_last_iteration(output_file):
         if bfgs_matches: val = int(bfgs_matches[-1])
         elif scf_matches: val = int(scf_matches[-1])
         return val
-    except: return 0
+    except Exception: return 0
 
 
 # --- ROBUSTE PHONON WRAPPER OHNE EXTERNE CHECKPOINTS ---
@@ -555,9 +556,9 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
                         print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
                         kill_process_tree(process.pid)
                         return "OOM"
-                except: pass
+                except Exception: pass
 
-        except: 
+        except Exception: 
             kill_process_tree(process.pid)
             return "CRASH"
         
@@ -573,7 +574,7 @@ def run_monitored_ph(input_file, output_file, cwd, active_cores):
         try:
             with open(output_file, 'r', errors='ignore') as f:
                 if "JOB DONE" in f.read(): return "DONE"
-        except: pass
+        except Exception: pass
         
         return "CRASH"
     
@@ -679,7 +680,7 @@ def main():
                             try:
                                 os.rename(scf_out, new_name)
                                 print(f"      👻 Ghost-Protection, Alte scf.out zu {os.path.basename(new_name)} verschoben.")
-                            except: pass
+                            except Exception: pass
 
                         if attempts >= MAX_RETRIES_LEVEL:
                             oom_level = file_level + 1
@@ -784,7 +785,7 @@ def main():
                                     if abs(e - e_fermi) < closest_diff:
                                         closest_diff = abs(e - e_fermi)
                                         dos_val = d
-                                except: continue
+                                except Exception: continue
                     is_metal = dos_val > DOS_THRESHOLD
 
                 if not is_metal:
@@ -804,7 +805,7 @@ def main():
                         for ext in ["*.dvscf*", "*.a2Fsave*", "*.dyn*", "*.fc", "*.freq", "*.phdos"]:
                             for f in glob.glob(os.path.join(work_dir, "tmp", ext)) + glob.glob(os.path.join(work_dir, ext)):
                                 try: os.remove(f)
-                                except: pass
+                                except Exception: pass
                         
                         # Nur noch Standard Phononen (kein electron_phonon Flag)
                         with open(phase2_in, "w") as f: 
@@ -856,7 +857,7 @@ def main():
                         print("      🧹 Lösche eventuelle a2Fsave-Leichen vor Phase 3...")
                         for f in glob.glob(os.path.join(work_dir, "tmp", "*.a2Fsave*")):
                             try: os.remove(f)
-                            except: pass
+                            except Exception: pass
                             
                         c_nq1, c_nq2, c_nq3 = "2", "2", "2"
                         if os.path.exists(phase2_in):
@@ -876,9 +877,10 @@ def main():
                         update_csv(name, "Rechnet El-Ph (Phase 3)...", e_fermi, round(dos_val, 4), "JA", min_f=min_f, stab=stab)
                         
                         ph_cores_p3 = int(DEFAULT_CORES)
-                        if os.path.exists(phase3_file):
-                            print("   📄 Phase 3.txt erkannt! Drossele Phase 3 hart auf 2 Kerne.")
-                            ph_cores_p3 = int(SAFE_CORES)
+                        # Sobald Phase 3 zum OOM Problem wird, nutzen wir die streng limitierte Kern-Zahl (1)
+                        if os.path.exists(phase3_file) or count_job_attempts(TXT_LOG_FILE, name) > 2:
+                            print(f"   📄 Erhöhtes Risiko erkannt! Drossele Phase 3 hart auf {PHASE3_OOM_CORES} Core(s), um MPI-Speicher zu sparen.")
+                            ph_cores_p3 = int(PHASE3_OOM_CORES)
 
                         print(f"   ⚛️ Starte Phase 3 (El-Ph) auf {ph_cores_p3} Kernen...")
                         ph_res_3 = run_monitored_ph(phase3_in, phase3_out, work_dir, ph_cores_p3)

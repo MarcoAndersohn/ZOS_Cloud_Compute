@@ -502,7 +502,6 @@ def fix_input_file(input_file, iteration_count=0):
     else:
         content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
 
-    # SICHERHEITS-BOOST: PAW/NC Potentiale brauchen höhere Cutoffs
     if "ecutwfc" in content:
         content = re.sub(r"ecutwfc\s*=\s*[0-9\.]+", "ecutwfc = 80.0", content)
     if "ecutrho" in content:
@@ -539,7 +538,6 @@ def get_last_iteration(output_file):
         return val
     except Exception: return 0
 
-# --- ROBUSTE PHONON WRAPPER ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
 
@@ -605,7 +603,6 @@ def deallocate_vm():
         print("🛑 Azure CLI nicht gefunden. Verlasse mich auf lokalen Shutdown.")
         return
     try:
-        # --no-wait entfernt, damit Python kurz wartet, ob der Befehl akzeptiert wurde
         result = subprocess.run(["az", "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], capture_output=True, text=True, timeout=60)
         if result.returncode != 0:
             print(f"⚠️ Azure CLI Deallocate Fehler: {result.stderr}")
@@ -674,8 +671,14 @@ def main():
             try:
                 if not os.path.exists(work_dir): os.makedirs(work_dir)
                 print(f"\n💎 Job: {name}")
+                
                 scf_in = os.path.join(work_dir, "scf.in")
-                dos_in, dos_out = os.path.join(work_dir, "dos.in"), os.path.join(work_dir, f"{name}.dos")
+                dos_in = os.path.join(work_dir, "dos.in")
+                
+                # FIX: Trennung von Log-Output und numerischen DOS-Daten!
+                dos_log = os.path.join(work_dir, "dos.out")
+                dos_data = os.path.join(work_dir, f"{name}.dos")
+                
                 ph_in, ph_out = os.path.join(work_dir, "ph_combined.in"), os.path.join(work_dir, "ph_combined.out")
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
@@ -778,24 +781,32 @@ def main():
                     match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", f.read())
                     prefix = match.group(1) if match else "calc"
                 
-                # --- HIER IST DIE ALTE, FUNKTIONIERENDE RE.SEARCH LOGIK WIEDER EINGEBAUT ---
+                # FIX: Append-Falle gelöst durch re.findall und den Index [-1]
                 e_fermi = "-"
                 if os.path.exists(scf_out):
                     with open(scf_out, 'r', errors='ignore') as f:
-                        match = re.search(r"the Fermi energy is\s+([0-9\.\-]+)\s+ev", f.read())
-                        if match: e_fermi = float(match.group(1))
+                        content = f.read()
+                        matches = re.findall(r"the Fermi energy is\s+([0-9\.\-]+)\s+eV", content, re.IGNORECASE)
+                        if matches:
+                            e_fermi = float(matches[-1])
+                        else:
+                            # Falls echtes Isolator-Verhalten (fixed occupations)
+                            matches_iso = re.findall(r"highest occupied.*level[s]?\s*\(ev\):\s+([0-9\.\-]+)", content, re.IGNORECASE)
+                            if matches_iso:
+                                e_fermi = float(matches_iso[-1])
 
                 update_csv(name, "Rechnet DOS...", e_fermi=e_fermi)
-                if not os.path.exists(dos_out):
+                if not os.path.exists(dos_data):
                     with open(dos_in, "w") as f: 
                         f.write(f"&DOS\n prefix='{prefix}', outdir='./tmp', fildos='{name}.dos', Emin=-20.0, Emax=30.0, DeltaE=0.1 /\n")
-                    with open(dos_in, "r") as f_in, open(dos_out, "w") as f_out:
+                    # DOS_LOG nutzen für Stdout, damit die DOS_DATA (fildos) nicht korrumpiert wird!
+                    with open(dos_in, "r") as f_in, open(dos_log, "w") as f_out:
                         subprocess.run([DOS_EXE], stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
 
                 is_metal, dos_val = False, 0.0
-                if os.path.exists(dos_out) and e_fermi != "-":
+                if os.path.exists(dos_data) and e_fermi != "-":
                     closest_diff = 99.9
-                    with open(dos_out, 'r') as f:
+                    with open(dos_data, 'r') as f:
                         for line in f:
                             if line.strip().startswith("#"): continue
                             p = line.split()
@@ -817,7 +828,6 @@ def main():
                 print(f"   ⚡ Metall (DOS={dos_val:.3f}). Berechne Phononen & El-Ph (Option C)...")
                 update_csv(name, "Rechnet Phononen (Option C)...", e_fermi, round(dos_val, 4), "JA")
                 
-                # --- OPTION C (Ansatz 1) ---
                 if not os.path.exists(ph_out) or "JOB DONE" not in open(ph_out, errors='ignore').read():
                     if not os.path.exists(ph_in):
                         print("   🧹 Erstelle neues Setup für Phononen & El-Ph (Option C)...")
@@ -910,11 +920,12 @@ def main():
                         with open(matdyn_out, 'r', errors='ignore') as f:
                             mc = f.read()
                             if "JOB DONE" in mc:
-                                ml = re.search(r"lambda\s*=\s*([0-9\.]+)", mc)
-                                mw = re.search(r"omega_log\s*=\s*([0-9\.]+)", mc)
+                                # FIX: Auch hier auf findall umgestellt für absolute Sicherheit
+                                ml = re.findall(r"lambda\s*=\s*([0-9\.]+)", mc)
+                                mw = re.findall(r"omega_log\s*=\s*([0-9\.]+)", mc)
                                 if ml and mw:
-                                    lam = ml.group(1)
-                                    wlog = mw.group(1)
+                                    lam = ml[-1]
+                                    wlog = mw[-1]
                                     tc_v = berechne_tc(wlog, lam)
                                     if tc_v != "-":
                                         tc = round(tc_v, 3)
@@ -929,20 +940,13 @@ def main():
 
         send_notification("🎉 Alle Jobs erledigt.")
         
-        # 1. Datei erstellen
         with open(SIGNAL_FILE, "w") as f: f.write(f"Status: Fertig\nTimestamp: {time.ctime()}")
-        
-        # 2. Letzter sauberer Git Sync
         git_sync("🏁 Finaler Sync vor Shutdown (Erfolgreich)")
-        
-        # 3. Azure Logic App deaktivieren (verhindert sofortigen Neustart)
         set_logic_app_state("Disabled")
         
-        # 4. VM über Azure CLI hart deallokieren (Stoppt die Rechnung im Portal)
         print("🛑 Deallokiere VM über Azure CLI...")
         deallocate_vm() 
         
-        # 5. Lokales Betriebssystem sicher herunterfahren (Fallback)
         if os.name != 'nt': 
             print("🛑 Fahre System herunter...")
             os.system("sudo shutdown -h now")

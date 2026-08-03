@@ -21,7 +21,11 @@ sys.stderr.reconfigure(line_buffering=True)
 # =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
-TELEGRAM_TOKEN = "8202414068:AAHnnLMa7nfo0E3gCDLUVnUmIomoyveDPBA"
+try:
+    TELEGRAM_TOKEN = open("/home/marco/.telegram_token").read().strip()
+except Exception:
+    TELEGRAM_TOKEN = ""
+    print("⚠️ Telegram-Token Datei nicht gefunden!")
 TELEGRAM_CHAT_ID = "711461437"
 
 LOGIC_APP_NAME = "AutoRestart-Supraleiter"

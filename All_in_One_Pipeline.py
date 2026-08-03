@@ -10,7 +10,6 @@ import requests
 import csv
 import psutil
 import math
-import signal
 from datetime import datetime
 
 # =============================================================================
@@ -18,20 +17,6 @@ from datetime import datetime
 # =============================================================================
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
-
-def truncate_log(log_path, max_size_mb=1.0):
-    if not os.path.exists(log_path): return
-    max_bytes = int(max_size_mb * 1024 * 1024)
-    if os.path.getsize(log_path) > max_bytes:
-        try:
-            with open(log_path, 'rb') as f:
-                f.seek(-max_bytes, 2)
-                content = f.read()
-            with open(log_path, 'wb') as f:
-                f.write(content)
-            print(f"✂️ Logfile {os.path.basename(log_path)} auf {max_size_mb} MB gekürzt.")
-        except Exception as e:
-            print(f"⚠️ Konnte Logfile nicht kürzen: {e}")
 
 # =============================================================================
 # 1. KONFIGURATION
@@ -46,7 +31,7 @@ DOS_THRESHOLD = 0.05
 DEFAULT_CORES = "4"
 SAFE_CORES = "2"
 PHASE3_OOM_CORES = "1" 
-MEMORY_LIMIT_PERCENT = 88.0
+MEMORY_LIMIT_PERCENT = 92.0
 MAX_BFGS_STEPS = 100 
 MAX_RETRIES_LEVEL = 3
 
@@ -59,9 +44,8 @@ SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
-BACKUP_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output_backup.txt")
 
-# KORREKTE FESTE PFADE (QE-Source)
+# Korrekte feste Pfade nach dem VM-Update
 PW_EXE = "/home/marco/qe-source/bin/pw.x"
 PH_EXE = "/home/marco/qe-source/bin/ph.x"
 DOS_EXE = "/home/marco/qe-source/bin/dos.x"
@@ -69,14 +53,8 @@ Q2R_EXE = "/home/marco/qe-source/bin/q2r.x"
 MATDYN_EXE = "/home/marco/qe-source/bin/matdyn.x"
 
 # =============================================================================
-# 2. HELFER & GIT
+# 2. HELFER & GIT & CLEANUP
 # =============================================================================
-def backup_log_file():
-    truncate_log(TXT_LOG_FILE, max_size_mb=1.0)
-    if os.path.exists(TXT_LOG_FILE):
-        try: shutil.copy(TXT_LOG_FILE, BACKUP_LOG_FILE)
-        except: pass
-
 def send_notification(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -122,31 +100,14 @@ def initial_git_pull():
 def git_sync(message):
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"
-    lock_file = os.path.join(WORK_DIR, ".git", "index.lock")
     try:
         subprocess.run(["git", "config", "credential.helper", "store"], cwd=WORK_DIR, env=env, timeout=10)
-        if os.path.exists(lock_file):
-            lock_age = time.time() - os.path.getmtime(lock_file)
-            if lock_age > 60:
-                os.remove(lock_file)
-                print("⚠️ Stale index.lock entfernt.")
-        
         subprocess.run(["git", "add", "."], cwd=WORK_DIR, env=env, timeout=30)
         subprocess.run(["git", "commit", "-m", message], cwd=WORK_DIR, capture_output=True, env=env, timeout=30)
         subprocess.run(["git", "pull", "origin", "main", "--strategy-option=ours", "--no-rebase"], cwd=WORK_DIR, env=env, timeout=60, capture_output=True)
         subprocess.run(["git", "push", "origin", "main"], cwd=WORK_DIR, env=env, timeout=60)
     except Exception as e:
         print(f"⚠️ Git Fehler: {e}")
-
-def print_error_log(output_file, label="QE ERROR LOG"):
-    if not os.path.exists(output_file): return
-    try:
-        err_lines = open(output_file, errors='ignore').read().strip().split('\n')
-        snippet   = err_lines[-50:]
-        print(f"      --- {label} ---")
-        print("      " + "\n      ".join(snippet))
-        print("      " + "-" * 20)
-    except: pass
 
 def berechne_tc(omega_log_K, lambda_ep, mu_star=0.13):
     try:
@@ -164,12 +125,7 @@ def update_csv(name, status, e_fermi="-", dos_val="-", is_metal="-", min_f="-", 
     fieldnames = ['Name', 'Status', 'Fermi Energie (eV)', 'DOS @ Fermi', 'Metall?', 'Min Freq (THz)', 'Stabilität', 'Lambda', 'Omega_log (K)', 'Tc (K)', 'Timestamp']
     rows = []
     if os.path.exists(CSV_FILE):
-        with open(CSV_FILE, 'r') as f: 
-            reader = csv.DictReader(f)
-            if reader.fieldnames:
-                for ef in reader.fieldnames:
-                    if ef not in fieldnames: fieldnames.append(ef)
-            rows = list(reader)
+        with open(CSV_FILE, 'r') as f: rows = list(csv.DictReader(f))
     found = False
     for row in rows:
         if row['Name'] == name:
@@ -222,6 +178,7 @@ def count_job_attempts(log_file, job_name):
     return max(1, count)
 
 def cleanup_heavy_files(work_dir, name, force=False):
+    """Löscht riesige tmp-Ordner von abgeschlossenen oder verworfenen Kandidaten."""
     if not force:
         row_data = get_csv_full_info(name)
         if not row_data: return
@@ -242,17 +199,16 @@ def cleanup_heavy_files(work_dir, name, force=False):
             except: pass
             
     if deleted_something:
-        print(f"      🧹 Heavy Files & dvscf für {name} sicher bereinigt (Speicherplatz gespart).")
-        git_sync(f"Cleanup Heavy Files: {name}")
+        print(f"      🧹 Heavy Files & dvscf für {name} sicher bereinigt (VM Speicher gespart).")
 
 def cleanup_system_memory():
     print("      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...")
     target_procs = ['pw.x', 'ph.x', 'dos.x', 'q2r.x', 'matdyn.x']
     for proc in psutil.process_iter(['pid', 'name']):
         try:
-            if proc.info['name'] in target_procs:
-                proc.kill()
+            if proc.info['name'] in target_procs: proc.kill()
         except: pass
+
     shm_dir = "/dev/shm"
     if os.path.exists(shm_dir):
         for item in os.listdir(shm_dir):
@@ -280,34 +236,26 @@ def analyze_crash_reason(output_file):
         if "The maximum number of steps has been reached"  in lines: return "RESTART_NEEDED"
         
         lines_lower = lines.lower()
-        
         if "fatal error reading xml" in lines_lower or "reading output_obj of xsd" in lines_lower or "wrong number of occurrences" in lines_lower:
             print("      🧨 XML-Struktur zerstört (Corruption).")
             return "XML_ERROR"
-
         if "not orthogonal" in lines_lower and "d_s" in lines_lower:
             print("      🧩 Symmetrie-Fehler erkannt (D_S not orthogonal).")
             return "SYMMETRY_ERROR"
-
         if "mx dimension too small" in lines_lower:
             print("      🧨 FATAL Pseudopotential übersteigt QE-Limit. Neues Pseudo (PAW) benötigt!")
             return "PSEUDO_ERROR"
 
         ram_match = re.search(r"estimated total dynamical ram\s*>\s*([0-9\.]+)\s*(mb|gb)", lines_lower)
-
         error_keywords = ["error", "mpi_abort", "segmentation fault", "stopping", "fatal", "diagonalization failed"]
         has_error_msg = any(key in lines_lower for key in error_keywords)
 
-        if has_error_msg: 
-            return "HARD"
-
+        if has_error_msg: return "HARD"
         if ram_match:
             if "self-consistent calculation" not in lines_lower and "iteration #" not in lines_lower:
                 return "LIKELY_OOM"
-
         if "iteration #" in lines_lower or "diagonalization" in lines_lower:
-            if not has_error_msg:
-                return "LIKELY_OOM"
+            if not has_error_msg: return "LIKELY_OOM"
         
         return "SOFT"
     except Exception: return "HARD"
@@ -337,13 +285,10 @@ def is_recoverable_fragmentation_error(ph_output_file):
 def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
     print(f"      🚑 Starte RECOVERY-Modus (Collect Waves), Cores {cores_to_use}")
     with open(scf_input_file, 'r') as f: content = f.read()
-    
     if "restart_mode" in content: content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", "restart_mode='restart'", content)
     else: content = content.replace("&CONTROL", "&CONTROL\n restart_mode='restart',")
-        
     if "wf_collect" in content: content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
     else: content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
-
     if "nstep" in content: content = re.sub(r"nstep\s*=\s*\d+", "nstep=0", content)
     else: content = content.replace("&CONTROL", "&CONTROL\n nstep=0,")
 
@@ -351,7 +296,6 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
     recover_out = os.path.join(cwd, "scf_recover.out")
     with open(recover_in, 'w') as f: f.write(content)
     
-    cleanup_system_memory()
     with open(recover_in, 'r') as f_in, open(recover_out, 'w') as f_out:
         cmd = ["mpirun", "--oversubscribe", "-np", str(cores_to_use), PW_EXE]
         try:
@@ -362,40 +306,24 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
             print(f"      ❌ Recovery fehlgeschlagen {e}")
             return False
 
-def disable_symmetries_and_reduce_grid(input_file):
-    if not os.path.exists(input_file): return
-    with open(input_file, 'r') as f: content = f.read()
-    content = content.replace("noinv=.true.,", "")
-    content = content.replace("noinv=.true.", "")
-    if "&INPUTPH" in content:
-        if "search_sym" not in content:
-            content = content.replace("&INPUTPH", "&INPUTPH\n search_sym=.false.,")
-    content = re.sub(r"nq1\s*=\s*\d+", "nq1=1", content)
-    content = re.sub(r"nq2\s*=\s*\d+", "nq2=1", content)
-    content = re.sub(r"nq3\s*=\s*\d+", "nq3=1", content)
-    with open(input_file, 'w') as f: f.write(content)
-    print(f"      🛡️ Symmetrien deaktiviert & Grid auf 1x1x1 reduziert.")
-
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
     with open(input_file, 'r', errors='ignore') as f: content = f.read()
-    match = re.search(r"!\s*SMART_OOM_LEVEL\s*=\s*(\d+)", content)
-    if match: return int(match.group(1))
     if "mixing_ndim = 2" in content or "mixing_ndim=2" in content: return 4
     if "mixing_ndim = 3" in content or "mixing_ndim=3" in content: return 3
     if "disk_io='low'" in content or 'disk_io="low"' in content: return 2
     if "diagonalization='cg'" in content or 'diagonalization="cg"' in content: return 1
     return 0
 
-def apply_oom_settings(input_file, level, force_cg=False):
+def apply_oom_settings(input_file, level):
     with open(input_file, 'r') as f: content = f.read()
-    diag = 'david'; mix = 6; disk = None 
-    msg = "Standard (david, mix=6, diago_david_ndim=2)"
+    diag = 'cg'; mix = 6; disk = None 
+    msg = "Standard (cg, mix=6, david=2)"
 
-    if level >= 1 or force_cg: diag = 'cg'; mix = 4; disk = 'low'; msg = "Stufe 1 (cg, mix=4, disk_io='low')"
-    if level >= 2: diag = 'cg'; mix = 3; disk = 'low'; msg = "Stufe 2 (cg, mix=3, disk_io='low')"
-    if level >= 3: diag = 'cg'; mix = 2; disk = 'low'; msg = "Stufe 3 (cg, mix=2, disk_io='low')"
-    if level >= 4: diag = 'cg'; mix = 2; disk = 'low'; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
+    if level >= 1: disk = 'low'; msg = "Stufe 1 (cg, mix=6, disk_io='low')"
+    if level >= 2: mix = 3; msg = "Stufe 2 (cg, mix=3, disk_io='low')"
+    if level >= 3: mix = 2; msg = "Stufe 3 (cg, mix=2, disk_io='low')"
+    if level >= 4: mix = 2; msg = "Stufe 4 (cg, mix=2, disk_io='low', 1 Core)"
 
     print(f"      📉 Setze RAM-Strategie {msg}")
 
@@ -405,18 +333,14 @@ def apply_oom_settings(input_file, level, force_cg=False):
     if "mixing_ndim" in content: content = re.sub(r"mixing_ndim\s*=\s*\d+", f"mixing_ndim = {mix}", content)
     else: content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_ndim = {mix},")
         
-    ndim = 2
-    if "diago_david_ndim" in content: content = re.sub(r"diago_david_ndim\s*=\s*\d+", f"diago_david_ndim = {ndim}", content)
-    else: content = content.replace("&ELECTRONS", f"&ELECTRONS\n diago_david_ndim = {ndim},")
+    if "diago_david_ndim" in content: content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
+    else: content = content.replace("&ELECTRONS", "&ELECTRONS\n diago_david_ndim = 2,")
 
     if disk == 'low':
         if "disk_io" in content: content = re.sub(r"disk_io\s*=\s*['\"][a-zA-Z]+['\"]", "disk_io='low'", content)
         else: content = content.replace("&CONTROL", "&CONTROL\n disk_io='low',")
     else:
         if "disk_io='low'" in content or 'disk_io="low"' in content: content = re.sub(r"disk_io\s*=\s*['\"]low['\"],?", "", content)
-
-    if "! SMART_OOM_LEVEL" in content: content = re.sub(r"!\s*SMART_OOM_LEVEL\s*=\s*\d+", f"! SMART_OOM_LEVEL={level}", content)
-    else: content += f"\n! SMART_OOM_LEVEL={level}\n"
 
     with open(input_file, 'w') as f: f.write(content)
     return True
@@ -426,9 +350,6 @@ def fix_input_file(input_file, iteration_count=0):
     corr_path = PSEUDO_DIR.replace("\\", "/") + "/"
     if "pseudo_dir" in content: content = re.sub(r"pseudo_dir\s*=\s*['\"].*['\"]", f"pseudo_dir='{corr_path}'", content)
     else: content = content.replace("&CONTROL", f"&CONTROL\n pseudo_dir='{corr_path}',")
-
-    if "mixing_mode" in content: content = re.sub(r"mixing_mode\s*=\s*['\"][a-zA-Z\-]+['\"]", "mixing_mode='local-TF'", content)
-    else: content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_mode='local-TF',")
 
     if "ecutwfc" in content: content = re.sub(r"ecutwfc\s*=\s*[0-9\.]+", "ecutwfc = 80.0", content)
     if "ecutrho" in content: content = re.sub(r"ecutrho\s*=\s*[0-9\.]+", "ecutrho = 800.0", content)
@@ -440,6 +361,12 @@ def fix_input_file(input_file, iteration_count=0):
 
     if "mixing_beta" in content: content = re.sub(r"mixing_beta\s*=\s*[0-9\.]+", f"mixing_beta = {target_beta}", content)
     else: content = content.replace("&ELECTRONS", f"&ELECTRONS\n mixing_beta = {target_beta},")
+    
+    if "mixing_ndim" in content: content = re.sub(r"mixing_ndim\s*=\s*\d+", "mixing_ndim = 6", content)
+    else: content = content.replace("&ELECTRONS", "&ELECTRONS\n mixing_ndim = 6,")
+        
+    if "diago_david_ndim" in content: content = re.sub(r"diago_david_ndim\s*=\s*\d+", "diago_david_ndim = 2", content)
+    else: content = content.replace("&ELECTRONS", "&ELECTRONS\n diago_david_ndim = 2,")
     
     if "electron_maxstep" in content: content = re.sub(r"electron_maxstep\s*=\s*\d+", "electron_maxstep = 150", content)
     else: content = content.replace("&ELECTRONS", "&ELECTRONS\n electron_maxstep = 150,")
@@ -465,117 +392,6 @@ def get_last_iteration(output_file):
 # =============================================================================
 # 6. SCF-BLOCK
 # =============================================================================
-def run_monitored_pw(input_file, output_file, cwd, active_cores):
-    fix_input_file(input_file, 0)
-    last_git_sync = time.time()
-    last_checkpoint_time = 0 
-
-    while True:
-        with open(input_file, 'r') as f: content = f.read()
-        tmp_dir = os.path.join(cwd, "tmp") 
-        checkpoint_dir = os.path.join(cwd, "tmp_SAFE_CHECKPOINT") 
-
-        if "wf_collect" in content: content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
-        else: content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
-
-        prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
-        current_prefix = prefix_match.group(1) if prefix_match else "calc"
-        xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")
-        
-        mode = 'from_scratch'
-        if os.path.exists(output_file) and is_xml_valid(xml_path):
-            mode = 'restart'
-            print("      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.")
-        elif os.path.exists(output_file) and os.path.exists(checkpoint_dir):
-            print("      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...")
-            if sync_checkpoint(checkpoint_dir, tmp_dir):
-                if is_xml_valid(xml_path):
-                    mode = 'restart'
-                    print("      ✅ Checkpoint erfolgreich geladen!")
-                else:
-                    print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
-        else:
-            print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
-
-        if mode == 'from_scratch':
-            if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir, ignore_errors=True)
-            if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir, ignore_errors=True)
-
-        if "restart_mode" in content: content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
-        else: content = content.replace("&CONTROL", f"&CONTROL\n restart_mode='{mode}',")
-        
-        run_input = input_file + ".run"
-        with open(run_input, 'w') as f: f.write(content)
-
-        file_mode = 'a' if mode == 'restart' else 'w'
-        backup_log_file()
-        cleanup_system_memory()
-        
-        with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
-            cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PW_EXE]
-            print(f"      ⚙️ Starte PWSCF ({mode}, {active_cores} Cores)...")
-            process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd, start_new_session=True)
-            
-            try:
-                while process.poll() is None:
-                    time.sleep(5)
-                    
-                    if time.time() - last_checkpoint_time > 900: 
-                        if is_xml_valid(xml_path):
-                            print("      💾 XML valide -> Erstelle Checkpoint per rsync...")
-                            if sync_checkpoint(tmp_dir, checkpoint_dir):
-                                last_checkpoint_time = time.time()
-                                print("      ✅ Checkpoint erstellt.")
-                                git_sync("Checkpoint & Log Update")
-                                backup_log_file()
-                                last_git_sync = time.time() 
-
-                    if time.time() - last_git_sync > 3600:
-                        print("      ❤️ Git Heartbeat...")
-                        git_sync("Log Update (Heartbeat)")
-                        backup_log_file()
-                        last_git_sync = time.time()
-
-                    try:
-                        mem_usage = psutil.virtual_memory().percent
-                        if mem_usage > MEMORY_LIMIT_PERCENT:
-                            print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
-                            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                            return "OOM" 
-                    except Exception: pass
-
-                    cur_iter = get_last_iteration(output_file)
-                    if cur_iter >= MAX_BFGS_STEPS:
-                        print(f"      🛑 Limit erreicht ({cur_iter}/{MAX_BFGS_STEPS} BFGS Schritte). Breche ab.")
-                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                        return "MAX_STEPS"
-                    
-                    if cur_iter > 30: fix_input_file(input_file, cur_iter)
-
-            except Exception: 
-                try: os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                except: pass
-                return "CRASH"
-            
-            time.sleep(1.5)
-            
-            if process.returncode == -9:
-                print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
-                return "OOM"
-
-            reason = analyze_crash_reason(output_file)
-            if reason == "DONE":
-                if process.returncode != 0: print("      ⚠️ MPI-Fehlalarm (JOB DONE gefunden).")
-                return "DONE"
-            if reason == "RESTART_NEEDED":
-                print("      🔄 nstep-Limit -> Neustart für weitere Optimierung.")
-                return "RESTART_NEEDED"
-            if reason == "LIKELY_OOM":
-                print("      💀 Logfile endet abrupt (Silent Death) -> OOM.")
-                return "OOM"
-            
-            return "CRASH"
-
 def run_scf_block(name, work_dir, scf_in, scf_out):
     if not os.path.exists(scf_out): file_level = 0
     else: file_level = detect_oom_level(scf_in)
@@ -584,24 +400,22 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
 
     if start_crash_reason == "LIKELY_OOM":
         attempts = count_job_attempts(TXT_LOG_FILE, name)
-        if os.path.exists(BACKUP_LOG_FILE):
-            attempts = max(attempts, count_job_attempts(BACKUP_LOG_FILE, name))
         print(f"      🕵️ OOM-Signatur erkannt. Versuch Nr. {attempts} auf Level {file_level}.")
 
         if os.path.exists(scf_out):
             ts = datetime.now().strftime("%H%M%S")
             try:
                 os.rename(scf_out, f"{scf_out}.crash_{ts}")
-                print(f"      👻 Ghost-Protection: Alte scf.out zu {os.path.basename(f'{scf_out}.crash_{ts}')} verschoben.")
-            except: pass
+                print(f"      👻 Ghost-Protection: Alte scf.out zu scf.out.crash_{ts} verschoben.")
+            except Exception: pass
 
         if attempts >= MAX_RETRIES_LEVEL:
             oom_level = file_level + 1
-            print(f"      ❗ Eskaliere, Level {file_level} -> {oom_level}.")
+            print(f"      ❗ Threshold ({MAX_RETRIES_LEVEL}) erreicht! Eskaliere HÄRTER (Level {file_level} -> {oom_level}).")
             update_csv(name, f"Recovering (Escalating to Lvl {oom_level})")
         else:
             oom_level = file_level
-            print(f"      🔄 Level {file_level} nochmal.")
+            print(f"      🔄 Threshold noch nicht erreicht. Gebe Level {file_level} noch eine Chance.")
             update_csv(name, f"Retrying (Attempt {attempts}/{MAX_RETRIES_LEVEL})")
     else:
         oom_level = file_level
@@ -620,11 +434,114 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
                     if "eigenvalues not converged" in f.read():
                         force_cg = True
                         print("      ⚠️ Konvergenz-Probleme -> erzwinge CG.")
-            except: pass
+            except Exception: pass
 
-        apply_oom_settings(scf_in, oom_level, force_cg)
+        apply_oom_settings(scf_in, oom_level)
         print(f"   1️⃣  SCF ({current_cores} Cores, OOM-Lvl {oom_level})")
-        result = run_monitored_pw(scf_in, scf_out, work_dir, current_cores)
+        
+        # --- INTEGRIERTE PWSCF LOGIK ---
+        fix_input_file(scf_in, 0)
+        last_git_sync = time.time()
+        last_checkpoint_time = 0 
+        result = "CRASH"
+        
+        with open(scf_in, 'r') as f: content = f.read()
+        tmp_dir = os.path.join(work_dir, "tmp") 
+        checkpoint_dir = os.path.join(work_dir, "tmp_SAFE_CHECKPOINT") 
+        if "wf_collect" in content: content = re.sub(r"wf_collect\s*=\s*\.?[a-zA-Z]+\.?", "wf_collect=.true.", content)
+        else: content = content.replace("&CONTROL", "&CONTROL\n wf_collect=.true.,")
+
+        prefix_match = re.search(r"prefix\s*=\s*['\"]([^'\"]+)['\"]", content)
+        current_prefix = prefix_match.group(1) if prefix_match else "calc"
+        xml_path = os.path.join(tmp_dir, f"{current_prefix}.save", "data-file-schema.xml")
+        
+        mode = 'from_scratch'
+        if os.path.exists(scf_out) and is_xml_valid(xml_path):
+            mode = 'restart'
+            print("      ✅ Gültige XML im tmp-Ordner gefunden -> Normaler Restart.")
+        elif os.path.exists(scf_out) and os.path.exists(checkpoint_dir):
+            print("      🛡️ tmp-Ordner defekt/unvollständig! Hole Safe-Checkpoint...")
+            if sync_checkpoint(checkpoint_dir, tmp_dir):
+                if is_xml_valid(xml_path):
+                    mode = 'restart'
+                    print("      ✅ Checkpoint erfolgreich geladen!")
+                else:
+                    print("      ❌ Checkpoint war auch defekt. Starte von vorne.")
+        else:
+            print("      🆕 Kein gültiger Speicherstand gefunden -> Starte von vorne (From Scratch).")
+
+        if mode == 'from_scratch':
+            if os.path.exists(tmp_dir): shutil.rmtree(tmp_dir, ignore_errors=True)
+            if os.path.exists(checkpoint_dir): shutil.rmtree(checkpoint_dir, ignore_errors=True)
+
+        if "restart_mode" in content: content = re.sub(r"restart_mode\s*=\s*['\"].*['\"]", f"restart_mode='{mode}'", content)
+        else: content = content.replace("&CONTROL", f"&CONTROL\n restart_mode='{mode}',")
+        
+        run_input = scf_in + ".run"
+        with open(run_input, 'w') as f: f.write(content)
+        file_mode = 'a' if mode == 'restart' else 'w'
+        
+        with open(run_input, 'r') as f_in, open(scf_out, file_mode) as f_out:
+            cmd = ["mpirun", "--oversubscribe", "-np", str(current_cores), PW_EXE]
+            print(f"      ⚙️ Starte PWSCF ({mode}, {current_cores} Cores)...")
+            process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=work_dir)
+            try:
+                while process.poll() is None:
+                    time.sleep(5)
+                    if time.time() - last_checkpoint_time > 900: 
+                        if is_xml_valid(xml_path):
+                            print("      💾 XML valide -> Erstelle Checkpoint per rsync...")
+                            if sync_checkpoint(tmp_dir, checkpoint_dir):
+                                last_checkpoint_time = time.time()
+                                print("      ✅ Checkpoint erstellt.")
+                                git_sync("Checkpoint & Log Update")
+                                last_git_sync = time.time() 
+
+                    if time.time() - last_git_sync > 3600:
+                        print("      ❤️ Git Heartbeat...")
+                        git_sync("Log Update (Heartbeat)")
+                        last_git_sync = time.time()
+
+                    try:
+                        mem_usage = psutil.virtual_memory().percent
+                        if mem_usage > MEMORY_LIMIT_PERCENT:
+                            print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
+                            kill_process_tree(process.pid)
+                            result = "OOM"
+                            break
+                    except Exception: pass
+
+                    cur_iter = get_last_iteration(scf_out)
+                    if cur_iter >= MAX_BFGS_STEPS:
+                        print(f"      🛑 Limit erreicht ({cur_iter}/{MAX_BFGS_STEPS} BFGS Schritte). Breche ab.")
+                        kill_process_tree(process.pid)
+                        result = "MAX_STEPS"
+                        break
+                    
+                    if cur_iter > 30: fix_input_file(scf_in, cur_iter)
+
+            except Exception: 
+                kill_process_tree(process.pid)
+                result = "CRASH"
+            
+            time.sleep(1.5)
+            if process.poll() is not None:
+                if process.returncode == -9:
+                    print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
+                    result = "OOM"
+                elif process.returncode != 0:
+                    reason = analyze_crash_reason(scf_out)
+                    if reason == "LIKELY_OOM":
+                        print("      💀 Logfile endet abrupt (Silent Death) -> OOM.")
+                        result = "OOM"
+                    else: result = "CRASH"
+                else:
+                    final_reason = analyze_crash_reason(scf_out)
+                    if final_reason == "DONE": result = "DONE"
+                    elif final_reason == "LIKELY_OOM": result = "OOM"
+                    else: result = "CRASH"
+
+        # --- ENDE INTEGRIERTE PWSCF LOGIK ---
 
         if result == "DONE": return "DONE"
         if result == "MAX_STEPS":
@@ -655,10 +572,7 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             if os.path.exists(tmp_p): shutil.rmtree(tmp_p, ignore_errors=True)
             if os.path.exists(chkpt_p): shutil.rmtree(chkpt_p, ignore_errors=True)
             
-            labels = {1: "Retrying (OOM Lvl 1, CG)",
-                      2: "Retrying (OOM Lvl 2, DiskIO)",
-                      3: "Retrying (OOM Lvl 3, Mix3)",
-                      4: "Retrying (OOM Lvl 4, 1Core)"}
+            labels = {1: "Retrying (OOM Lvl 1, CG)", 2: "Retrying (OOM Lvl 2, DiskIO)", 3: "Retrying (OOM Lvl 3, Mix3)", 4: "Retrying (OOM Lvl 4, 1Core)"}
             if oom_level in labels:
                 update_csv(name, labels[oom_level])
                 if oom_level == 4: current_cores = int(SAFE_CORES)
@@ -670,16 +584,18 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
 
         if result == "CRASH":
             reason = analyze_crash_reason(scf_out)
-            print_error_log(scf_out)
-
             if reason == "NON_CONVERGED":
                 update_csv(name, "SKIPPED (Non-Conv)")
                 return "NON_CONV"
-
             if reason == "AAINIT_ERROR":
                 print("      ❌ aainit-Fehler. System zu komplex. Skippe.")
                 update_csv(name, "SKIPPED (OOM Limit)")
                 return "OOM_LIMIT"
+            if reason == "PSEUDO_ERROR":
+                update_csv(name, "SKIPPED (Pseudo Limit)")
+                print(f"      ❌ Skippe Job wegen inkompatiblem Pseudopotential.")
+                git_sync(f"Skipped {name}, Pseudo Error")
+                return "PSEUDO_ERROR"
 
             crash_counter += 1
             print(f"      ⚠️ Crash ({reason}). Versuch {crash_counter}/3...")
@@ -693,95 +609,51 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
             time.sleep(2)
             continue
 
-# --- ROBUSTE PHONON WRAPPER ---
+# --- ROBUSTE PHONON WRAPPER OHNE EXTERNE CHECKPOINTS ---
 def run_monitored_ph(input_file, output_file, cwd, active_cores):
     last_git_sync = time.time()
-    last_checkpoint_time = time.time()
-    tmp_dir = os.path.join(cwd, "tmp")
-    ph0_dir = os.path.join(tmp_dir, "_ph0")
-    checkpoint_dir = os.path.join(cwd, "tmp_SAFE_PHONON_CHECKPOINT")
-
     with open(input_file, 'r') as f: content = f.read()
-
-    if not os.path.exists(ph0_dir) and os.path.exists(checkpoint_dir):
-        print("      🛡️ _ph0 fehlt! Lade Phonon-Checkpoint...")
-        try:
-            shutil.copytree(checkpoint_dir, ph0_dir)
-            print("      ✅ Phonon-Checkpoint geladen!")
-        except Exception as e:
-            print(f"      ❌ Phonon-Checkpoint-Fehler: {e}")
-
-    if os.path.exists(ph0_dir):
-        if "recover" not in content:
-            content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
-    else:
-        if os.path.exists(checkpoint_dir):
-            shutil.rmtree(checkpoint_dir, ignore_errors=True)
+    if os.path.exists(output_file):
+        if "recover" not in content: content = content.replace("&INPUTPH", "&INPUTPH\n recover=.true.,")
     
     run_input = input_file + ".run"
     with open(run_input, 'w') as f: f.write(content)
     
     file_mode = 'a' if "recover=.true." in content else 'w'
-    backup_log_file()
-    cleanup_system_memory()
 
     with open(run_input, 'r') as f_in, open(output_file, file_mode) as f_out:
         cmd = ["mpirun", "--oversubscribe", "-np", str(active_cores), PH_EXE]
-        print(f"      ⚙️ Starte PHONONEN (Cores {active_cores})...")
-        process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd, start_new_session=True)
+        print(f"      ⚙️ Starte PHONONEN (Cores: {active_cores})...")
+        process = subprocess.Popen(cmd, stdin=f_in, stdout=f_out, stderr=subprocess.STDOUT, cwd=cwd)
         
         try:
             while process.poll() is None:
                 time.sleep(5)
-                current_time = time.time()
-                
-                if current_time - last_git_sync > 1800:
+                if time.time() - last_git_sync > 1800:
                     print("      ❤️ Git Heartbeat (Phonon)...")
                     git_sync("Log Update (Phonon Running)")
-                    backup_log_file()
-                    last_git_sync = current_time
-
-                if current_time - last_checkpoint_time > 1200:
-                    if os.path.exists(ph0_dir):
-                        print("      💾 Phonon-Checkpoint...")
-                        try:
-                            if os.path.exists(checkpoint_dir):
-                                shutil.rmtree(checkpoint_dir)
-                            shutil.copytree(ph0_dir, checkpoint_dir)
-                            last_checkpoint_time = current_time
-                            backup_log_file()
-                            print("      ✅ Phonon-Checkpoint gesichert.")
-                        except Exception as e:
-                            print(f"      ⚠️ Phonon-Checkpoint fail: {e}")
-
+                    last_git_sync = time.time()
                 try:
-                    if psutil.virtual_memory().percent > MEMORY_LIMIT_PERCENT:
+                    mem_usage = psutil.virtual_memory().percent
+                    if mem_usage > MEMORY_LIMIT_PERCENT:
                         print(f"      ⚠️ RAM NOT-AUS (Python Monitor)!")
-                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                        kill_process_tree(process.pid)
                         return "OOM"
                 except Exception: pass
-
         except Exception: 
-            try: os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-            except: pass
+            kill_process_tree(process.pid)
             return "CRASH"
         
         time.sleep(1.5)
-        
         if process.returncode == -9:
             print("      💀 Prozess wurde vom OS getötet (Exit -9 -> Wahrscheinlich OOM).")
             return "OOM"
+        if process.returncode != 0: return "CRASH"
 
         try:
             with open(output_file, 'r', errors='ignore') as f:
-                if "JOB DONE" in f.read(): 
-                    if process.returncode != 0:
-                        print("      ⚠️ MPI-Fehlalarm (JOB DONE gefunden).")
-                    return "DONE"
+                if "JOB DONE" in f.read(): return "DONE"
         except Exception: pass
-
-        if process.returncode != 0:
-            return "CRASH"
         
         return "CRASH"
     
@@ -792,10 +664,8 @@ def deallocate_vm():
         return
     try:
         result = subprocess.run([az_cmd, "vm", "deallocate", "--resource-group", RESOURCE_GROUP, "--name", "Supraleiter-HPC-Knoten"], capture_output=True, text=True, timeout=60)
-        if result.returncode != 0:
-            print(f"⚠️ Azure CLI Deallocate Fehler {result.stderr}")
-        else:
-            print("✅ VM erfolgreich deallokiert.")
+        if result.returncode != 0: print(f"⚠️ Azure CLI Deallocate Fehler {result.stderr}")
+        else: print("✅ VM erfolgreich deallokiert.")
     except Exception as e: 
         print(f"⚠️ Fehler beim Aufruf der Azure CLI {e}")
 
@@ -815,10 +685,6 @@ def main():
         initial_git_pull()
         
         set_logic_app_state("Enabled")
-        
-        truncate_log(TXT_LOG_FILE, max_size_mb=1.0)
-        with open(TXT_LOG_FILE, "a") as f:
-            f.write(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         print(f"\n\n{'='*40}\n🚀 NEUSTART SMART-PIPELINE, {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{'='*40}\n")
         
         cleanup_system_memory()
@@ -827,7 +693,7 @@ def main():
         if not os.path.exists(INPUTS_DIR): os.makedirs(INPUTS_DIR)
         
         input_files = sorted(glob.glob(os.path.join(INPUTS_DIR, "*.in")))
-        send_notification(f"Start: {len(input_files)} Jobs.")
+        send_notification(f"Start {len(input_files)} Jobs.")
         git_sync("🚀 Start")
 
         for input_file in input_files:
@@ -838,8 +704,7 @@ def main():
             
             if name in FORCE_RETRY_LIST:
                 print(f"🔄 ERZWUNGENER NEUSTART für {name} (Lösche korrupten RUN-Ordner)...")
-                if os.path.exists(work_dir):
-                    shutil.rmtree(work_dir, ignore_errors=True)
+                if os.path.exists(work_dir): shutil.rmtree(work_dir, ignore_errors=True)
                 update_csv(name, "NEW", "-", "-", "-", "-", "-")
             
             row_data = get_csv_full_info(name)
@@ -897,9 +762,6 @@ def main():
                 phase3_out = os.path.join(work_dir, "ph_phase3_elph.out")
 
                 if not os.path.exists(scf_in): shutil.copy(input_file, scf_in)
-
-                result = "DONE"
-                crash_counter = 0
 
                 if not (os.path.exists(scf_out) and "JOB DONE" in open(scf_out, errors='ignore').read()):
                     update_csv(name, "Rechnet SCF...")
@@ -1139,7 +1001,7 @@ def main():
 
     except Exception as e:
         full_error = f"\n\n🚨 KRITISCHER ABSTURZ ({datetime.now()})\n{e}\n{traceback.format_exc()}\n"
-        with open(TXT_LOG_FILE, "a") as f: f.write(full_error)
+        print(full_error)
         git_sync("🚨 Notfall Sync nach Skript-Absturz")
         send_notification(f"🚨 KRITISCHER FEHLER: {e} -> Shutdown.")
         

@@ -338,10 +338,18 @@ def detect_oom_level(input_file):
     if "diagonalization='cg'" in content or 'diagonalization="cg"' in content: return 1
     return 0
 
-def apply_oom_settings(input_file, level):
+def apply_oom_settings(input_file, level, force_cg=False):
     with open(input_file, 'r') as f: content = f.read()
-    diag = 'david'; mix = 6; disk = None 
-    msg = "Standard (david, mix=6, diago_david_ndim=2)"
+    diag = 'david' if not force_cg else 'cg'
+    mix = 6
+    disk = None 
+    
+    if force_cg:
+        msg = "Konvergenz-Rettung (cg, mix=4, disk_io='low')"
+        mix = 4
+        disk = 'low'
+    else:
+        msg = "Standard (david, mix=6, diago_david_ndim=2)"
 
     if level >= 1: diag = 'cg'; mix = 4; disk = 'low'; msg = "Stufe 1 (cg, mix=4, disk_io='low')"
     if level >= 2: diag = 'cg'; mix = 3; disk = 'low'; msg = "Stufe 2 (cg, mix=3, disk_io='low')"

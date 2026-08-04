@@ -338,6 +338,18 @@ def detect_oom_level(input_file):
     if "diagonalization='cg'" in content or 'diagonalization="cg"' in content: return 1
     return 0
 
+def get_scf_cores(scf_out_path, default_cores=4):
+    """Liest aus der scf.out aus, mit wie vielen Cores die Rechnung beendet wurde."""
+    if not os.path.exists(scf_out_path): 
+        return int(default_cores)
+    try:
+        with open(scf_out_path, 'r', errors='ignore') as f:
+            matches = re.findall(r"running on\s+(\d+)\s+processors", f.read())
+            if matches:
+                return int(matches[-1])
+    except Exception: pass
+    return int(default_cores)
+
 def apply_oom_settings(input_file, level, force_cg=False):
     with open(input_file, 'r') as f: content = f.read()
     diag = 'david' if not force_cg else 'cg'

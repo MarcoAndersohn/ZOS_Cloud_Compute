@@ -108,3 +108,64 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    a9762a16..17cdc5a1  main -> main
       ❤️ Git Heartbeat (Phonon)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   17cdc5a1..e1eb7432  main -> main
+      ⚠️ Phonon Crash/OOM! (Phase: Stabilität)
+      --- PHONON ERROR LOG ---
+              k(    3) = (  -0.0010813   0.0010777  -0.4881170), wk =   0.2500000
+              k(    4) = (  -0.0032334  -0.4859562  -0.9751561), wk =   0.0000000
+              k(    5) = (  -0.0010708  -0.4881116   0.0010780), wk =   0.2500000
+              k(    6) = (  -0.0032229  -0.9751455  -0.4859610), wk =   0.0000000
+              k(    7) = (  -0.0021521  -0.4870339  -0.4870390), wk =   0.2500000
+              k(    8) = (  -0.0043042  -0.9740678  -0.9740780), wk =   0.0000000
+              k(    9) = (  -0.4881224  -0.0010705  -0.0010813), wk =   0.2500000
+              k(   10) = (  -0.4902744  -0.4881044  -0.4881203), wk =   0.0000000
+              k(   11) = (  -0.4892037   0.0000072  -0.4891983), wk =   0.2500000
+              k(   12) = (  -0.4913557  -0.4870267  -0.9762374), wk =   0.0000000
+              k(   13) = (  -0.4891932  -0.4891821  -0.0000033), wk =   0.2500000
+              k(   14) = (  -0.4913452  -0.9762160  -0.4870423), wk =   0.0000000
+              k(   15) = (  -0.4902744  -0.4881044  -0.4881203), wk =   0.2500000
+              k(   16) = (  -0.4924265  -0.9751383  -0.9751594), wk =   0.0000000
+      
+           Dense  grid:   231187 G-vectors     FFT dimensions: (  80,  80,  80)
+      
+           Smooth grid:    58327 G-vectors     FFT dimensions: (  50,  50,  50)
+      
+           Estimated max dynamical RAM per process >     201.80 MB
+      
+           Estimated total dynamical RAM >     807.21 MB
+      
+           Check: negative core charge=   -0.000001
+      
+           The potential is recalculated from file :
+           ./tmp/_ph0/Ti3GaH7.save/charge-density
+      
+      
+           negative rho (up, down):  2.739E-03 0.000E+00
+           Starting wfcs are   46 atomic wfcs
+           Checking if some PAW data can be deallocated... 
+      
+           Band Structure Calculation
+           Davidson diagonalization with overlap
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine cdiaghg (230):
+           S matrix not positive definite
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 230.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🛡️ Phonon-Recovery, Versuch 1/3
+      📉 tr2_ph=1.0d-12
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ Starte PHONONEN (Cores: 4)...
+      ❤️ Git Heartbeat (Phonon)...

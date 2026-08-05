@@ -19,6 +19,20 @@ from datetime import datetime
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
+def truncate_log(log_path, max_size_mb=1.0):
+    if not os.path.exists(log_path): return
+    max_bytes = int(max_size_mb * 1024 * 1024)
+    if os.path.getsize(log_path) > max_bytes:
+        try:
+            with open(log_path, 'rb') as f:
+                f.seek(-max_bytes, 2)
+                content = f.read()
+            with open(log_path, 'wb') as f:
+                f.write(content)
+            print(f"✂️ Logfile {os.path.basename(log_path)} auf {max_size_mb} MB gekürzt.")
+        except Exception as e:
+            print(f"⚠️ Konnte Logfile nicht kürzen: {e}")
+
 # =============================================================================
 # 1. KONFIGURATION
 # =============================================================================
@@ -51,6 +65,7 @@ SIGNAL_FILE = os.path.join(WORK_DIR, "rechnung_fertig.txt")
 CSV_FILE = os.path.join(WORK_DIR, "Final_Electronic_Check.csv")
 
 TXT_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output.txt")
+BACKUP_LOG_FILE = os.path.join(WORK_DIR, "pipeline_output_backup.txt")
 
 # Korrekte feste Pfade nach dem VM-Update
 PW_EXE = "/home/marco/qe-source/bin/pw.x"
@@ -62,6 +77,12 @@ MATDYN_EXE = "/home/marco/qe-source/bin/matdyn.x"
 # =============================================================================
 # 2. HELFER & GIT & CLEANUP
 # =============================================================================
+def backup_log_file():
+    truncate_log(TXT_LOG_FILE, max_size_mb=1.0)
+    if os.path.exists(TXT_LOG_FILE):
+        try: shutil.copy(TXT_LOG_FILE, BACKUP_LOG_FILE)
+        except: pass
+
 def send_notification(message):
     if not TELEGRAM_TOKEN: return
     try:
@@ -198,6 +219,18 @@ def count_job_attempts(log_file, job_name):
     except Exception: return 1
     return max(1, count)
 
+def get_scf_cores(scf_out_path, default_cores=4):
+    """Liest aus der scf.out aus, mit wie vielen Cores die Rechnung beendet wurde."""
+    if not os.path.exists(scf_out_path): 
+        return int(default_cores)
+    try:
+        with open(scf_out_path, 'r', errors='ignore') as f:
+            matches = re.findall(r"running on\s+(\d+)\s+processors", f.read())
+            if matches:
+                return int(matches[-1])
+    except Exception: pass
+    return int(default_cores)
+
 def cleanup_heavy_files(work_dir, name, force=False):
     """Löscht riesige tmp-Ordner von abgeschlossenen oder verworfenen Kandidaten."""
     if not force:
@@ -214,7 +247,7 @@ def cleanup_heavy_files(work_dir, name, force=False):
         try: os.remove(dvscf_file); deleted_something = True
         except: pass
 
-    # Wir löschen nur noch den echten tmp Ordner, da es keine Backup-Ordner mehr gibt
+    # Löscht den _ph0 / tmp Ordner restlos
     tmp_path = os.path.join(work_dir, "tmp")
     if os.path.exists(tmp_path):
         try: shutil.rmtree(tmp_path, ignore_errors=True); deleted_something = True
@@ -267,6 +300,12 @@ def analyze_crash_reason(output_file):
         if "mx dimension too small" in lines_lower:
             print("      🧨 FATAL Pseudopotential übersteigt QE-Limit. Neues Pseudo (PAW) benötigt!")
             return "PSEUDO_ERROR"
+            
+        # --- S-MATRIX / STRUKTUR KOLLAPS CHECK ---
+        if "s matrix not positive definite" in lines_lower or "cdiaghg" in lines_lower:
+            print("      💥 FATAL: S-Matrix nicht positiv definit (Struktur kollabiert!).")
+            return "S_MATRIX_ERROR"
+        # -----------------------------------------
 
         ram_match = re.search(r"estimated total dynamical ram\s*>\s*([0-9\.]+)\s*(mb|gb)", lines_lower)
         error_keywords = ["error", "mpi_abort", "segmentation fault", "stopping", "fatal", "diagonalization failed"]
@@ -332,23 +371,13 @@ def run_cleanup_scf(scf_input_file, cwd, cores_to_use=2):
 def detect_oom_level(input_file):
     if not os.path.exists(input_file): return 0
     with open(input_file, 'r', errors='ignore') as f: content = f.read()
+    match = re.search(r"!\s*SMART_OOM_LEVEL\s*=\s*(\d+)", content)
+    if match: return int(match.group(1))
     if "mixing_ndim = 2" in content or "mixing_ndim=2" in content: return 4
     if "mixing_ndim = 3" in content or "mixing_ndim=3" in content: return 3
     if "disk_io='low'" in content or 'disk_io="low"' in content: return 2
     if "diagonalization='cg'" in content or 'diagonalization="cg"' in content: return 1
     return 0
-
-def get_scf_cores(scf_out_path, default_cores=4):
-    """Liest aus der scf.out aus, mit wie vielen Cores die Rechnung beendet wurde."""
-    if not os.path.exists(scf_out_path): 
-        return int(default_cores)
-    try:
-        with open(scf_out_path, 'r', errors='ignore') as f:
-            matches = re.findall(r"running on\s+(\d+)\s+processors", f.read())
-            if matches:
-                return int(matches[-1])
-    except Exception: pass
-    return int(default_cores)
 
 def apply_oom_settings(input_file, level, force_cg=False):
     with open(input_file, 'r') as f: content = f.read()
@@ -384,6 +413,9 @@ def apply_oom_settings(input_file, level, force_cg=False):
         else: content = content.replace("&CONTROL", "&CONTROL\n disk_io='low',")
     else:
         if "disk_io='low'" in content or 'disk_io="low"' in content: content = re.sub(r"disk_io\s*=\s*['\"]low['\"],?", "", content)
+
+    if "! SMART_OOM_LEVEL" in content: content = re.sub(r"!\s*SMART_OOM_LEVEL\s*=\s*\d+", f"! SMART_OOM_LEVEL={level}", content)
+    else: content += f"\n! SMART_OOM_LEVEL={level}\n"
 
     with open(input_file, 'w') as f: f.write(content)
     return True
@@ -449,7 +481,7 @@ def run_monitored_pw(input_file, output_file, cwd, active_cores):
         
         mode = 'from_scratch'
         
-        # Native QE Restart Logik (Keine Kopien!)
+        # Native QE Restart Logik
         if os.path.exists(output_file) and is_xml_valid(xml_path):
             mode = 'restart'
             print("      ✅ Gültige XML im tmp-Ordner gefunden -> QE nativer Restart.")
@@ -528,6 +560,8 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
 
     if start_crash_reason == "LIKELY_OOM":
         attempts = count_job_attempts(TXT_LOG_FILE, name)
+        if os.path.exists(BACKUP_LOG_FILE):
+            attempts = max(attempts, count_job_attempts(BACKUP_LOG_FILE, name))
         print(f"      🕵️ OOM-Signatur erkannt. Versuch Nr. {attempts} auf Level {file_level}.")
 
         if os.path.exists(scf_out):
@@ -622,6 +656,11 @@ def run_scf_block(name, work_dir, scf_in, scf_out):
                 print(f"      ❌ Skippe Job wegen inkompatiblem Pseudopotential.")
                 git_sync(f"Skipped {name}, Pseudo Error")
                 return "PSEUDO_ERROR"
+            if reason == "S_MATRIX_ERROR":
+                update_csv(name, "SKIPPED (S-Matrix Crash)")
+                print(f"      ❌ Skippe Job wegen strukturellem Kollaps (S-Matrix).")
+                git_sync(f"Skipped {name}, S-Matrix Crash")
+                return "S_MATRIX_ERROR"
 
             crash_counter += 1
             print(f"      ⚠️ Crash ({reason}). Versuch {crash_counter}/3...")
@@ -748,10 +787,11 @@ def run_phonon_block(name, work_dir, scf_in, scf_out, ph_in, ph_out, e_fermi, do
             crash_reason = analyze_crash_reason(ph_out)
             print_error_log(ph_out, "PHONON ERROR LOG")
 
-            if crash_reason == "AAINIT_ERROR":
-                print("      🔩 aainit-Fehler unlösbar -> Skippe.")
-                update_csv(name, f"SKIPPED (Phonon OOM, Phase {phase_name})")
-                git_sync(f"Phonon OOM, {name}")
+            if crash_reason in ["AAINIT_ERROR", "S_MATRIX_ERROR"]:
+                error_name = "S-Matrix" if crash_reason == "S_MATRIX_ERROR" else "aainit"
+                print(f"      🔩 {error_name}-Fehler unlösbar -> Skippe.")
+                update_csv(name, f"SKIPPED (Phonon Crash, Phase {phase_name})")
+                git_sync(f"Phonon Crash ({error_name}) {name}")
                 return "CRASH"
 
             if crash_reason == "CORRUPT_FILE_ERROR":

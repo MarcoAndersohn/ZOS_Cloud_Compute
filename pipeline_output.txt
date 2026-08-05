@@ -520,3 +520,60 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    b79b671f..bb3ad6e3  main -> main
       ❤️ Git Heartbeat (Phonon)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   bb3ad6e3..10f863c7  main -> main
+      ⚠️ Phonon Crash/OOM! (Phase: Stabilität)
+      💥 FATAL: S-Matrix nicht positiv definit (Struktur kollabiert!).
+      --- PHONON ERROR LOG ---
+              k(    3) = (  -0.0010813   0.0010777  -0.4881170), wk =   0.2500000
+              k(    4) = (  -0.0021626   0.0021554  -0.9762341), wk =   0.0000000
+              k(    5) = (  -0.0010708  -0.4881116   0.0010780), wk =   0.2500000
+              k(    6) = (  -0.0021521  -0.4870339  -0.4870390), wk =   0.0000000
+              k(    7) = (  -0.0021521  -0.4870339  -0.4870390), wk =   0.2500000
+              k(    8) = (  -0.0032334  -0.4859562  -0.9751561), wk =   0.0000000
+              k(    9) = (  -0.4881224  -0.0010705  -0.0010813), wk =   0.2500000
+              k(   10) = (  -0.4892037   0.0000072  -0.4891983), wk =   0.0000000
+              k(   11) = (  -0.4892037   0.0000072  -0.4891983), wk =   0.2500000
+              k(   12) = (  -0.4902849   0.0010849  -0.9773154), wk =   0.0000000
+              k(   13) = (  -0.4891932  -0.4891821  -0.0000033), wk =   0.2500000
+              k(   14) = (  -0.4902744  -0.4881044  -0.4881203), wk =   0.0000000
+              k(   15) = (  -0.4902744  -0.4881044  -0.4881203), wk =   0.2500000
+              k(   16) = (  -0.4913557  -0.4870267  -0.9762374), wk =   0.0000000
+      
+           Dense  grid:   231187 G-vectors     FFT dimensions: (  80,  80,  80)
+      
+           Smooth grid:    58327 G-vectors     FFT dimensions: (  50,  50,  50)
+      
+           Estimated max dynamical RAM per process >     201.77 MB
+      
+           Estimated total dynamical RAM >     807.07 MB
+      
+           Check: negative core charge=   -0.000001
+      
+           The potential is recalculated from file :
+           ./tmp/_ph0/Ti3GaH7.save/charge-density
+      
+      
+           negative rho (up, down):  2.739E-03 0.000E+00
+           Starting wfcs are   46 atomic wfcs
+           Checking if some PAW data can be deallocated... 
+      
+           Band Structure Calculation
+           Davidson diagonalization with overlap
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine cdiaghg (230):
+           S matrix not positive definite
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      --------------------------------------------------------------------------
+      MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+      with errorcode 230.
+      
+      NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+      You may or may not see output from other processes, depending on
+      exactly when Open MPI kills them.
+      --------------------------------------------------------------------------
+      --------------------
+      🔩 S-Matrix-Fehler unlösbar -> Skippe.

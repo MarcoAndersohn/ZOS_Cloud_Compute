@@ -314,3 +314,64 @@ To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
 To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
    089e62a7..9475c999  main -> main
       ❤️ Git Heartbeat (Phonon)...
+To https://github.com/MarcoAndersohn/ZOS_Cloud_Compute.git
+   9475c999..955ac236  main -> main
+      ⚠️ Phonon Crash/OOM! (Phase: Stabilität)
+      --- PHONON ERROR LOG ---
+              10        H      tau(  10) = (  -0.0025235   0.0025251   0.5362367  )
+              11        H      tau(  11) = (   0.5485073   0.4735907   0.0661078  )
+      
+           number of k points=    16  Methfessel-Paxton smearing, width (Ry)=  0.0200
+                             cart. coord. in units 2pi/alat
+              k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+              k(    2) = (  -0.0010708  -0.4881116   0.0010780), wk =   0.0000000
+              k(    3) = (  -0.0010813   0.0010777  -0.4881170), wk =   0.2500000
+              k(    4) = (  -0.0021521  -0.4870339  -0.4870390), wk =   0.0000000
+              k(    5) = (  -0.0010708  -0.4881116   0.0010780), wk =   0.2500000
+              k(    6) = (  -0.0021416  -0.9762232   0.0021560), wk =   0.0000000
+              k(    7) = (  -0.0021521  -0.4870339  -0.4870390), wk =   0.2500000
+              k(    8) = (  -0.0032229  -0.9751455  -0.4859610), wk =   0.0000000
+              k(    9) = (  -0.4881224  -0.0010705  -0.0010813), wk =   0.2500000
+              k(   10) = (  -0.4891932  -0.4891821  -0.0000033), wk =   0.0000000
+              k(   11) = (  -0.4892037   0.0000072  -0.4891983), wk =   0.2500000
+              k(   12) = (  -0.4902744  -0.4881044  -0.4881203), wk =   0.0000000
+              k(   13) = (  -0.4891932  -0.4891821  -0.0000033), wk =   0.2500000
+              k(   14) = (  -0.4902640  -0.9772937   0.0010747), wk =   0.0000000
+              k(   15) = (  -0.4902744  -0.4881044  -0.4881203), wk =   0.2500000
+              k(   16) = (  -0.4913452  -0.9762160  -0.4870423), wk =   0.0000000
+      
+           Dense  grid:   231187 G-vectors     FFT dimensions: (  80,  80,  80)
+      
+           Smooth grid:    58327 G-vectors     FFT dimensions: (  50,  50,  50)
+      
+           Estimated max dynamical RAM per process >     201.77 MB
+      
+           Estimated total dynamical RAM >     807.07 MB
+      
+           Check: negative core charge=   -0.000001
+      
+           The potential is recalculated from file :
+           ./tmp/_ph0/Ti3GaH7.save/charge-density
+      
+      
+           negative rho (up, down):  2.739E-03 0.000E+00
+           Starting wfcs are   46 atomic wfcs
+           Checking if some PAW data can be deallocated... 
+      
+           Band Structure Calculation
+           Davidson diagonalization with overlap
+      
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           Error in routine cdiaghg (230):
+           S matrix not positive definite
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+           stopping ...
+      [Supraleiter-HPC-Knoten:01061] [[28691,0],0] ORTE_ERROR_LOG: Data unpack would read past end of buffer in file ../../../orte/util/show_help.c at line 501
+      --------------------
+      🛡️ Phonon-Recovery, Versuch 1/3
+      📉 tr2_ph=1.0d-12
+      🧹 Bereinige Zombie-Prozesse und Shared Memory (/dev/shm)...
+      ✅ System-RAM und Prozesse sind sauber.
+      ⚙️ Starte PHONONEN (Cores: 4)...
+      ❤️ Git Heartbeat (Phonon)...
